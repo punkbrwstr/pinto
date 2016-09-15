@@ -36,6 +36,10 @@ public final class PeriodicRange<P extends Period> {
 		return periodicity.distance(range.lowerEndpoint(), p);
 	}
 
+	public long indexOf(LocalDate d) {
+		return periodicity.distance(range.lowerEndpoint(), periodicity.from(d));
+	}
+
 	public P start() {
 		return range.lowerEndpoint();
 	}

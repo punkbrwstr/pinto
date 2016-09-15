@@ -3,6 +3,7 @@ package tech.pinto.extras;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -15,11 +16,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.zip.InflaterInputStream;
 
 import com.bloomberglp.blpapi.CorrelationID;
 import com.bloomberglp.blpapi.Datetime;
@@ -32,6 +36,7 @@ import com.bloomberglp.blpapi.Session;
 import com.bloomberglp.blpapi.SessionOptions;
 
 import tech.pinto.Cache;
+import tech.pinto.data.DoubleData;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
@@ -39,7 +44,7 @@ public class BloombergClient {
 
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
-	private static final int TIMEOUT = 5;
+	private static final int TIMEOUT = 5000;
 
 	private final AtomicLong requestNumber = new AtomicLong();
 	private Session session;
@@ -68,21 +73,15 @@ public class BloombergClient {
 					}
 					Job j = jobs.get(msg.correlationID().value());
 					try {
-						if (!event.eventType().equals(Event.EventType.RESPONSE)
-								|| event.eventType().equals(Event.EventType.PARTIAL_RESPONSE)) {
+						if (!(event.eventType().equals(Event.EventType.RESPONSE)
+								|| event.eventType().equals(Event.EventType.PARTIAL_RESPONSE))) {
 							return;
 						}
 						if (msg.hasElement("responseError")) {
 							throw new Exception("Response error: "
 									+ msg.getElement("responseError").getElement("message").getValueAsString());
 						}
-						Element securityDataRaw = msg.getElement("securityData"); // maybe
-																					// //
-																					// one
-																					// //
-																					// maybe
-																					// //
-																					// many
+						Element securityDataRaw = msg.getElement("securityData"); // maybe one maybe many
 						List<Element> securityElements = new ArrayList<Element>();
 						Consumer<Element> processSecurityElement = e -> {
 							if (e.hasElement("securityError")) {
@@ -125,18 +124,26 @@ public class BloombergClient {
 		}
 	}
 
-	public <P extends Period> Function<PeriodicRange<P>, DoubleStream> getFunction(Cache cache, String... t) {
-		final String securityCode = t[0];
-		final String fieldCode = t.length < 2 ? "PX_LAST" : t[1].trim().replaceAll(" ", "_");
-		final boolean fillPrevious = t.length == 3;
-
+	public <P extends Period> Function<PeriodicRange<?>, ArrayDeque<DoubleData>> 
+					getFunction(List<String> securities, List<String> fields ) {
 		if (session == null) {
 			connect();
 		}
-		return (d) -> {
+		return (range) -> {
 			final long jobNumber = requestNumber.incrementAndGet();
-			final CompletableFuture<DoubleStream> futureDS = new CompletableFuture<>();
-			final DoubleStream.Builder builder = DoubleStream.builder();
+			final List<String> securityCodes = securities;
+			final List<String> fieldCodes = fields;
+			final List<String> securityCodeFieldCode = securityCodes.stream()
+						.flatMap(s -> fieldCodes.stream().map(c -> s + ":" + c)).collect(Collectors.toList());
+			final Map<String,Integer> rowMap = IntStream.range(0,securityCodeFieldCode.size()).mapToObj(Integer::new)
+						.collect(Collectors.toMap((i) -> securityCodeFieldCode.get(i), Function.identity()));
+			final double[][] data = new double[securityCodeFieldCode.size()][(int) range.size()];
+			Arrays.stream(data).forEach(d -> Arrays.fill(d, Double.NaN));
+			final CompletableFuture<ArrayDeque<DoubleData>> futureDS = new CompletableFuture<>();
+//			final Map<String,DoubleStream.Builder> builders = securityCodeFieldCode.stream()
+//						.collect(Collectors.toMap(Function.identity(), (s) -> DoubleStream.builder()));
+//			final Map<String,AtomicInteger> stillNeeded = securityCodeFieldCode.stream()
+//						.collect(Collectors.toMap(Function.identity(), (s) -> new AtomicInteger((int) d.size())));
 			final Consumer<Exception> errorHandler = e -> {
 				futureDS.completeExceptionally(e);
 			};
@@ -144,45 +151,61 @@ public class BloombergClient {
 				synchronized (session) {
 					Service refDataService = session.getService("//blp/refdata");
 					com.bloomberglp.blpapi.Request request = refDataService.createRequest("HistoricalDataRequest");
-					log.trace("Bbg history request: {}:{} {}:{}-{}", securityCode, fieldCode, d.periodicity().code(),
-							d.start(), d.end());
-					request.getElement("securities").appendValue(securityCode);
-					request.getElement("fields").appendValue(fieldCode);
-					request.set("periodicitySelection", d.periodicity().bloombergCode());
-					request.set("startDate", d.start().endDate().format(DateTimeFormatter.BASIC_ISO_DATE));
-					LocalDate endDate = Arrays.asList("BM", "BQ-DEC", "BA-DEC").contains(d.periodicity().code())
-							? d.end().endDate().withDayOfMonth(d.end().endDate().lengthOfMonth()) : d.end().endDate();
+					//log.trace("Bbg history request: {}:{} {}:{}-{}", securityCode, fieldCode, d.periodicity().code(),
+							//d.start(), d.end());
+					securityCodes.stream().forEach(request.getElement("securities")::appendValue);
+					fieldCodes.stream().forEach(request.getElement("fields")::appendValue);
+					//request.getElement("securities").appendValue(securityCode);
+					//request.getElement("fields").appendValue(fieldCode);
+					request.set("periodicitySelection", range.periodicity().bloombergCode());
+					request.set("startDate", range.start().endDate().format(DateTimeFormatter.BASIC_ISO_DATE));
+					LocalDate endDate = Arrays.asList("BM", "BQ-DEC", "BA-DEC").contains(range.periodicity().code())
+							? range.end().endDate().withDayOfMonth(range.end().endDate().lengthOfMonth()) : range.end().endDate();
 
 					request.set("endDate", endDate.format(DateTimeFormatter.BASIC_ISO_DATE));
 					request.set("maxDataPoints", 10000);
 					request.set("returnEids", true);
 					request.set("nonTradingDayFillOption", "NON_TRADING_WEEKDAYS");
-					// request.set(nonTradingDayFillMethod", "NIL_VALUE");
-					request.set("nonTradingDayFillMethod", fillPrevious ? "PREVIOUS_VALUE" : "NIL_VALUE");
+					request.set("nonTradingDayFillMethod", "NIL_VALUE");
+					//request.set("nonTradingDayFillMethod", fillPrevious ? "PREVIOUS_VALUE" : "NIL_VALUE");
 					jobs.put(jobNumber, new Job(l -> {
 						for (Element securityData : l) {
 							Element fieldElement = securityData.getElement("fieldData");
 							for (int i = 0; i < fieldElement.numValues(); ++i) {
 								Element dateValueElement = fieldElement.getValueAsElement(i);
 								Datetime date = dateValueElement.getElement(0).getValueAsDate();
-								if (d.periodicity().code().equals("B")
+								if (range.periodicity().code().equals("B")
 										&& (date.calendar().get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
 												|| date.calendar().get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)) {
 									continue;
 								}
-								if (dateValueElement.numElements() == 2) {
-									builder.add(dateValueElement.getElement(1).getValueAsFloat64());
+								if (dateValueElement.numElements() == 1) {
+									//TODO
+									//builders.get(securityField).add(Double.NaN);
 								} else {
-									builder.add(Double.NaN);
+									for(int j = 1; j < dateValueElement.numElements(); j++) {
+										int row = rowMap.get(securityData.getElement("security").getValueAsString() 
+												+ ":" + dateValueElement.getElement(j).name());
+										int col = (int) range.indexOf(LocalDate.parse(date.toString()));
+										data[row][col] = dateValueElement.getElement(j).getValueAsFloat64();
+//										builders.get(securityField).add(dateValueElement.getElement(1).getValueAsFloat64());
+//										stillNeeded.get(securityField).decrementAndGet();
+									}
 								}
-							}
-							long stillNeeded = d.size() - fieldElement.numValues();
-							for (int i = 0; i < stillNeeded; i++) {
-								builder.add(Double.NaN);
 							}
 						}
 						jobs.remove(jobNumber);
-						futureDS.complete(builder.build());
+//						for(String securityField : securityCodeFieldCode) {
+//							for (int i = 0; i < stillNeeded.get(securityField).get(); i++) {
+//								builders.get(securityField).add(Double.NaN);
+//							}
+//						}
+						futureDS.complete(IntStream.range(0, securityCodeFieldCode.size())
+								.mapToObj(i -> new DoubleData(range, securityCodeFieldCode.get(i), DoubleStream.of(data[i])))
+								.collect(Collectors.toCollection(() -> new ArrayDeque<DoubleData>())));
+//						futureDS.complete(builders.entrySet().stream()
+//								.map(e -> new DoubleData(d, e.getKey(), e.getValue().build()))
+//								.collect(Collectors.toCollection(() -> new ArrayDeque<DoubleData>())));
 					}, errorHandler));
 					session.sendRequest(request, new CorrelationID(jobNumber));
 				}
@@ -190,7 +213,7 @@ public class BloombergClient {
 			} catch (Exception e) {
 				String message = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
 				session = null;
-				throw new RuntimeException("Bloomberg error for " + securityCode + "/" + fieldCode + ": " + message, e);
+				throw new RuntimeException("Bloomberg error: " + message, e);
 			}
 		};
 	}

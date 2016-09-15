@@ -89,7 +89,7 @@ public class Statement extends Command<Object, AnyData, Object, AnyData> {
 					stack.addFirst(c);
 					sb.add(c.toString());
 				} else { // it's the name of a saved statement (hopefully)
-					if (!cache.isSaved(s)) {
+					if (!cache.isSavedStatement(s)) {
 						throw new PintoSyntaxException("Command or saved statement \"" + s + "\" not found.");
 					}
 					dependencies.add(s);
@@ -148,6 +148,7 @@ public class Statement extends Command<Object, AnyData, Object, AnyData> {
 					if (!sc.hasNext()) {
 						throw new IllegalArgumentException("Unmatched parenthesis in statement \"" + statement + "\"");
 					}
+					argBuilder.append(" ");
 					next = sc.next();
 				}
 			} while (!foundClosingParen);

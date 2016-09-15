@@ -1,15 +1,11 @@
 package tech.pinto.command.nonedouble;
 
-import java.util.ArrayDeque;
-
-
 import java.util.stream.DoubleStream;
 
 import tech.pinto.Cache;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.DoubleData;
 import tech.pinto.data.NoneData;
-import tech.pinto.time.PeriodicRange;
 
 abstract public class CachedDoubleCommand extends ParameterizedCommand<Object,NoneData,DoubleStream,DoubleData> {
 	
@@ -23,13 +19,14 @@ abstract public class CachedDoubleCommand extends ParameterizedCommand<Object,No
 	}
 
 
-    public ArrayDeque<DoubleData> getOutputData(PeriodicRange<?> range) {
-        if(outputStack == null) {
-        	outputStack = new ArrayDeque<>();
-            outputStack.addFirst(new DoubleData(range,toString(),
-            		cache.evaluateCached(this, range, r -> evaluate(r).getFirst().getData())));
-        }
-        return outputStack;
-    }
+//    public ArrayDeque<DoubleData> getOutputData(PeriodicRange<?> range) {
+//        if(outputStack == null) {
+//        	//get from cache
+//        	outputStack = new ArrayDeque<>();
+//            outputStack.addFirst(new DoubleData(range,toString(),
+//            		cache.evaluateCached(this, range, r -> evaluate(r).getFirst().getData())));
+//        }
+//        return outputStack;
+//    }
 
 }

@@ -2,7 +2,7 @@ package tech.pinto.data;
 
 import tech.pinto.time.PeriodicRange;
 
-public class Data<D> {
+public class Data<D> implements Comparable<Data<D>> {
 	
 	protected PeriodicRange<?> range;
 	protected String label;
@@ -35,5 +35,12 @@ public class Data<D> {
 		this.data = data;
 		return this;
 	}
+
+	@Override
+	public int compareTo(Data<D> o) {
+		return range.start().compareTo(o.getRange().start());
+	}
+	
+	
 
 }
