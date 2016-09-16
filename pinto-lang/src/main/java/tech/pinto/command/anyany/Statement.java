@@ -111,7 +111,7 @@ public class Statement extends Command<Object, AnyData, Object, AnyData> {
 		// terminal command to start recursively executing
 
 		if (range == null) {
-			return (ArrayDeque<AnyData>) terminalCommands.stream().flatMap(c -> c.getOutputData(null).stream())
+			return terminalCommands.stream().flatMap(c -> c.getOutputData(null).stream())
 					.map(Data.class::cast).collect(Collectors.toCollection(()-> new ArrayDeque()));
 		} else {
 			ArrayDeque<AnyData> output = new ArrayDeque<>();

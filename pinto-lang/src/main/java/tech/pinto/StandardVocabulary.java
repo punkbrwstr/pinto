@@ -18,6 +18,8 @@ import tech.pinto.command.nonedouble.MoonPhase;
 import tech.pinto.command.nonedouble.Yahoo;
 import tech.pinto.command.terminal.Delete;
 import tech.pinto.command.terminal.Evaluate;
+import tech.pinto.command.terminal.Export;
+import tech.pinto.command.terminal.Help;
 import tech.pinto.command.terminal.Save;
 
 public class StandardVocabulary implements Vocabulary {
@@ -25,8 +27,10 @@ public class StandardVocabulary implements Vocabulary {
     private final Map<String,CommandFactory> commands = 
             new ImmutableMap.Builder<String, CommandFactory>()
                 .put("eval", (c,a) -> new Evaluate(a))
+                .put("export", (c,a) -> new Export(a))
                 .put("save", (c,a) -> new Save(c,a))
                 .put("del", (c,a) -> new Delete(c,a))
+                .put("help", (c,a) -> new Help(c,this,a))
                 .put("+", (c,a) -> new DoubleDoubleOperator("+", (x,y) -> x + y))
                 .put("-", (c,a) -> new DoubleDoubleOperator("-", (x,y) -> x - y))
                 .put("*", (c,a) -> new DoubleDoubleOperator("*", (x,y) -> x * y))

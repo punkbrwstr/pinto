@@ -28,7 +28,7 @@ public class ExtrasConsole extends Console {
 	public static void main(String[] args) throws IOException {
 		try {
 			new ExtrasConsole().run();
-		} catch (IOException e) {
+		} catch (Throwable e) {
 			e.printStackTrace();
 		} finally {
 			try {

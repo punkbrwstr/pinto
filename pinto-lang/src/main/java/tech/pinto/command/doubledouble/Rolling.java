@@ -47,7 +47,7 @@ public class Rolling extends ParameterizedCommand<DoubleStream,DoubleData,Double
 			}
 			windowFrequency =  Optional.of(p);
 		}
-		inputCount = args.length < 2 ? 1 : Math.abs(Integer.parseInt(args[2].replaceAll("\\s+", "")));
+		inputCount = args.length <= 2 ? 1 : Math.abs(Integer.parseInt(args[2].replaceAll("\\s+", "")));
 		inputCount = inputCount == -1 ? Integer.MAX_VALUE : inputCount;
 		outputCount = 1;
 

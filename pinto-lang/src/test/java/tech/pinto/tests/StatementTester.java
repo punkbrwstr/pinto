@@ -69,6 +69,18 @@ public class StatementTester {
 		pinto.evaluateStatement("1 del(deleteme)");
 	}
 	
+	
+	public void testRolling() throws Exception {
+		double[][] d = runDoubleDataStatement("moon r_mean(10) eval(2016-09-06,2016-09-09,B)");
+		assertEquals("rolling mean", 12.0096, d[0][d[0].length-1],0.001d);
+
+		d = runDoubleDataStatement("moon r_mean(10,B) eval(2016-08-06,2016-09-09,W-FRI)");
+		assertEquals("rolling mean (diff freqs window < range)", -33.2738, d[0][d[0].length-2],0.001d);
+
+		d = runDoubleDataStatement("moon lag(1,BM) eval(2016-08-06,2016-09-09,B)");
+		assertEquals("lag (diff freqs range > window)", -27.3281, d[0][0],0.001d);
+	}
+	
 	/**
 	 *   July 2014
 	 *   
