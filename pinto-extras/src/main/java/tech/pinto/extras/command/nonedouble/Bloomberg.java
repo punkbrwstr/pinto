@@ -1,8 +1,9 @@
 package tech.pinto.extras.command.nonedouble;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -16,7 +17,9 @@ import tech.pinto.time.PeriodicRange;
 
 public class Bloomberg extends CachedDoubleCommand {
 	
-	Function<PeriodicRange<?>, ArrayDeque<DoubleData>> function;
+	private final Function<PeriodicRange<?>, List<DoubleData>> function;
+	private int evalCount = 0;
+	private Map<PeriodicRange<?>,List<DoubleData>> data = new HashMap<>();
 
 	public Bloomberg(BloombergClient bc, Cache cache, String... arguments) {
 		super("bbg", cache, arguments);
@@ -34,8 +37,9 @@ public class Bloomberg extends CachedDoubleCommand {
 	}
 
 	@Override
-	protected <P extends Period> ArrayDeque<DoubleData> evaluate(PeriodicRange<P> range) {
-		return function.apply(range);
+	public <P extends Period> DoubleData evaluate(PeriodicRange<P> range) {
+		List<DoubleData> d = data.containsKey(range) ? data.get(range) : function.apply(range);
+		return d.get(evalCount++);
 	}
 
 }

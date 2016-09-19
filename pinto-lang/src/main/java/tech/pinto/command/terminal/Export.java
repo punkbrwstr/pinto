@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.AnyData;
+import tech.pinto.data.Data;
 import tech.pinto.data.DoubleData;
 import tech.pinto.data.MessageData;
 import tech.pinto.time.Period;
@@ -20,47 +21,52 @@ import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 import tech.pinto.tools.Outputs;
 
-public class Export extends ParameterizedCommand<Object, AnyData, String, MessageData> {
+public class Export extends ParameterizedCommand {
+
+	protected final PeriodicRange<?> range;
+	protected final ArrayDeque<Data<?>> output = new ArrayDeque<>();
 
 	public Export(String[] arguments) {
 		super("export", AnyData.class, MessageData.class, arguments);
+		LocalDate start = LocalDate.parse(arguments[0]);
+		LocalDate end = LocalDate.parse(arguments[1]);
+		Periodicity<?> p = Periodicities.get(arguments.length > 2 ? arguments[2] : "B");
+		this.range = p.range(start, end, false);
+
 		inputCount = Integer.MAX_VALUE;
+		outputCount = Integer.MAX_VALUE;
 	}
 
 	@Override
-	protected <P extends Period> ArrayDeque<MessageData> evaluate(PeriodicRange<P> range) {
-		// passed range is null
-		LocalDate start = LocalDate.parse(arguments[0]);
-		LocalDate end = LocalDate.parse(arguments[1]);
-		Periodicity<?> p =  Periodicities.get(arguments.length > 2 ? arguments[2] : "B");
-		PeriodicRange<?> r = p.range(start, end, false);
-		ArrayDeque<MessageData> result = new ArrayDeque<>();
-		@SuppressWarnings("rawtypes")
-		ArrayDeque<?> ad = inputStack.stream().flatMap(c -> c.getOutputData(r).stream())
-								.collect(Collectors.toCollection(() -> new ArrayDeque()));
-		Optional<Outputs.StringTable> t = ad.stream().filter(d -> d instanceof DoubleData).map(d -> (DoubleData) d)
-					.collect(Outputs.doubleDataToStringTable());
-		if(t.isPresent()) {
-			try (PrintWriter out = new PrintWriter(
-				new BufferedWriter(new FileWriter(arguments[3])))) {
-				out.println(Stream.of(t.get().getHeader()).collect(Collectors.joining(",")));
-				Stream.of(t.get().getCells()).forEach(line -> out.println(Stream.of(line).collect(Collectors.joining(","))));
-			} catch (IOException e) {
-				throw new IllegalArgumentException("Unable to open file \"" + arguments[3] + "\" for export");
-			}
-			result.addFirst(new MessageData("Successfully exported"));
-		} else {
-			result.addFirst(new MessageData("Nothing to export"));
-		}
+	protected void determineOutputCount() {
+		outputCount = inputStack.size();
+	}
 
-		return result;
+	@Override
+	public <P extends Period> MessageData evaluate(PeriodicRange<P> range) {
+		output.addLast(inputStack.removeFirst().evaluate(this.range));
+		if (output.size() != outputCount) {
+			return new MessageData("Adding data column");
+		} else {
+			Optional<Outputs.StringTable> t = output.stream().map(d -> (Object) d).filter(d -> d instanceof DoubleData)
+					.map(d -> (DoubleData) d).collect(Outputs.doubleDataToStringTable());
+			if (t.isPresent()) {
+				try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(arguments[3])))) {
+					out.println(Stream.of(t.get().getHeader()).collect(Collectors.joining(",")));
+					Stream.of(t.get().getCells())
+							.forEach(line -> out.println(Stream.of(line).collect(Collectors.joining(","))));
+				} catch (IOException e) {
+					throw new IllegalArgumentException("Unable to open file \"" + arguments[3] + "\" for export");
+				}
+			}
+
+			return new MessageData("Successfully exported");
+		}
 	}
 
 	@Override
 	public boolean isTerminal() {
 		return true;
 	}
-	
-	
 
 }

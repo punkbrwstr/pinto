@@ -1,9 +1,5 @@
 package tech.pinto.command.terminal;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-
 import tech.pinto.Cache;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.AnyData;
@@ -11,7 +7,7 @@ import tech.pinto.data.MessageData;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class Save extends ParameterizedCommand<Object, AnyData, String, MessageData> {
+public class Save extends ParameterizedCommand {
 
 	private final String code;
 	private final Cache cache;
@@ -25,6 +21,7 @@ public class Save extends ParameterizedCommand<Object, AnyData, String, MessageD
 		this.cache = cache;
 		code = arguments[0];
 		inputCount = Integer.MAX_VALUE;
+		outputCount = 1;
 	}
 	
 	public void setFormula(String formula) {
@@ -32,16 +29,14 @@ public class Save extends ParameterizedCommand<Object, AnyData, String, MessageD
 	}
 
 	@Override
-	protected <P extends Period> ArrayDeque<MessageData> evaluate(PeriodicRange<P> range) {
+	public <P extends Period> MessageData evaluate(PeriodicRange<P> range) {
 //		ArrayList<String> fullStatement = new ArrayList<>();
 //		while(!inputStack.isEmpty()) {
 //			fullStatement.add(inputStack.removeLast().summarize());
 //		}
 //		cache.save(code, fullStatement.stream().collect(Collectors.joining(" ")));
 		cache.save(code, formula);
-		ArrayDeque<MessageData> out = new ArrayDeque<>();
-		out.addFirst(new MessageData("Successfully saved."));
-		return out;
+		return new MessageData("Successfully saved.");
 	}
 
 	@Override

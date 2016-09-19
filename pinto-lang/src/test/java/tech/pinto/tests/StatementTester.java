@@ -36,6 +36,17 @@ public class StatementTester {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
+	public void testSave() throws Exception {
+		pinto.evaluateStatement("1.1 save(thing)");
+		pinto.evaluateStatement("thing 1.2 + save(thing2)");
+		assertEquals("Nested save ref", 3.4, runDoubleDataStatement("thing thing2 +" + EVAL)[0][0], 0.001d);
+		pinto.evaluateStatement("2 save(thing)");
+		assertEquals("Update nested ref", 5.2, runDoubleDataStatement("thing thing2 +" + EVAL)[0][0], 0.001d);
+		pinto.evaluateStatement("1 + save(increment)");
+		assertEquals("Saved function", 7.0, runDoubleDataStatement("6 increment" + EVAL)[0][0], 0.001d);
+	}
+
+	@Test
 	public void testDup() throws Exception {
 		log.info("START testDup");
 		double[][] d = runDoubleDataStatement("1 2 dup dup +" + EVAL);
@@ -44,16 +55,6 @@ public class StatementTester {
 
 	}
 
-	@Test
-	public void testSave() throws Exception {
-		pinto.evaluateStatement("1 save(thing)");
-		pinto.evaluateStatement("thing 1 + save(thing2)");
-		assertEquals("Nested save ref", 3.0, runDoubleDataStatement("thing thing2 +" + EVAL)[0][0], 0.001d);
-		pinto.evaluateStatement("2 save(thing)");
-		assertEquals("Update nested ref", 5.0, runDoubleDataStatement("thing thing2 +" + EVAL)[0][0], 0.001d);
-		pinto.evaluateStatement("1 + save(increment)");
-		assertEquals("Saved function", 2.0, runDoubleDataStatement("1 increment" + EVAL)[0][0], 0.001d);
-	}
 
 	@Test(expected=PintoSyntaxException.class)
 	public void testDelete() throws Exception {

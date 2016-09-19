@@ -1,6 +1,5 @@
 package tech.pinto.command.nonedouble;
 
-import java.util.ArrayDeque;
 
 import java.util.stream.DoubleStream;
 
@@ -10,7 +9,7 @@ import tech.pinto.data.NoneData;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class Literal extends Command<Object,NoneData,DoubleStream,DoubleData> {
+public class Literal extends Command {
 	
 	private final double value;
 
@@ -22,10 +21,8 @@ public class Literal extends Command<Object,NoneData,DoubleStream,DoubleData> {
 	}
 
 	@Override
-	public <P extends Period> ArrayDeque<DoubleData> evaluate(PeriodicRange<P> range) {
-		ArrayDeque<DoubleData> output = new ArrayDeque<>();
-		output.addFirst(new DoubleData(range, toString(), DoubleStream.iterate(value, r -> value).limit(range.size())));
-		return output;
+	public <P extends Period> DoubleData evaluate(PeriodicRange<P> range) {
+		return new DoubleData(range, toString(), DoubleStream.iterate(value, r -> value).limit(range.size()));
 	}
 	
 	@Override

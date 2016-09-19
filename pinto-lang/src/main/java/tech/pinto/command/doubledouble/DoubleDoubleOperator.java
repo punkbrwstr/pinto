@@ -1,6 +1,5 @@
 package tech.pinto.command.doubledouble;
 
-import java.util.ArrayDeque;
 
 import java.util.PrimitiveIterator.OfDouble;
 import java.util.function.DoubleBinaryOperator;
@@ -11,7 +10,7 @@ import tech.pinto.data.DoubleData;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class DoubleDoubleOperator extends Command<DoubleStream,DoubleData,DoubleStream,DoubleData> {
+public class DoubleDoubleOperator extends Command {
 
 	protected final DoubleBinaryOperator operator;
 	
@@ -23,16 +22,16 @@ public class DoubleDoubleOperator extends Command<DoubleStream,DoubleData,Double
 	}
 
 	@Override
-	public <P extends Period> ArrayDeque<DoubleData> evaluate(PeriodicRange<P> range) {
-		ArrayDeque<DoubleData> output = new ArrayDeque<>();
-		ArrayDeque<DoubleData> inputs = getInputData(range);
-		DoubleData b = inputs.removeFirst();
-		DoubleData a = inputs.removeFirst();
+	public <P extends Period> DoubleData evaluate(PeriodicRange<P> range) {
+		if(inputStack.size() != 2) {
+			throw new IllegalArgumentException("not enough inputs for binary operator");
+		}
+		DoubleData a = (DoubleData) inputStack.removeFirst().evaluate(range);
+		DoubleData b = (DoubleData) inputStack.removeFirst().evaluate(range);
 	 	OfDouble bIterator = b.getData().iterator();
 		DoubleStream outputStream = a.getData()
 				.map(aValue -> operator.applyAsDouble(aValue, bIterator.nextDouble())); 
-		output.add(new DoubleData(range, joinWithSpaces(a.getLabel(),b.getLabel(),toString()),outputStream));
-		return output;
+		return new DoubleData(range, joinWithSpaces(a.getLabel(),b.getLabel(),toString()),outputStream);
 	}
 
 }

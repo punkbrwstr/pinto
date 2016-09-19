@@ -1,14 +1,12 @@
 package tech.pinto.command.anyany;
 
-import java.util.ArrayDeque;
-
 import tech.pinto.command.Command;
 import tech.pinto.data.AnyData;
 import tech.pinto.data.Data;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class Reverse extends Command<Object, AnyData, Object, AnyData> {
+public class Reverse extends Command {
 
 	public Reverse() {
 		super("rev", AnyData.class, AnyData.class);
@@ -18,17 +16,12 @@ public class Reverse extends Command<Object, AnyData, Object, AnyData> {
 	
 	@Override
 	protected void determineOutputCount() {
-		outputCount = inputStack.stream().mapToInt(Command::outputCount).sum();
+		outputCount = inputStack.size();
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
-	protected <P extends Period> ArrayDeque<AnyData> evaluate(PeriodicRange<P> range) {
-		ArrayDeque output = new ArrayDeque<>();
-		for(Data d : getInputData(range)) {
-			output.addFirst(d);
-		}
-		return output;
+	public <P extends Period> Data<?> evaluate(PeriodicRange<P> range) {
+		return inputStack.removeLast().evaluate(range);
 	}
 
 }

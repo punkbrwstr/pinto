@@ -7,7 +7,7 @@ import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.DoubleData;
 import tech.pinto.data.NoneData;
 
-abstract public class CachedDoubleCommand extends ParameterizedCommand<Object,NoneData,DoubleStream,DoubleData> {
+abstract public class CachedDoubleCommand extends ParameterizedCommand {
 	
 	protected final Cache cache;
 	

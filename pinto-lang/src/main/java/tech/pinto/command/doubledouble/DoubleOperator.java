@@ -1,7 +1,5 @@
 package tech.pinto.command.doubledouble;
 
-import java.util.ArrayDeque;
-
 import java.util.function.DoubleUnaryOperator;
 import java.util.stream.DoubleStream;
 
@@ -10,7 +8,7 @@ import tech.pinto.data.DoubleData;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class DoubleOperator extends Command<DoubleStream,DoubleData,DoubleStream,DoubleData> {
+public class DoubleOperator extends Command {
 
 	protected final DoubleUnaryOperator operator;
 	
@@ -22,12 +20,9 @@ public class DoubleOperator extends Command<DoubleStream,DoubleData,DoubleStream
 	}
 
 	@Override
-	public <P extends Period> ArrayDeque<DoubleData> evaluate(PeriodicRange<P> range) {
-		ArrayDeque<DoubleData> output = new ArrayDeque<>();
-		ArrayDeque<DoubleData> inputs = getInputData(range);
-		output.add(new DoubleData(range, joinWithSpaces(inputs.peekFirst().getLabel(),toString()),
-				inputs.removeFirst().getData().map(operator)));
-		return output;
+	public <P extends Period> DoubleData evaluate(PeriodicRange<P> range) {
+		DoubleData d = (DoubleData) inputStack.removeFirst().evaluate(range);
+		return new DoubleData(range, joinWithSpaces(d.getLabel(),toString()), d.getData().map(operator));
 	}
 
 }

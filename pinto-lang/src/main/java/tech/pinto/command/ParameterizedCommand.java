@@ -5,12 +5,12 @@ import java.util.stream.Stream;
 
 import tech.pinto.data.Data;
 
-abstract public class ParameterizedCommand<IT,ID extends Data<IT>,OT, OD extends Data<OT>> 
-			extends Command<IT,ID,OT,OD> {
+abstract public class ParameterizedCommand extends Command {
 	
 	protected final String[] arguments;
 
-	public ParameterizedCommand(String name, Class<ID> inputType, Class<OD> outputType, String...arguments) {
+	public ParameterizedCommand(String name, Class<? extends Data<?>> inputType,
+			Class<? extends Data<?>> outputType, String...arguments) {
 		super(name, inputType, outputType);
 		this.arguments = arguments;
 	}

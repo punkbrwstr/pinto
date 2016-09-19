@@ -18,7 +18,7 @@ import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 
 
-public class Rolling extends ParameterizedCommand<DoubleStream,DoubleData,DoubleStream,DoubleData> {
+public class Rolling extends ParameterizedCommand {
 
 	private final Supplier<DoubleCollector> collectorSupplier;
 	private int size;
@@ -55,25 +55,22 @@ public class Rolling extends ParameterizedCommand<DoubleStream,DoubleData,Double
 
 
 	@Override
-	protected <P extends Period> ArrayDeque<DoubleData> evaluate(PeriodicRange<P> range) {
-		ArrayDeque<DoubleData> outputs = new ArrayDeque<>();
+	public <P extends Period> DoubleData evaluate(PeriodicRange<P> range) {
 		@SuppressWarnings("unchecked")
 		Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
 		Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
 		Period windowEnd = wf.from(range.end().endDate());
 		PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
-		for(DoubleData input : getInputData(expandedWindow)) {
-			Builder b = DoubleStream.builder();
-			double[] data = input.getData().toArray();
-			for(Period p : range.values()) {
-				long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - size + 1;
-				DoubleCollector dc = Arrays.stream(data, (int) windowStartIndex, (int) windowStartIndex + size)
+		DoubleData input = (DoubleData) inputStack.getFirst().evaluate(expandedWindow);
+		Builder b = DoubleStream.builder();
+		double[] data = input.getData().toArray();
+		for(Period p : range.values()) {
+			long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - size + 1;
+			DoubleCollector dc = Arrays.stream(data, (int) windowStartIndex, (int) windowStartIndex + size)
 						.collect(collectorSupplier, (v,d) -> v.add(d), (v,v1) -> v.combine(v1));
-				b.accept(dc.finish());
-			}
-			outputs.addFirst(new DoubleData(range,toString(),b.build()));
+			b.accept(dc.finish());
 		}
-		return outputs;
+		return new DoubleData(range,toString(),b.build());
 	}
 	
 }

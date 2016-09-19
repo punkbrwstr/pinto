@@ -11,6 +11,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -31,20 +32,21 @@ public class Yahoo extends CachedDoubleCommand {
 				.put(new FridayWeekly(),"w")
 				.put(new BusinessMonthly(),"m")
 				.build();
-	private final String ticker;
+	private final ArrayDeque<String> tickers = new ArrayDeque<>();
 	
 	public Yahoo(Cache cache, String... args) {
 		super("yhoo", cache, args);
-		ticker = args[0];
+		Stream.of(args).forEach(tickers::addLast);
 		inputCount = 0;
-		outputCount = 1;
+		outputCount = tickers.size();
 	}
 
 	@Override
-	public <P extends Period> ArrayDeque<DoubleData> evaluate(PeriodicRange<P> range) {
+	public <P extends Period> DoubleData evaluate(PeriodicRange<P> range) {
 		if(!FREQ.containsKey(range.periodicity())) {
 			throw new IllegalArgumentException("Unsupported periodicity for yahoo finance data.");
 		}
+		String ticker = tickers.removeFirst();
 		LocalDate start = range.start().endDate();
 		LocalDate end = range.end().endDate();
 		String url = MessageFormat.format("http://chart.finance.yahoo.com/table.csv?" +
@@ -77,9 +79,7 @@ public class Yahoo extends CachedDoubleCommand {
 				b.accept(Double.NaN);
 			}
 		}
-		ArrayDeque<DoubleData> output = new ArrayDeque<>();
-		output.addFirst(new DoubleData(range, toString(),b.build()));
-		return output;
+		return new DoubleData(range, ticker,b.build());
 	}
 	
 

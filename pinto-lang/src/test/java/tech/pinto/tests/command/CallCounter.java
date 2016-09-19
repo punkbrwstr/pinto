@@ -1,7 +1,5 @@
 package tech.pinto.tests.command;
 
-import java.util.ArrayDeque;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.DoubleStream;
 
@@ -22,12 +20,10 @@ public class CallCounter extends CachedDoubleCommand {
 	}
 
 	@Override
-	public <P extends Period> ArrayDeque<DoubleData> evaluate(PeriodicRange<P> range) {
-		ArrayDeque<DoubleData> output = new ArrayDeque<>();
+	public <P extends Period> DoubleData evaluate(PeriodicRange<P> range) {
 		double d = count.getAndIncrement();
-		output.addFirst(new DoubleData(range, toString(), 
-				DoubleStream.iterate(d, r -> d ).limit(range.size())));
-		return output;
+		return new DoubleData(range, toString(), 
+				DoubleStream.iterate(d, r -> d ).limit(range.size()));
 	}
 
 

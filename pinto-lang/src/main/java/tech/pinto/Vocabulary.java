@@ -14,7 +14,7 @@ public interface Vocabulary {
         return getCommandMap().containsKey(commandName);
     }
 
-    default public Command<?, ?, ?, ?> getCommand(String commandName, Cache cache, String... arguments) {
+    default public Command getCommand(String commandName, Cache cache, String... arguments) {
         return getCommandMap().get(commandName).build(cache, arguments);
     }
 

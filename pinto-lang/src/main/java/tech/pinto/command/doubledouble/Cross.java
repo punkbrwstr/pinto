@@ -1,6 +1,5 @@
 package tech.pinto.command.doubledouble;
 
-import java.util.ArrayDeque;
 import java.util.List;
 import java.util.PrimitiveIterator.OfDouble;
 import java.util.function.Supplier;
@@ -14,7 +13,7 @@ import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
 
-public class Cross extends ParameterizedCommand<DoubleStream,DoubleData,DoubleStream,DoubleData> {
+public class Cross extends ParameterizedCommand {
 	
 	private final Supplier<DoubleCollector> collectorSupplier;
 	
@@ -29,18 +28,16 @@ public class Cross extends ParameterizedCommand<DoubleStream,DoubleData,DoubleSt
 
 	
 	@Override
-	protected <P extends Period> ArrayDeque<DoubleData> evaluate(PeriodicRange<P> range) {
+	public <P extends Period> DoubleData evaluate(PeriodicRange<P> range) {
 		Builder b = DoubleStream.builder();
-		List<OfDouble> l = getInputData(range).stream()
+		List<OfDouble> l = inputStack.stream().map(c -> evaluate(range))
 					.map(DoubleData::getData).map(ds -> ds.iterator()).collect(Collectors.toList());
 		for(int i = 0; i < range.size(); i++) {
 			DoubleCollector dc = collectorSupplier.get();
 			l.forEach(di -> dc.add(di.nextDouble()));
 			b.accept(dc.finish());
 		}
-		ArrayDeque<DoubleData> output = new ArrayDeque<>();
-		output.addFirst(new DoubleData(range, toString(), b.build()));
-		return output;
+		return new DoubleData(range, toString(), b.build());
 	}
 
 }
