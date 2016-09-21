@@ -13,7 +13,7 @@ import tech.pinto.time.PeriodicRange;
 
 abstract public class Command implements Cloneable {
     
-    protected final String name;
+    private final String name;
     protected final Class<? extends Data<?>> inputType;
     protected final Class<? extends Data<?>> outputType;
     protected ArrayDeque<Command> inputStack = new ArrayDeque<>();
@@ -35,12 +35,16 @@ abstract public class Command implements Cloneable {
         return inputStack.stream().flatMap(d -> d.getDependencies().stream()).collect(Collectors.toSet()); 
     }
     
+    public Command getReference() {
+    	return this;
+    }
+    
     public boolean isTerminal() {
         return false;
     }
     
     public String toString() {
-        return name;
+        return getName();
     }
 
     public String summarize(String prefix) {
@@ -100,5 +104,9 @@ abstract public class Command implements Cloneable {
     protected String joinWithSpaces(Collection<String> s) {
     	return s.stream().collect(Collectors.joining(" "));
     }
+
+	public String getName() {
+		return name;
+	}
 
 }

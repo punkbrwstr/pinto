@@ -1,5 +1,7 @@
 package tech.pinto.tests.command;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.DoubleStream;
 
@@ -20,10 +22,10 @@ public class CallCounter extends CachedDoubleCommand {
 	}
 
 	@Override
-	public <P extends Period> DoubleData evaluate(PeriodicRange<P> range) {
+	public <P extends Period> List<DoubleData> evaluateAllUncached(PeriodicRange<P> range) {
 		double d = count.getAndIncrement();
-		return new DoubleData(range, toString(), 
-				DoubleStream.iterate(d, r -> d ).limit(range.size()));
+		return Arrays.asList(new DoubleData(range, toString(), 
+				DoubleStream.iterate(d, r -> d ).limit(range.size())));
 	}
 
 

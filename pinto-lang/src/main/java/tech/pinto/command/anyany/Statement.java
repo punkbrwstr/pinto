@@ -81,7 +81,7 @@ public class Statement extends Command {
 					inputCount += c.inputsNeeded();
 				}
 				for (int i = 0; i < c.outputCount(); i++) {
-					inputStack.addFirst(c);
+					inputStack.addFirst(c.getReference());
 				}
 			}
 		}

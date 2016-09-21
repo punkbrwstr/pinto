@@ -51,7 +51,7 @@ public class StatementTester {
 		log.info("START testDup");
 		double[][] d = runDoubleDataStatement("1 2 dup dup +" + EVAL);
 		assertEquals("Correct # dup outputs", 7, d.length);
-		assertEquals("Dup output works in plus", 3.0, d[0][0], 0.001d);
+		assertEquals("Dup output works in plus", 3.0, d[d.length-1][0], 0.001d);
 
 	}
 
@@ -68,6 +68,12 @@ public class StatementTester {
 		pinto.evaluateStatement("1 save(deleteme)");
 		pinto.evaluateStatement("deleteme 1 + del(needsdeleteme)");
 		pinto.evaluateStatement("1 del(deleteme)");
+	}
+	
+	
+	@Test
+	public void testLabel() throws Exception {
+		//bbg(msft equity,px open:px high:px low:px last) label(a,b,c,d) dup index(d) eval(2016-01-05,2016-01-05)
 	}
 	
 	
@@ -98,27 +104,26 @@ public class StatementTester {
 	 * @throws InterruptedException 
 	 * @throws TimeoutException 
 	 */
-//	private String A = "eval(2014-07-07,2014-07-11,B)";
-//	private String B = "eval(2014-07-01,2014-07-07,B)";
-//	private String C = "eval(2014-07-09,2014-07-09,B)";
-//	private String D = "eval(2014-07-11,2014-07-15,B)";
-//	@Test
-//	public void testCaching() throws Exception {
-//		String formula = "counter ";
-//		// 5 * 0.0
-//		assertEquals("Range B", 0.0, Arrays.stream(runDoubleDataStatement(formula + B)[0]).sum(), 0.001d);
-//		// 1 * 1.0
-//		assertEquals("Range C", 1.0, Arrays.stream(runDoubleDataStatement(formula + C)[0]).sum(), 0.001d);
-//		// 3 * 2.0
-//		assertEquals("Range D", 6.0, Arrays.stream(runDoubleDataStatement(formula + D)[0]).sum(), 0.001d);
-//		// 0, 3, 1, 4, 2
-//		assertEquals("Range A", 10.0, Arrays.stream(runDoubleDataStatement(formula + A)[0]).sum(), 0.001d);
-//		
-//		log.info("END testRanges");
-//	}
+	private String A = "eval(2014-07-07,2014-07-11,B)";
+	private String B = "eval(2014-07-01,2014-07-07,B)";
+	private String C = "eval(2014-07-09,2014-07-09,B)";
+	private String D = "eval(2014-07-11,2014-07-15,B)";
+	@Test
+	public void testCaching() throws Exception {
+		String formula = "counter ";
+		// 5 * 0.0
+		assertEquals("Range B", 0.0, Arrays.stream(runDoubleDataStatement(formula + B)[0]).sum(), 0.001d);
+		// 1 * 1.0
+		assertEquals("Range C", 1.0, Arrays.stream(runDoubleDataStatement(formula + C)[0]).sum(), 0.001d);
+		// 3 * 2.0
+		assertEquals("Range D", 6.0, Arrays.stream(runDoubleDataStatement(formula + D)[0]).sum(), 0.001d);
+		// 0, 3, 1, 4, 2
+		assertEquals("Range A", 10.0, Arrays.stream(runDoubleDataStatement(formula + A)[0]).sum(), 0.001d);
+		
+		log.info("END testRanges");
+	}
 
 	private double[][] runDoubleDataStatement(String line) throws Exception {
-		@SuppressWarnings("unchecked")
 		ArrayDeque<Data<?>> output = (ArrayDeque<Data<?>>) pinto.evaluateStatement(line);
 		List<DoubleData> dd = new ArrayList<>();
 		while(!output.isEmpty()) {

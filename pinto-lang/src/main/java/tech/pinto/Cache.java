@@ -1,11 +1,16 @@
 package tech.pinto;
 
+import java.util.List;
 import java.util.SortedSet;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import com.google.common.base.Joiner;
 
 import tech.pinto.command.anyany.Statement;
+import tech.pinto.data.DoubleData;
+import tech.pinto.time.Period;
+import tech.pinto.time.PeriodicRange;
 
 abstract public class Cache {
 	
@@ -20,6 +25,8 @@ abstract public class Cache {
 	abstract protected void addDependency(String key);
 	abstract protected void removeDependency(String key);
 	abstract protected SortedSet<String> dependenciesStartingWith(String query);
+    abstract public <P extends Period> List<DoubleData> evaluateCached(String k, int streamCount, PeriodicRange<P> range,
+            Function<PeriodicRange<P>,List<DoubleData>> filler);
 
 	public void save(String code, String statement) {
 		statementCacheLock.lock();

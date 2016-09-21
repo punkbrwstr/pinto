@@ -18,7 +18,7 @@ abstract public class ParameterizedCommand extends Command {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(name);
+		sb.append(getName());
 		if(arguments.length > 0) {
 			sb.append(Stream.of(arguments).collect(Collectors.joining(",", "(", ")")));
 		}

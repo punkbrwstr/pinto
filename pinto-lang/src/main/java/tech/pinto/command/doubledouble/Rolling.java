@@ -1,6 +1,5 @@
 package tech.pinto.command.doubledouble;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
 
 import java.util.Optional;

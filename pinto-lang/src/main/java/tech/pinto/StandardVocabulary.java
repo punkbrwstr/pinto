@@ -6,8 +6,10 @@ import com.google.common.collect.ImmutableMap;
 
 import tech.pinto.command.CommandFactory;
 import tech.pinto.command.anyany.Duplicate;
+import tech.pinto.command.anyany.Index;
 import tech.pinto.command.anyany.Label;
 import tech.pinto.command.anyany.Reverse;
+import tech.pinto.command.anyany.Roll;
 import tech.pinto.command.doubledouble.Cross;
 import tech.pinto.command.doubledouble.DoubleCollectors;
 import tech.pinto.command.doubledouble.DoubleDoubleOperator;
@@ -55,8 +57,10 @@ public class StandardVocabulary implements Vocabulary {
                         return price; }))
                 .put("moon", (c,a) -> new MoonPhase())
                 .put("label", (c,a) -> new Label(a))
+                .put("index", (c,a) -> new Index(a))
                 .put("rev", (c,a) -> new Reverse())
                 .put("dup", (c,a) -> new Duplicate())
+                .put("roll", (c,a) -> new Roll(a))
                 .put("yhoo", (c,a) -> new Yahoo(c,a))
                 .put("lag", (c,a) -> new Rolling("lag",DoubleCollectors.first,false, a))
 	            .put("last", (c,a) -> new Rolling("last",DoubleCollectors.last, false, a))

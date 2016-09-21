@@ -10,7 +10,6 @@ import org.junit.rules.ExpectedException;
 import tech.pinto.time.BusinessDay;
 import tech.pinto.time.BusinessMonth;
 import tech.pinto.time.BusinessQuarter;
-import tech.pinto.time.BusinessYear;
 import tech.pinto.time.FridayWeek;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;

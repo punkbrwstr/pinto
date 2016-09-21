@@ -2,6 +2,7 @@ package tech.pinto.time;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
@@ -63,7 +64,21 @@ public final class PeriodicRange<P extends Period> {
 	}
 	
 	@Override
+	public boolean equals(Object obj) {
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+        final PeriodicRange<?> other = (PeriodicRange<?>) obj;
+        return Objects.equals(this.periodicity, other.periodicity)
+            && Objects.equals(this.range, other.range);
+	}
+	
+	@Override
 	public String toString() {
 		return Joiner.on(":").join(periodicity.code(),start().toString(),end().toString());
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(periodicity.code(),range.hashCode());
 	}
 }

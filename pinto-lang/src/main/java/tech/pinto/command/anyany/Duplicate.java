@@ -20,11 +20,18 @@ public class Duplicate extends Command {
 		outputCount = inputStack.size() * 2;
         inputStack.stream().map(Command::clone).forEach(inputStack::addLast);
 	}
+	
+	@Override public Command getReference() {
+		return inputStack.removeFirst();
+	}
+
+
 
 
 	@Override
 	public <P extends Period> Data<?> evaluate(PeriodicRange<P> range) {
-		return inputStack.removeFirst().evaluate(range);
+		// never gets called bc it passes on references to inputs
+		throw new UnsupportedOperationException();
 	}
 
 }

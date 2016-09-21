@@ -1,6 +1,7 @@
 package tech.pinto.time;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.Range;
@@ -57,25 +58,28 @@ public abstract class Periodicity<P extends Period> extends DiscreteDomain<P> {
 	public PeriodicRange<P> range(LocalDate start, LocalDate end, boolean clearCache) {
 		return range(from(start),from(end), clearCache);
 	}
+	
+	public PeriodicRange<P> range(long start, long end, boolean clearCache) {
+		return range(get(start),get(end), clearCache);
+	}
 
 	@Override
 	public String toString() {
 		return code();
 	}
 
-	@SuppressWarnings("rawtypes")
 	@Override
 	public boolean equals(Object obj) {
-		return code().equals(((Periodicity) obj).code());
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+        final Periodicity<?> other = (Periodicity<?>) obj;
+        return Objects.equals(this.code(), other.code());
 	}
 
 	@Override
 	public int hashCode() {
 		return code().hashCode();
 	}
-	
-	
-	
 	
 
 }

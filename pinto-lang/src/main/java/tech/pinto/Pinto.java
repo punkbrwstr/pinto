@@ -22,7 +22,7 @@ public class Pinto {
 			ArrayDeque<Data<?>> output = new ArrayDeque<>();
 			for(Command terminal : new Statement(cache, vocab, statement).getTerminalCommands()) {
 				for(int i = 0; i < terminal.outputCount(); i++) {
-					System.out.println(terminal.summarize(""));
+					//System.out.println(terminal.summarize(""));
 					output.addLast(terminal.evaluate(null));
 				}
 			}

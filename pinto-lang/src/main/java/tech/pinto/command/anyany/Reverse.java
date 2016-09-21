@@ -19,9 +19,14 @@ public class Reverse extends Command {
 		outputCount = inputStack.size();
 	}
 
+	@Override public Command getReference() {
+		return inputStack.removeLast();
+	}
+
 	@Override
 	public <P extends Period> Data<?> evaluate(PeriodicRange<P> range) {
-		return inputStack.removeLast().evaluate(range);
+		// never gets called bc it passes on references to inputs
+		throw new UnsupportedOperationException();
 	}
 
 }
