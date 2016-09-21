@@ -12,7 +12,7 @@ Pinto programs define a prodecure for creating one or more time series of numeri
 
 Programs are comprised of a list of commands that take (zero or more) inputs, perform an operation, and return (one or more) outputs.  These inputs and outputs are stored as a stack, a LIFO (last-in-first-out) collection where command inputs are taken from the most recent outputs of the preceding commands.  
 
-With inputs coming from the stack, arithmetic operators come after their operands. This is known as Reverse Polish notation, but you may recognized it as the way HP12C calculators work.  In Pinto, 2 + 2 is ```2 2 +``` (but instead of returning a single 4, Pinto returns a time series of 4s).
+Because inputs come from the stack, arithmetic operators come after all of their operands. This is known as Reverse Polish (or postfix) notation.  The grizzled veterans among you may recognized it as the way HP12C calculators work.  In Pinto, 2 + 2 is ```2 2 +``` (but instead of returning a single 4, Pinto returns a time series of 4s).
 
 ## What can I do it?
 
