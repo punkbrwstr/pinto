@@ -6,8 +6,7 @@
 
 Inputs| Command(Parameters) | Outputs|Description
 ---:|:---:|:---|:---
-*any<sub>1</sub>...any<sub>n</sub>*|**eval(*start date, end date,
-    periodicity*)**|*any*| Evaluates the preceding commands over the given date range. (Date formats: *yyyy-mm-dd*, Valid periodicities: B, W-FRI, BM, BQ, BA ,Defaults: *periodicity*=B)
+*any<sub>1</sub>...any<sub>n</sub>*|**eval(*start date, end date, periodicity*)**|*any*| Evaluates the preceding commands over the given date range. (Date formats: *yyyy-mm-dd*, Valid periodicities: B, W-FRI, BM, BQ, BA ,Defaults: *periodicity*=B)
 
 #### Stack manipulation commands
 
