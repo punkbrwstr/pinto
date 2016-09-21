@@ -10,7 +10,9 @@ series that has a fixed periodicity.
 
 Pinto programs define a prodecure for creating one or more time series of numerical data.  Once defined, that prodecure can be evaluated over different ranges of dates and periodicities (frequencies).
 
-Programs are comprised of a list of commands that take (zero or more) inputs, perform an operation, and return (one or more) outputs.  These inputs and outputs are stored as a stack, a LIFO (last-in-first-out) collection where command inputs are taken from the most recent outputs of the preceding commands.  Simple arithmetic operations are like using an HP12C calculator--two minus three looks like ```2 4 -``` in Pinto (but instead of returning a single 2, Pinto returns a time series of 2s).
+Programs are comprised of a list of commands that take (zero or more) inputs, perform an operation, and return (one or more) outputs.  These inputs and outputs are stored as a stack, a LIFO (last-in-first-out) collection where command inputs are taken from the most recent outputs of the preceding commands.  
+
+With inputs coming from the stack, arithmetic operators come after their operands. This is known as Reverse Polish notation, but you may recognized it as the way HP12C calculators work.  In Pinto, 2 + 2 is ```2 2 +``` (but instead of returning a single 4, Pinto returns a time series of 4s).
 
 ## What can I do it?
 
