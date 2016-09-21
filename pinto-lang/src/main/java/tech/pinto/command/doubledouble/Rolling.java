@@ -46,10 +46,12 @@ public class Rolling extends ParameterizedCommand {
 			}
 			windowFrequency =  Optional.of(p);
 		}
-		inputCount = args.length <= 2 ? 1 : Math.abs(Integer.parseInt(args[2].replaceAll("\\s+", "")));
-		inputCount = inputCount == -1 ? Integer.MAX_VALUE : inputCount;
-		outputCount = 1;
-
+		inputCount = args.length <= 2 || Integer.parseInt(args[2]) == -1 ? Integer.MAX_VALUE : Integer.parseInt(args[2]);
+	}
+	
+	@Override
+	protected void determineOutputCount() {
+		outputCount = inputStack.size();
 	}
 
 
@@ -60,7 +62,7 @@ public class Rolling extends ParameterizedCommand {
 		Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
 		Period windowEnd = wf.from(range.end().endDate());
 		PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
-		DoubleData input = (DoubleData) inputStack.getFirst().evaluate(expandedWindow);
+		DoubleData input = (DoubleData) inputStack.removeFirst().evaluate(expandedWindow);
 		Builder b = DoubleStream.builder();
 		double[] data = input.getData().toArray();
 		for(Period p : range.values()) {
@@ -69,7 +71,7 @@ public class Rolling extends ParameterizedCommand {
 						.collect(collectorSupplier, (v,d) -> v.add(d), (v,v1) -> v.combine(v1));
 			b.accept(dc.finish());
 		}
-		return new DoubleData(range,toString(),b.build());
+		return new DoubleData(range,joinWithSpaces(input.getLabel(),toString()),b.build());
 	}
 	
 }

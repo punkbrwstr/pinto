@@ -3,7 +3,6 @@ package tech.pinto;
 
 import java.time.LocalDate;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -127,7 +126,7 @@ public class LocalCache extends Cache {
    			final long finalStart = chunkStart;
     		toRemove.stream().forEach(cache::remove);
     		final long lengthToSave = Math.min(current - 1, freq.from(LocalDate.now()).longValue() - 1); // don't save anything from this period
-    		cache.put(Range.closed(chunkStart, current), dup(chunkData, (int) (lengthToSave - finalStart + 1)));
+    		cache.put(Range.closed(chunkStart, current), DoubleData.dup(chunkData, (int) (lengthToSave - finalStart + 1)));
     		
     		chunkData.stream().forEach(s -> s.setData(s.getData()
     				.skip(requestedRange.lowerEndpoint() - finalStart).limit(range.size())));
@@ -144,18 +143,6 @@ public class LocalCache extends Cache {
     	}
     }
 
-    private List<DoubleData> dup(List<DoubleData> a, int length) {
-    	List<DoubleData> b = new ArrayList<>();
-    	List<DoubleData> temp = new ArrayList<>(a);
-    	a.clear();
-    	for(DoubleData d : temp) {
-    		DoubleStream.Builder aBuilder = DoubleStream.builder();
-    		DoubleStream.Builder bBuilder = DoubleStream.builder();
-    		d.getData().peek(aBuilder::accept).forEachOrdered(bBuilder::accept);
-    		a.add(new DoubleData(d.getRange(),d.getLabel(),aBuilder.build()));
-    		b.add(new DoubleData(d.getRange(),d.getLabel(),bBuilder.build().limit(length)));
-    	}
-    	return b;
-    }
+
 
 }

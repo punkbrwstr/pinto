@@ -15,8 +15,7 @@ public class Copy extends ParameterizedCommand {
 
 	public Copy(String...args) {
 		super("copy", AnyData.class, AnyData.class, args);
-		inputCount = args.length == 0 ? Integer.MAX_VALUE :
-			Integer.parseInt(args[0]) == -1 ? Integer.MAX_VALUE : Integer.parseInt(args[0]);
+		inputCount = args.length == 0 || Integer.parseInt(args[0]) == -1 ? Integer.MAX_VALUE : Integer.parseInt(args[0]);
 		times = args.length < 2 ? 2 : Integer.parseInt(args[1]);
 	}
 	

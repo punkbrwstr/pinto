@@ -47,7 +47,7 @@ public class Statement extends Command {
 					try {
 						c = vocab.getCommand(commandName, cache, parseCommandArguments(text, s, sc));
 					} catch (IllegalArgumentException e) {
-						throw new PintoSyntaxException("Wrong arguments for command: " + commandName);
+						throw new PintoSyntaxException("Wrong arguments for " + commandName + ": " + e.getMessage(),e);
 					}
 					if (c.isTerminal()) {
 						terminalCommands.addFirst(c);

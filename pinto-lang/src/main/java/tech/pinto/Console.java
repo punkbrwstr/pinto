@@ -46,11 +46,11 @@ public class Console {
 					out.println(FlipTable.of(t.get().getHeader(), t.get().getCells()));
 				}
 				output.stream().filter(d -> !(d instanceof DoubleData)).map(Object::toString).forEach(out::println);
-//			} catch (PintoSyntaxException pse) {
-//				System.out.println("Pinto syntax problem: " + pse.getMessage());
-//				pse.printStackTrace();
+			} catch (PintoSyntaxException pse) {
+				System.out.println("Incorrect syntax: " + pse.getMessage());
+				pse.printStackTrace();
 			} catch (Throwable e) {
-				System.out.println("Evaluation error: " + e.getCause().getMessage());
+				System.out.println("Evaluation error");
 				e.printStackTrace();
 
 			}

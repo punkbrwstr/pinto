@@ -22,8 +22,14 @@ abstract public class EvaluateMultipleAtOnceCommand extends ParameterizedCommand
 	abstract protected <P extends Period> List<DoubleData> evaluateAll(PeriodicRange<P> range);
 
 	public <P extends Period> DoubleData evaluateOne(int i, PeriodicRange<P> range) {
-		List<DoubleData> d = data.containsKey(range) ? data.get(range) : evaluateAll(range);
-		return d.get(i);
+		synchronized(data) {
+			if(!data.containsKey(range)) {
+				data.put(range, evaluateAll(range));
+			}
+			List<DoubleData> duped = DoubleData.dup(data.get(range).remove(i));
+			data.get(range).add(i, duped.get(0));
+			return duped.get(1);
+		}
 	}
 
 	@Override public Command getReference() {
@@ -36,5 +42,12 @@ abstract public class EvaluateMultipleAtOnceCommand extends ParameterizedCommand
 	public <P extends Period> Data<?> evaluate(PeriodicRange<P> range) {
 		throw new UnsupportedOperationException();
 	}
+	
+	@Override
+	public Command clone() {
+		EvaluateMultipleAtOnceCommand clone = (EvaluateMultipleAtOnceCommand) super.clone();
+		clone.data = data;
+		return clone;
+    }
 
 }

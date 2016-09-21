@@ -10,16 +10,18 @@ import tech.pinto.time.PeriodicRange;
 
 public class Roll extends ParameterizedCommand {
 	
-
-	public Roll(String[] arguments) {
-		super("roll", AnyData.class, AnyData.class, arguments);
+	private final int times;
+	
+	public Roll(String[] args) {
+		super("roll", AnyData.class, AnyData.class, args);
+		inputCount = args.length == 0 || Integer.parseInt(args[0]) == -1 ? Integer.MAX_VALUE : Integer.parseInt(args[0]);
+		times = args.length < 2 ? 1 : Integer.parseInt(args[1]);
 	}
 	
 	@Override
 	protected void determineOutputCount() {
 		outputCount = inputStack.size();
-		int timesToRoll = arguments.length > 0 ? Integer.parseInt(arguments[0]) : 1;
-		for(int i = 0; i < timesToRoll; i++) {
+		for(int i = 0; i < times; i++) {
 			inputStack.addFirst(inputStack.removeLast());
 		}
 	}
