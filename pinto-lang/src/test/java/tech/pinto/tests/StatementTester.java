@@ -47,11 +47,13 @@ public class StatementTester {
 	}
 
 	@Test
-	public void testDup() throws Exception {
+	public void testCopy() throws Exception {
 		log.info("START testDup");
-		double[][] d = runDoubleDataStatement("1 2 dup dup +" + EVAL);
+		double[][] d = runDoubleDataStatement("1 2 copy copy +" + EVAL);
 		assertEquals("Correct # dup outputs", 7, d.length);
 		assertEquals("Dup output works in plus", 3.0, d[d.length-1][0], 0.001d);
+		d = runDoubleDataStatement("1 2 copy(2,3)" + EVAL);
+		assertEquals("Correct # dup outputs with params", 7, d.length);
 
 	}
 

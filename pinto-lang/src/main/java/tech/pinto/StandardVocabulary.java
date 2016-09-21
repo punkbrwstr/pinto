@@ -5,7 +5,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 
 import tech.pinto.command.CommandFactory;
-import tech.pinto.command.anyany.Duplicate;
+import tech.pinto.command.anyany.Copy;
 import tech.pinto.command.anyany.Index;
 import tech.pinto.command.anyany.Label;
 import tech.pinto.command.anyany.Reverse;
@@ -59,7 +59,7 @@ public class StandardVocabulary implements Vocabulary {
                 .put("label", (c,a) -> new Label(a))
                 .put("index", (c,a) -> new Index(a))
                 .put("rev", (c,a) -> new Reverse())
-                .put("dup", (c,a) -> new Duplicate())
+                .put("copy", (c,a) -> new Copy(a))
                 .put("roll", (c,a) -> new Roll(a))
                 .put("yhoo", (c,a) -> new Yahoo(c,a))
                 .put("lag", (c,a) -> new Rolling("lag",DoubleCollectors.first,false, a))
