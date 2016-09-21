@@ -8,25 +8,20 @@ series that has a fixed periodicity.
 
 ## What can I do with Pinto?
 
-Lots of stuff!  For example, to get stock prices from a popular online site try:
+For example, to get stock prices from a popular online site and compute moving averages for each:
 
 ```
-pinto> yhoo(aapl) yhoo(orcl) eval(2016-01-04,2016-01-08,B)
-Evaluating: yhoo(aapl) yhoo(orcl) eval(2016-01-04,2016-01-08,B)
-╔════════════╤════════════╤════════════╗
-║ Date       │ yhoo(orcl) │ yhoo(aapl) ║
-╠════════════╪════════════╪════════════╣
-║ 2016-01-04 │ 35.75      │ 105.349998 ║
-╟────────────┼────────────┼────────────╢
-║ 2016-01-05 │ 35.639999  │ 102.709999 ║
-╟────────────┼────────────┼────────────╢
-║ 2016-01-06 │ 35.82      │ 100.699997 ║
-╟────────────┼────────────┼────────────╢
-║ 2016-01-07 │ 35.040001  │ 96.449997  ║
-╟────────────┼────────────┼────────────╢
-║ 2016-01-08 │ 34.650002  │ 96.959999  ║
-╚════════════╧════════════╧════════════╝
+pinto> yhoo(cmg,taco) copy(2) r_mean(20,B,2) label(cmg 20-day MA, taco 20-day MA) eval(2016-09-12,2016-09-13)
+╔════════════╤════════╤═══════╤═══════════════╤════════════════╗
+║ Date       │ cmg    │ taco  │ cmg 20-day MA │ taco 20-day MA ║
+╠════════════╪════════╪═══════╪═══════════════╪════════════════╣
+║ 2016-09-12 │ 428.89 │ 11.2  │ 410.71        │ 10.99          ║
+╟────────────┼────────┼───────┼───────────────┼────────────────╢
+║ 2016-09-13 │ 421.35 │ 11.02 │ 410.62        │ 10.99          ║
+╚════════════╧════════╧═══════╧═══════════════╧════════════════╝
 ```
+
+For more information see the [Pinto Language Reference](./pinto_reference.md)
 
 
 ## Pinto features
