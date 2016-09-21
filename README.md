@@ -1,14 +1,20 @@
 # Pinto
 
 Pinto is a stack-oriented programming language for manipulating time series
-data that uses Reverse Polish notation.
+data that uses Reverse Polish (postfix) notation.
 
 Pinto was designed for financial time series, but it can be used with any
 series that has a fixed periodicity.
 
-## What can I do with Pinto?
+## What does it do?
 
-For example, to get stock prices from a popular online site and compute moving averages for each:
+Pinto programs define a prodecure for creating one or more time series of numerical data.  Once defined, that prodecure can be evaluated over different ranges of dates and periodicities (frequencies).
+
+Programs are comprised of a list of commands that take (zero or more) inputs, perform an operation, and return (one or more) outputs.  These inputs and outputs are stored as a stack, a LIFO (last-in-first-out) collection where command inputs are taken from the most recent outputs of the preceding commands.  Simple arithmetic operations are like using an HP12C calculator--two minus three looks like ```2 4 -``` in Pinto (but instead of returning a single 2, Pinto returns a time series of 2s).
+
+## What can I do it?
+
+Get online stock prices and compute moving averages for each:
 
 ```
 pinto> yhoo(cmg,taco) copy(2) r_mean(20,B,2) label(cmg 20-day MA, taco 20-day MA) eval(2016-09-12,2016-09-13)
@@ -22,13 +28,6 @@ pinto> yhoo(cmg,taco) copy(2) r_mean(20,B,2) label(cmg 20-day MA, taco 20-day MA
 ```
 
 For more information see the [Pinto Language Reference](./pinto_reference.md)
-
-
-## Pinto features
-
- - Define formulas for time series that can be evaluated over different ranges of dates and periodicities (frequencies)
- - Save series definitions and functions and refer to them in other formulas
- - Save defined functions that can be reused
 
 
 
@@ -48,8 +47,8 @@ If you have the requirements, it's easy to get up and running with the pinto con
 ```
 git clone https://github.com/punkbrwstr/pinto.git
 cd pinto
-mvn compile
-mvn exec:java -Dexec.mainClass="pinto.Console"
+mvn -pl pinto-lang compile
+mvn exec:java -pl pinto-lang -Dexec.mainClass=tech.pinto.Console
 ```
 
 
