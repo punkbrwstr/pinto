@@ -28,16 +28,21 @@ public class Rolling extends ParameterizedCommand {
 		super(name, DoubleData.class, DoubleData.class, args);
 		this.collectorSupplier = collectorSupplier;
 		if(args.length < 1) {
-			throw new IllegalArgumentException("window requires at least one parameter (window size)");
+			if(countIncludesCurrent) {
+				throw new IllegalArgumentException("window requires at least one parameter (window size)");
+			} else {
+				size = 2;
+			}
+		} else {
+			try {
+				size = Math.abs(Integer.parseInt(args[0].replaceAll("\\s+", "")));
+				size += countIncludesCurrent ? 0 : 1;
+			} catch(NumberFormatException nfe) {
+				throw new IllegalArgumentException("Non-numeric argument \"" + args[0] + "\" for window"
+						+ " size in rolling function args: \"" + Joiner.on(",").join(args) + "\"");
+			}
 		}
-		try {
-			size = Math.abs(Integer.parseInt(args[0].replaceAll("\\s+", "")));
-			size += countIncludesCurrent ? 0 : 1;
-		} catch(NumberFormatException nfe) {
-			throw new IllegalArgumentException("Non-numeric argument \"" + args[0] + "\" for window"
-					+ " size in rolling function args: \"" + Joiner.on(",").join(args) + "\"");
-		}
-		if(args.length == 1) {
+		if(args.length < 2) {
 			windowFrequency =  Optional.empty();
 		} else {
 			Periodicity<?> p =	Periodicities.get(args[1].replaceAll("\\s+", ""));

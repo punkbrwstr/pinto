@@ -14,6 +14,7 @@ import tech.pinto.Cache;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.Vocabulary;
 import tech.pinto.command.Command;
+import tech.pinto.command.SimpleCommand;
 import tech.pinto.command.nonedouble.Literal;
 import tech.pinto.command.terminal.Save;
 import tech.pinto.data.AnyData;
@@ -24,7 +25,7 @@ import tech.pinto.time.PeriodicRange;
 public class Statement extends Command {
 
 	private final ArrayDeque<Command> terminalCommands = new ArrayDeque<>();
-	private final ArrayDeque<Command> awaitingInputs = new ArrayDeque<>();
+	private final List<Command> inputsToStatement = new ArrayList<>();
 	private final Set<String> dependencies = new HashSet<>();
 	private final String text;
 
@@ -76,9 +77,9 @@ public class Statement extends Command {
 					c.addInput(inputStack.removeFirst());
 					inputCount += c.inputsNeeded();
 				}
-				if (inputStack.size() == 0 && c.inputsNeeded() > 0 && c.inputsNeeded() != Integer.MAX_VALUE) {
-					awaitingInputs.addLast((Command)c);
-					inputCount += c.inputsNeeded();
+				while (inputStack.size() == 0 && c.inputsNeeded() > 0 && c.inputsNeeded() != Integer.MAX_VALUE) {
+					final int i = inputCount++;
+					c.addInput(new SimpleCommand(this,1,1,range -> inputsToStatement.get(i).evaluate(range)));
 				}
 				for (int i = 0; i < c.outputCount(); i++) {
 					inputStack.addFirst(c.getReference());
@@ -89,13 +90,13 @@ public class Statement extends Command {
 	}
 	
 	@Override
+	public int inputsNeeded() {
+		return inputCount - inputsToStatement.size();
+	}
+	
+	@Override
     public void addInput(Command c) {
-		//if(!awaitingInputs.isEmpty()) {
-			awaitingInputs.peekFirst().addInput((Command)c);
-			if(awaitingInputs.peekFirst().inputsNeeded() == 0) {
-				awaitingInputs.removeFirst();
-			}
-		//}
+		inputsToStatement.add(c);
     }
 
 	@Override
@@ -143,7 +144,7 @@ public class Statement extends Command {
 				}
 			} while (!foundClosingParen);
 			args = Stream.of(argBuilder.toString().replaceAll("\\(|\\)", "").split(",")).map(String::trim)
-					.toArray(String[]::new);
+					.filter(arg -> !arg.equals("")).toArray(String[]::new);
 		} else {
 			args = new String[] {};
 		}

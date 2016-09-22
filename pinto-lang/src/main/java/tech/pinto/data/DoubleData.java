@@ -2,7 +2,6 @@ package tech.pinto.data;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 import tech.pinto.time.PeriodicRange;
@@ -14,12 +13,18 @@ public class DoubleData extends Data<DoubleStream> {
 	}
 
 	
-	public String toString() {
-		return label + ": " + data.mapToObj(Double::toString).collect(Collectors.joining(",","[","]"));
-	}
+//	public String toString() {
+//		return label + ": " + data.mapToObj(Double::toString).collect(Collectors.joining(",","[","]"));
+//	}
 	
 	public static List<DoubleData> dup(List<DoubleData> a) {
 		return dup(a,0);
+	}
+	
+	private void peek() {
+		DoubleStream.Builder b = DoubleStream.builder();
+		data.peek(System.out::println).forEachOrdered(b::accept); // trick to duplicate streams
+		data = b.build();
 	}
 
 	public static List<DoubleData> dup(List<DoubleData> a, int length) {

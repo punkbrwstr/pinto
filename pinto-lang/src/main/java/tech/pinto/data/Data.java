@@ -23,6 +23,10 @@ public class Data<D> implements Comparable<Data<D>> {
 		return this;
 	}
 
+	public void setRange(PeriodicRange<?> range) {
+		this.range = range;
+	}
+
 	public D getData() {
 		return data;
 	}

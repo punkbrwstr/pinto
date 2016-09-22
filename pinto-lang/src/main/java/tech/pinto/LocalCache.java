@@ -104,7 +104,7 @@ public class LocalCache extends Cache {
         synchronized(cache) {
         	Range<Long> requestedRange = Range.closed(range.start().longValue(), range.end().longValue());
     		Set<Range<Long>> toRemove = new HashSet<>();
-            List<DoubleData> chunkData = IntStream.range(0,streamCount).mapToObj( i -> new DoubleData(range,null,DoubleStream.empty()))
+            List<DoubleData> chunkData = IntStream.range(0,streamCount).mapToObj( i -> new DoubleData(null,null,DoubleStream.empty()))
             		.collect(Collectors.toList());
             long current = requestedRange.lowerEndpoint();
             long chunkStart = current;
@@ -125,9 +125,11 @@ public class LocalCache extends Cache {
     		}
    			final long finalStart = chunkStart;
     		toRemove.stream().forEach(cache::remove);
-    		final long lengthToSave = Math.min(current - 1, freq.from(LocalDate.now()).longValue() - 1); // don't save anything from this period
-    		cache.put(Range.closed(chunkStart, current), DoubleData.dup(chunkData, (int) (lengthToSave - finalStart + 1)));
-    		
+    		final long endToSave = Math.min(current - 1, freq.from(LocalDate.now()).longValue() - 1); // don't save anything from this period
+    		chunkData.stream().forEach(s -> s.setRange(freq.range(finalStart, endToSave, false)));
+    		cache.put(Range.closed(finalStart, endToSave), DoubleData.dup(chunkData, (int) (endToSave - finalStart + 1)));
+
+    		chunkData.stream().forEach(s -> s.setRange(range));
     		chunkData.stream().forEach(s -> s.setData(s.getData()
     				.skip(requestedRange.lowerEndpoint() - finalStart).limit(range.size())));
     		return chunkData;

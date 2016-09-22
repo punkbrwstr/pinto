@@ -14,11 +14,13 @@ public class Evaluate extends ParameterizedCommand {
 
 	protected final PeriodicRange<?> range;
 
-	public Evaluate(String[] arguments) {
-		super("eval", AnyData.class, AnyData.class, arguments);
-		LocalDate start = LocalDate.parse(arguments[0]);
-		LocalDate end = LocalDate.parse(arguments[1]);
-		Periodicity<?> p =  Periodicities.get(arguments.length > 2 ? arguments[2] : "B");
+	public Evaluate(String[] args) {
+		super("eval", AnyData.class, AnyData.class, args);
+		Periodicity<?> p =  Periodicities.get(args.length > 2 ? args[2] : "B");
+		LocalDate start = args.length > 0 ? LocalDate.parse(args[0]) : 
+							p.from(LocalDate.now()).previous().endDate();
+		LocalDate end = args.length > 1 ? LocalDate.parse(args[1]) : 
+							p.from(LocalDate.now()).previous().endDate();
 		this.range = p.range(start, end, false);
 
 		inputCount = Integer.MAX_VALUE;
