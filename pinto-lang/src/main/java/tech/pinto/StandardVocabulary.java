@@ -16,6 +16,7 @@ import tech.pinto.command.doubledouble.DoubleDoubleOperator;
 import tech.pinto.command.doubledouble.DoubleOperator;
 import tech.pinto.command.doubledouble.Fill;
 import tech.pinto.command.doubledouble.Rolling;
+import tech.pinto.command.doubledouble.RollingCorrelation;
 import tech.pinto.command.nonedouble.MoonPhase;
 import tech.pinto.command.nonedouble.Yahoo;
 import tech.pinto.command.terminal.Delete;
@@ -90,6 +91,7 @@ public class StandardVocabulary implements Vocabulary {
 	            .put("r_zscorep", (c,a) -> new Rolling("r_zscorep",DoubleCollectors.zscorep, true, a))
 	            .put("x_zscorep", (c,a) -> new Cross("x_zscorep",DoubleCollectors.zscorep, a))
 	            .put("fill", (c,a) -> new Fill(a))
+	            .put("correl", (c,a) -> new RollingCorrelation(a))
                 .build();
     public StandardVocabulary() {
     	
