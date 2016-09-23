@@ -1,9 +1,12 @@
 package tech.pinto.command.terminal;
 
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import tech.pinto.Cache;
 import tech.pinto.Vocabulary;
+import tech.pinto.command.Command;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.MessageData;
 import tech.pinto.data.NoneData;
@@ -23,11 +26,11 @@ public class Help extends ParameterizedCommand {
 		if(arguments.length == 0) {
 			sb.append("Pinto help").append(crlf);
 			sb.append("Built-in commands:").append(crlf);
-			sb.append(vocab.getCommands().stream().collect(Collectors.joining(", "))).append(crlf);
-			sb.append("For help with a specific command type: help(command)").append(crlf);
-		} else if(arguments.length == 1) {
-			sb.append("help for ").append(arguments[0]).append(crlf);
-			sb.append("here is the help").append(crlf);
+			sb.append(vocab.getCommandNames().stream().collect(Collectors.joining(", "))).append(crlf);
+			sb.append("For extended help type: help(full)").append(crlf);
+			sb.append("For help with a specific command type: command help").append(crlf);
+		} else if(arguments.length == 1 && arguments[0].equals("full")) {
+			sb.append(vocab.getAllCommandHelp().stream().map(CommandHelp::toTableRowString).collect(Collectors.joining(crlf))).append(crlf);
 		}
 		text = sb.toString();
 	}
@@ -42,7 +45,14 @@ public class Help extends ParameterizedCommand {
 		return true;
 	}
 	
-	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("help")
+				.inputs("any<sub>1</sub>...any<sub>n</sub>")
+				.outputs("none")
+				.description("Prints help for proceding commands or prints *help type*.")
+				.parameter("help type")
+				.build();
+	}
 	
 
 }

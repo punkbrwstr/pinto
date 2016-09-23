@@ -12,12 +12,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 
 import tech.pinto.Cache;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.data.DoubleData;
 import tech.pinto.time.BusinessDaily;
 import tech.pinto.time.BusinessMonthly;
@@ -80,6 +82,16 @@ public class Yahoo extends CachedDoubleCommand {
 			output.add(new DoubleData(range, ticker, b.build()));
 		}
 		return output;
+	}
+	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("yhoo")
+				.inputs("none")
+				.outputs("double<sub>1</sub>...double<sub>z</sub>")
+				.description("Retrieves online price history for each *ticker*.")
+				.parameter("ticker<sub>1</sub>")
+				.parameter("ticker<sub>z</sub>")
+				.build();
 	}
 
 }

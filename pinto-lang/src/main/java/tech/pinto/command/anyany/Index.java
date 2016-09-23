@@ -2,11 +2,11 @@ package tech.pinto.command.anyany;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Functions;
-
 import tech.pinto.command.Command;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.command.SimpleCommand;
 import tech.pinto.data.AnyData;
@@ -59,6 +59,16 @@ public class Index extends ParameterizedCommand {
 	public <P extends Period> Data<?> evaluate(PeriodicRange<P> range) {
 		// never gets called bc it passes on references to inputs
 		throw new UnsupportedOperationException();
+	}
+	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("index")
+				.inputs("any<sub>1</sub>...any<sub>n</sub>")
+				.outputs("any<sub>1</sub>...any<sub>z</sub>")
+				.description("Retrieves stack element for each *i*. *i* may be integer or string to retrieve by label.")
+				.parameter("i<sub>1</sub>")
+				.parameter("i<sub>z</sub>")
+				.build();
 	}
 	
 	private boolean isInteger(String str) {

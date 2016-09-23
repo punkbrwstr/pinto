@@ -7,9 +7,11 @@ import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.AnyData;
 import tech.pinto.data.Data;
@@ -67,6 +69,18 @@ public class Export extends ParameterizedCommand {
 	@Override
 	public boolean isTerminal() {
 		return true;
+	}
+	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("export")
+				.outputs("none")
+				.inputs("any<sub>1</sub>...any<sub>n</sub>")
+				.description("Evaluates the preceding commands over the given date range and exports csv for *filename*.")
+				.parameter("start date", "prior period", "yyyy-dd-mm")
+				.parameter("end date", "prior period", "yyyy-dd-mm")
+				.parameter("periodicity", "B", "{B,W-FRI,BM,BQ,BA}")
+				.parameter("filename")
+				.build();
 	}
 
 }

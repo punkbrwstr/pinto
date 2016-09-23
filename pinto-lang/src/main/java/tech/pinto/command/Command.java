@@ -13,7 +13,7 @@ import tech.pinto.time.PeriodicRange;
 
 abstract public class Command implements Cloneable {
     
-    private final String name;
+    protected final String name;
     protected final Class<? extends Data<?>> inputType;
     protected final Class<? extends Data<?>> outputType;
     protected ArrayDeque<Command> inputStack = new ArrayDeque<>();
@@ -84,7 +84,7 @@ abstract public class Command implements Cloneable {
 		}
 		return outputCount;
 	}
-
+	
     public Class<? extends Data<?>> getOutputType() {
         return outputType;
     }

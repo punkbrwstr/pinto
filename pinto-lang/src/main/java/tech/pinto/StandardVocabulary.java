@@ -1,10 +1,12 @@
 package tech.pinto;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableMap;
 
 import tech.pinto.command.CommandFactory;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.anyany.Copy;
 import tech.pinto.command.anyany.Index;
 import tech.pinto.command.anyany.Label;
@@ -31,7 +33,7 @@ public class StandardVocabulary implements Vocabulary {
             new ImmutableMap.Builder<String, CommandFactory>()
                 .put("eval", (c,a) -> new Evaluate(a))
                 .put("export", (c,a) -> new Export(a))
-                .put("save", (c,a) -> new Save(c,a))
+                .put("def", (c,a) -> new Save(c,a))
                 .put("del", (c,a) -> new Delete(c,a))
                 .put("help", (c,a) -> new Help(c,this,a))
                 .put("+", (c,a) -> new DoubleDoubleOperator("+", (x,y) -> x + y))
@@ -93,6 +95,67 @@ public class StandardVocabulary implements Vocabulary {
 	            .put("fill", (c,a) -> new Fill(a))
 	            .put("correl", (c,a) -> new RollingCorrelation(a))
                 .build();
+
+    private final Map<String,Supplier<CommandHelp>> commandHelp = 
+            new ImmutableMap.Builder<String, Supplier<CommandHelp>>()
+            /* terminal commands */
+                .put("eval", Evaluate.getHelp())
+                .put("export", Export.getHelp())
+                .put("def", Save.getHelp())
+                .put("help", Help.getHelp())
+                .put("del", Delete.getHelp())
+
+            /* stack manipulation commands */
+                .put("label", Label.getHelp())
+                .put("copy", Copy.getHelp())
+                .put("roll", Roll.getHelp())
+                .put("index", Index.getHelp())
+
+            /* initial data commands */
+                .put("yhoo", Yahoo.getHelp())
+                .put("moon", MoonPhase.getHelp())
+
+            /* rolling window commands */
+                .put("chg",Rolling.getHelp("chg", "change"))
+                .put("chg_pct",Rolling.getHelp("chg_pct", "change in percent"))
+                .put("chg_log",Rolling.getHelp("chg_log", "log change"))
+                .put("r_mean",Rolling.getHelp("r_mean", "mean"))
+                .put("r_max",Rolling.getHelp("r_max", "maximum"))
+                .put("r_min",Rolling.getHelp("r_min", "minimum"))
+                .put("r_sum",Rolling.getHelp("r_sum", "sum"))
+                .put("r_geomean",Rolling.getHelp("r_geomean", "geometric mean"))
+                .put("r_var",Rolling.getHelp("r_var", "sample variance"))
+                .put("r_varp",Rolling.getHelp("r_varp", "variance"))
+                .put("r_std",Rolling.getHelp("r_std", "sample standard deviation"))
+                .put("r_zscorep",Rolling.getHelp("r_zscorep", "z-score"))
+                .put("r_zscore",Rolling.getHelp("r_zscore", "sample z-score"))
+                .put("r_stdp",Rolling.getHelp("r_stdp", "standard deviation"))
+                .put("correl",Rolling.getHelp("correl", "average correlation"))
+
+            /* cross commands */
+                .put("x_mean",Cross.getHelp("x_mean", "mean"))
+                .put("x_max",Cross.getHelp("x_max", "maximum"))
+                .put("x_min",Cross.getHelp("x_min", "minimum"))
+                .put("x_sum",Cross.getHelp("x_sum", "sum"))
+                .put("x_geomean",Cross.getHelp("x_geomean", "geometric mean"))
+                .put("x_var",Cross.getHelp("x_var", "sample variance"))
+                .put("x_varp",Cross.getHelp("x_varp", "variance"))
+                .put("x_std",Cross.getHelp("x_std", "sample standard deviation"))
+                .put("x_zscorep",Cross.getHelp("x_zscorep", "z-score"))
+                .put("x_zscore",Cross.getHelp("x_zscore", "sample z-score"))
+                .put("x_stdp",Cross.getHelp("x_stdp", "standard deviation"))
+                
+           /* other commands */
+                .put("fill",Fill.getHelp())
+
+           /* binary operators */
+                .put("+",DoubleDoubleOperator.getHelp("+", "addition"))
+                .put("-",DoubleDoubleOperator.getHelp("-", "subtraction"))
+                .put("/",DoubleDoubleOperator.getHelp("/", "division"))
+                .put("*",DoubleDoubleOperator.getHelp("*", "multiplication"))
+                .put("%",DoubleDoubleOperator.getHelp("%", "modulo"))
+
+                .build();
     public StandardVocabulary() {
     	
     }
@@ -100,6 +163,11 @@ public class StandardVocabulary implements Vocabulary {
 	@Override
 	public Map<String, CommandFactory> getCommandMap() {
 		return commands;
+	}
+
+	@Override
+	public Map<String, Supplier<CommandHelp>> getCommandHelpMap() {
+		return commandHelp;
 	}
     
 

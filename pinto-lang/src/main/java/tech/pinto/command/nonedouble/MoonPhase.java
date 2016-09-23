@@ -4,9 +4,11 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.function.Supplier;
 import java.util.stream.DoubleStream;
 
 import tech.pinto.command.Command;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.data.DoubleData;
 import tech.pinto.data.NoneData;
 import tech.pinto.time.Period;
@@ -33,6 +35,14 @@ public class MoonPhase extends Command {
 		calendar.setTime(date);
 		return calendar;
 
+	}
+	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("moon")
+				.inputs("none")
+				.outputs("double<sub>1</sub>...double<sub>z</sub>")
+				.description("Calculates moon phase for this day.")
+				.build();
 	}
 
 }

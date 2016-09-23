@@ -1,7 +1,9 @@
 package tech.pinto.command.terminal;
 
 import java.time.LocalDate;
+import java.util.function.Supplier;
 
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.AnyData;
 import tech.pinto.data.Data;
@@ -41,6 +43,17 @@ public class Evaluate extends ParameterizedCommand {
 	@Override
 	public boolean isTerminal() {
 		return true;
+	}
+	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("eval")
+				.outputs("any<sub>1</sub>...any<sub>n</sub>")
+				.inputs("any<sub>1</sub>...any<sub>n</sub>")
+				.description("Evaluates the preceding commands over the given date range.")
+				.parameter("start date", "prior period", "yyyy-dd-mm")
+				.parameter("end date", "prior period", "yyyy-dd-mm")
+				.parameter("periodicity", "B", "{B,W-FRI,BM,BQ,BA}")
+				.build();
 	}
 	
 	

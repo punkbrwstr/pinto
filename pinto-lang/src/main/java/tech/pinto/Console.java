@@ -33,27 +33,35 @@ public class Console {
 	public void run() throws IOException {
 		ConsoleReader reader = new ConsoleReader();
 		reader.setPrompt("pinto> ");
-		reader.addCompleter(new StringsCompleter(pinto.getVocab().getCommands()));
+		reader.addCompleter(new StringsCompleter(pinto.getVocab().getCommandNames()));
+		StringBuilder multiLine = new StringBuilder();
 		String line;
 		PrintWriter out = new PrintWriter(reader.getOutput());
 
 		while ((line = reader.readLine()) != null) {
 			try {
-				ArrayDeque<Data<?>> output = (ArrayDeque<Data<?>>) pinto.evaluateStatement(line);
-				Optional<Outputs.StringTable> t = output.stream().filter(d -> d instanceof DoubleData).map(d -> (DoubleData) d)
-					.collect(Outputs.doubleDataToStringTable());
-				if(t.isPresent()) {
-					out.println(FlipTable.of(t.get().getHeader(), t.get().getCells()));
+				multiLine.append(" ").append(line);
+				ArrayDeque<Data<?>> output = (ArrayDeque<Data<?>>) pinto.evaluateStatement(multiLine.toString());
+				if(output.size() != 0) {
+					multiLine.setLength(0);
+					Optional<Outputs.StringTable> t = output.stream().filter(d -> d instanceof DoubleData).map(d -> (DoubleData) d)
+							.collect(Outputs.doubleDataToStringTable());
+					if(t.isPresent()) {
+						out.println(FlipTable.of(t.get().getHeader(), t.get().getCells()));
+					}
 				}
 				output.stream().filter(d -> !(d instanceof DoubleData)).map(Object::toString).forEach(out::println);
 			} catch (PintoSyntaxException pse) {
 				System.out.println("Incorrect syntax: " + pse.getMessage());
 				pse.printStackTrace();
+				multiLine.setLength(0);
 			} catch (Throwable e) {
 				System.out.println("Evaluation error");
 				e.printStackTrace();
+				multiLine.setLength(0);
+			} 
+				
 
-			}
 			out.flush();
 		}
 	}

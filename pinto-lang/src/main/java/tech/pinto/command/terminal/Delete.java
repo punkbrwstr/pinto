@@ -1,6 +1,9 @@
 package tech.pinto.command.terminal;
 
+import java.util.function.Supplier;
+
 import tech.pinto.Cache;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.AnyData;
 import tech.pinto.data.MessageData;
@@ -12,7 +15,7 @@ public class Delete extends ParameterizedCommand {
 	private final Cache cache;
 	
 	public Delete(Cache cache, String[] arguments) {
-		super("save", AnyData.class, MessageData.class, arguments);
+		super("del", AnyData.class, MessageData.class, arguments);
 		if(arguments.length < 1) {
 			throw new IllegalArgumentException("del requires one argument.");
 		}
@@ -25,7 +28,7 @@ public class Delete extends ParameterizedCommand {
 	@Override
 	public <P extends Period> MessageData evaluate(PeriodicRange<P> range) {
 		cache.deleteSaved(arguments[0]);
-		return new MessageData("Successfully saved.");
+		return new MessageData("Successfully deleted.");
 	}
 
 	@Override
@@ -33,7 +36,14 @@ public class Delete extends ParameterizedCommand {
 		return true;
 	}
 	
-	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("del")
+				.inputs("none")
+				.outputs("none")
+				.description("Deletes previously defined command *name*.")
+				.parameter("name")
+				.build();
+	}	
 	
 
 }

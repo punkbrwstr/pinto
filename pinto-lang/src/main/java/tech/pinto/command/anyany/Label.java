@@ -2,8 +2,10 @@ package tech.pinto.command.anyany;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 import tech.pinto.command.Command;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.command.SimpleCommand;
 import tech.pinto.data.AnyData;
@@ -36,6 +38,16 @@ public class Label extends ParameterizedCommand {
 	public <P extends Period> AnyData evaluate(PeriodicRange<P> range) {
 		// never gets called bc it passes on references to inputs
 		throw new UnsupportedOperationException();
+	}
+	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("label")
+				.inputs("any<sub>1</sub>...any<sub>z</sub>")
+				.outputs("any<sub>1</sub>...any<sub>z</sub>")
+				.description("Sets arguments as labels for inputs")
+				.parameter("label<sub>1</sub>")
+				.parameter("label<sub>z</sub>")
+				.build();
 	}
 	
 

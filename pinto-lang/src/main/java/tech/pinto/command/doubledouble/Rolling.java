@@ -9,6 +9,7 @@ import java.util.stream.DoubleStream.Builder;
 
 import com.google.common.base.Joiner;
 
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.DoubleData;
 import tech.pinto.time.Period;
@@ -77,6 +78,17 @@ public class Rolling extends ParameterizedCommand {
 			b.accept(dc.finish());
 		}
 		return new DoubleData(range,joinWithSpaces(input.getLabel(),toString()),b.build());
+	}
+	
+	public static Supplier<CommandHelp> getHelp(String name, String description) {
+		return () -> new CommandHelp.Builder(name)
+				.inputs("double<sub>1</sub>...double<sub>n</sub>")
+				.outputs("double<sub>1</sub>...double<sub>n</sub>")
+				.description("Calculates " + description + " over rolling window starting *size* number of *periodicity* prior for *n* inputs.")
+				.parameter("size","1",null)
+				.parameter("periodicity", "B", "{B,W-FRI,BM,BQ,BA}")
+				.parameter("n","all",null)
+				.build();
 	}
 	
 }

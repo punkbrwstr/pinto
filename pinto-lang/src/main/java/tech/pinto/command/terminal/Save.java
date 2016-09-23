@@ -1,6 +1,9 @@
 package tech.pinto.command.terminal;
 
+import java.util.function.Supplier;
+
 import tech.pinto.Cache;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.AnyData;
 import tech.pinto.data.MessageData;
@@ -14,7 +17,7 @@ public class Save extends ParameterizedCommand {
 	private String formula;
 	
 	public Save(Cache cache, String[] arguments) {
-		super("save", AnyData.class, MessageData.class, arguments);
+		super("def", AnyData.class, MessageData.class, arguments);
 		if(arguments.length < 1) {
 			throw new IllegalArgumentException("save requires one argument.");
 		}
@@ -42,6 +45,15 @@ public class Save extends ParameterizedCommand {
 	@Override
 	public boolean isTerminal() {
 		return true;
+	}
+	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("def")
+				.inputs("any<sub>1</sub>...any<sub>n</sub>")
+				.outputs("none")
+				.description("Defines the preceding commands as a new command, named *name*.")
+				.parameter("name")
+				.build();
 	}
 	
 	

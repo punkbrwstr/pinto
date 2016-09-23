@@ -2,7 +2,10 @@ package tech.pinto.command.anyany;
 
 
 
+import java.util.function.Supplier;
+
 import tech.pinto.command.Command;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.AnyData;
 import tech.pinto.time.Period;
@@ -35,6 +38,16 @@ public class Roll extends ParameterizedCommand {
 	public <P extends Period> AnyData evaluate(PeriodicRange<P> range) {
 		// never gets called bc it passes on references to inputs
 		throw new UnsupportedOperationException();
+	}
+	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("roll")
+				.inputs("any<sub>1</sub>...any<sub>n</sub>")
+				.outputs("any<sub>1</sub>...any<sub>n</sub>")
+				.description("Permutes *n* stack elements *m* times")
+				.parameter("n","all",null)
+				.parameter("m","2",null)
+				.build();
 	}
 	
 

@@ -20,7 +20,7 @@ public class Pinto {
 	public ArrayDeque<Data<?>> evaluateStatement(String statement) throws Exception {
 		try {
 			ArrayDeque<Data<?>> output = new ArrayDeque<>();
-			for(Command terminal : new Statement(cache, vocab, statement).getTerminalCommands()) {
+			for(Command terminal : new Statement(cache, vocab, statement, true).getTerminalCommands()) {
 				for(int i = 0; i < terminal.outputCount(); i++) {
 					//System.out.println(terminal.summarize(""));
 					output.addLast(terminal.evaluate(null));

@@ -34,7 +34,7 @@ abstract public class Cache {
 			if(isSavedStatement(code)) {
 				Statement oldStatement = null;
 				try {
-					oldStatement = new Statement(this, getVocabulary(), getSaved(code));
+					oldStatement = new Statement(this, getVocabulary(), getSaved(code),true);
 				} catch(PintoSyntaxException e) {
 					throw new RuntimeException("Unparseable saved query.",e);
 				}
@@ -45,7 +45,7 @@ abstract public class Cache {
 			}
 			Statement newStatement = null;
 			try {
-				newStatement = new Statement(this, getVocabulary(), statement);
+				newStatement = new Statement(this, getVocabulary(), statement, true);
 			} catch(PintoSyntaxException e) {
 				throw new RuntimeException("Unparseable saved query.",e);
 			}
@@ -68,7 +68,7 @@ abstract public class Cache {
 			}
 			Statement oldStatement;
 			try {
-				oldStatement = new Statement(this, getVocabulary(), getSaved(code));
+				oldStatement = new Statement(this, getVocabulary(), getSaved(code), true);
 			} catch (PintoSyntaxException e) {
 				throw new RuntimeException();
 			}

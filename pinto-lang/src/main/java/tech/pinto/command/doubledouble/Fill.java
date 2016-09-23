@@ -1,7 +1,9 @@
 package tech.pinto.command.doubledouble;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.DoubleData;
 import tech.pinto.time.Period;
@@ -30,6 +32,15 @@ public class Fill extends ParameterizedCommand {
 			}
 			return lastGoodValue.get();
 		}));
+	}
+	
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("fill")
+				.inputs("any<sub>1</sub>...any<sub>n</sub>")
+				.outputs("any<sub>1</sub>...any<sub>n</sub>")
+				.description("Fills missing data with last good obseration for *n* inputs.")
+				.parameter("n","all",null)
+				.build();
 	}
 
 }

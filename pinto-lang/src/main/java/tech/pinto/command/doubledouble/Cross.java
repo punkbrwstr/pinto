@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.DoubleStream.Builder;
 
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.DoubleData;
 import tech.pinto.time.Period;
@@ -38,6 +39,15 @@ public class Cross extends ParameterizedCommand {
 			b.accept(dc.finish());
 		}
 		return new DoubleData(range, toString(), b.build());
+	}
+	
+	public static Supplier<CommandHelp> getHelp(String name, String description) {
+		return () -> new CommandHelp.Builder(name)
+				.inputs("double<sub>1</sub>...double<sub>n</sub>")
+				.outputs("double")
+				.description("Calculates " + description + " across *n* inputs.")
+				.parameter("n","all",null)
+				.build();
 	}
 
 }

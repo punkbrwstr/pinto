@@ -126,8 +126,10 @@ public class LocalCache extends Cache {
    			final long finalStart = chunkStart;
     		toRemove.stream().forEach(cache::remove);
     		final long endToSave = Math.min(current - 1, freq.from(LocalDate.now()).longValue() - 1); // don't save anything from this period
-    		chunkData.stream().forEach(s -> s.setRange(freq.range(finalStart, endToSave, false)));
-    		cache.put(Range.closed(finalStart, endToSave), DoubleData.dup(chunkData, (int) (endToSave - finalStart + 1)));
+    		if(finalStart <= endToSave) {
+    			chunkData.stream().forEach(s -> s.setRange(freq.range(finalStart, endToSave, false)));
+    			cache.put(Range.closed(finalStart, endToSave), DoubleData.dup(chunkData, (int) (endToSave - finalStart + 1)));
+    		}
 
     		chunkData.stream().forEach(s -> s.setRange(range));
     		chunkData.stream().forEach(s -> s.setData(s.getData()

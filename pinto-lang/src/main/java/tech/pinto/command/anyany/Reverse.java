@@ -1,6 +1,9 @@
 package tech.pinto.command.anyany;
 
+import java.util.function.Supplier;
+
 import tech.pinto.command.Command;
+import tech.pinto.command.CommandHelp;
 import tech.pinto.command.ParameterizedCommand;
 import tech.pinto.data.AnyData;
 import tech.pinto.data.Data;
@@ -31,4 +34,12 @@ public class Reverse extends ParameterizedCommand {
 		throw new UnsupportedOperationException();
 	}
 
+	public static Supplier<CommandHelp> getHelp() {
+		return () -> new CommandHelp.Builder("rev")
+				.inputs("any<sub>1</sub>...any<sub>n</sub>")
+				.outputs("any<sub>n</sub>...any<sub>1</sub>")
+				.description("Reverses order of *n* stack elements")
+				.parameter("n","all",null)
+				.build();
+	}
 }

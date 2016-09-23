@@ -28,10 +28,12 @@ public class Statement extends Command {
 	private final List<Command> inputsToStatement = new ArrayList<>();
 	private final Set<String> dependencies = new HashSet<>();
 	private final String text;
+	private final boolean isNested;
 
-	public Statement(Cache cache, Vocabulary vocab, String text) throws PintoSyntaxException {
+	public Statement(Cache cache, Vocabulary vocab, String text, boolean isNested) throws PintoSyntaxException {
 		super("statement", AnyData.class, AnyData.class);
 		this.text = text;
+		this.isNested = isNested;
 		inputCount = 0;
 		List<String> sb = new ArrayList<>();
 		try (Scanner sc = new Scanner(text)) {
@@ -63,7 +65,7 @@ public class Statement extends Command {
 						throw new PintoSyntaxException("Command or saved statement \"" + s + "\" not found.");
 					}
 					dependencies.add(s);
-					c = new Statement(cache, vocab, cache.getSaved(s));
+					c = new Statement(cache, vocab, cache.getSaved(s), true);
 					sb.add(s);
 				}
 				while (inputStack.size() > 0 && c.inputsNeeded() > 0) {
@@ -78,6 +80,10 @@ public class Statement extends Command {
 					inputCount += c.inputsNeeded();
 				}
 				while (inputStack.size() == 0 && c.inputsNeeded() > 0 && c.inputsNeeded() != Integer.MAX_VALUE) {
+					if(!isNested) {
+						throw new PintoSyntaxException("Insufficient inputs for " + c.toString() + ". " 
+									+ c.inputsNeeded() + " more required.");
+					}
 					final int i = inputCount++;
 					c.addInput(new SimpleCommand(this,1,1,range -> inputsToStatement.get(i).evaluate(range)));
 				}
