@@ -23,7 +23,7 @@ Inputs| Command(Parameters) | Outputs|Description
 *any<sub>1</sub>...any<sub>n</sub>*|**roll(*n*,*m*)**|*any<sub>1</sub>...any<sub>n</sub>*|Permutes *n* stack elements *m* times (defaults: *m=2*,*n=all*)
 *any<sub>1</sub>...any<sub>n</sub>*|**index(*i<sub>1</sub>*,*i<sub>z</sub>*)**|*any<sub>1</sub>...any<sub>z</sub>*|Retrieves stack element for each *i*. *i* may be integer or string to retrieve by label. 
 
-#### Data creation commands
+### Data creation commands
 
 These commands generate data values.
 
@@ -32,7 +32,7 @@ Inputs| Command(Parameters) | Outputs|Description
 *none*|**yhoo(*ticker<sub>1</sub>*,*ticker<sub>z</sub>*)**|*double<sub>1</sub>...double<sub>z</sub>*|Retrieves online price history for each *ticker*. 
 *none*|**moon**|*double<sub>1</sub>...double<sub>z</sub>*|Calculates moon phase for this day. 
 
-#### Rolling window commands
+### Rolling window commands
 
 Inputs| Command(Parameters) | Outputs|Description
 ---:|:---:|:---|:---
@@ -52,7 +52,7 @@ Inputs| Command(Parameters) | Outputs|Description
 *double<sub>1</sub>...double<sub>n</sub>*|**r_stdp(*size*,*periodicity*,*n*)**|*double<sub>1</sub>...double<sub>n</sub>*|Calculates standard deviation over rolling window starting *size* number of *periodicity* prior for *n* inputs. (defaults: *size=1*,*periodicity=B*,*n=all*)
 *double<sub>1</sub>...double<sub>n</sub>*|**correl(*size*,*periodicity*,*n*)**|*double<sub>1</sub>...double<sub>n</sub>*|Calculates average correlation over rolling window starting *size* number of *periodicity* prior for *n* inputs. (defaults: *size=1*,*periodicity=B*,*n=all*)
 
-#### Cross-sectional commands
+### Cross-sectional commands
 
 Inputs| Command(Parameters) | Outputs|Description
 ---:|:---:|:---|:---
@@ -67,7 +67,17 @@ Inputs| Command(Parameters) | Outputs|Description
 *double<sub>1</sub>...double<sub>n</sub>*|**x_zscorep(*n*)**|*double*|Calculates z-score across *n* inputs. (defaults: *n=all*)
 *double<sub>1</sub>...double<sub>n</sub>*|**x_zscore(*n*)**|*double*|Calculates sample z-score across *n* inputs. (defaults: *n=all*)
 *double<sub>1</sub>...double<sub>n</sub>*|**x_stdp(*n*)**|*double*|Calculates standard deviation across *n* inputs. (defaults: *n=all*)
-*any<sub>1</sub>...any<sub>n</sub>*|**fill(*n*)**|*any<sub>1</sub>...any<sub>n</sub>*|Fills missing data with last good obseration for *n* inputs. (defaults: *n=all*)
+
+### Data cleaning commands
+
+Inputs| Command(Parameters) | Outputs|Description
+---:|:---:|:---|:---
+*double<sub>1</sub>...double<sub>n</sub>*|**fill(*n*)**|*double<sub>1</sub>...double<sub>n</sub>*|Fills missing data with last good obseration for *n* inputs. (defaults: *n=all*)
+
+### Binary double operators
+
+Inputs| Command(Parameters) | Outputs|Description
+---:|:---:|:---|:---
 *double<sub>1</sub>, double<sub>2</sub>*|**+**|*double*|Binary double operator for addition. 
 *double<sub>1</sub>, double<sub>2</sub>*|**-**|*double*|Binary double operator for subtraction. 
 *double<sub>1</sub>, double<sub>2</sub>*|**/**|*double*|Binary double operator for division. 
