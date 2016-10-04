@@ -6,7 +6,22 @@ With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equati
 
 ## What can I do it?
 
-Get online stock prices and compute daily differences between their 20 and 200-day moving averages:
+Calculate the Monthly YTD return of an evenly-weighted portfolio of two stocks:
+
+```
+pinto> yhoo(aapl,ibm) fill r_chgpct x_mean 1 + log e_sum(2016-01-01) exp -1 + label(YTD return) eval(2016-01-01,2016-03-30,BM)
+╔════════════╤══════════════╗
+║ Date       │ YTD return   ║
+╠════════════╪══════════════╣
+║ 2016-01-29 │ -0.08423500  ║
+╟────────────┼──────────────╢
+║ 2016-02-29 │ -0.06439658  ║
+╟────────────┼──────────────╢
+║ 2016-03-31 │ 0.068015989  ║
+╚════════════╧══════════════╝
+```
+
+Or compute daily differences between their 20 and 200-day moving averages for two stocks:
 
 ```
 pinto> yhoo(cmg,taco) copy(3) [-2:] r_mean(20) [2:3] r_mean(200) [3,1] - [1:2] - [:1] label(taco MA diff,cmg MA diff) eval(2016-09-26,2016-09-28)
@@ -21,20 +36,7 @@ pinto> yhoo(cmg,taco) copy(3) [-2:] r_mean(20) [2:3] r_mean(200) [3,1] - [1:2] -
 ╚════════════╧═══════╧════════════╧════════════════════╧═════════════════════╝
 ```
 
-Or calculate the Monthly YTD return of an evenly weighted portfolio of two stocks:
 
-```
-pinto> yhoo(aapl,ibm) fill r_chgpct x_mean 1 + log e_sum(2016-01-01) exp -1 + label(YTD return) eval(2016-01-01,2016-03-30,BM)
-╔════════════╤══════════════╗
-║ Date       │ YTD return   ║
-╠════════════╪══════════════╣
-║ 2016-01-29 │ -0.08423500  ║
-╟────────────┼──────────────╢
-║ 2016-02-29 │ -0.06439658  ║
-╟────────────┼──────────────╢
-║ 2016-03-31 │ 0.068015989  ║
-╚════════════╧══════════════╝
-```
 
 For more information see the [Pinto Language Reference](./pinto_reference.md)
 
