@@ -1,5 +1,12 @@
 # Pinto Language Reference
 
+### Indexing/slicing operators
+
+An indexing/slicing operator determines which stack elements are passed to the following function.  By default the entire stack is passed.  The operator can take lists or ranges of indicies.  Index numbering starts with ```0```, which represents the top or rightmost element of the stack.  Lists of indicies are separated by commas.   ```[1,3]``` represents the second and fourth stack elements.  Ranges may specify an inclusive starting index, an inclusive ending index or both.  ```[0:3]```  represents the first through fourth stack elements.  ```[1:]``` represents all stack elements after the first.  Negative indicies are converted to the stack size minus that number.  ```[-2:]```  represents the last two elements in the stack.
+
+
+## Function reference
+
 ### Terminal functions
 
 These functions tell the interpreter to start executing your Pinto code.  The most common is **eval** which evaluates the preceding stack of commands over the date range that you specify as arguments.  In console mode the resulting data is printed as a table.
