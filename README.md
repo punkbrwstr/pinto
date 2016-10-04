@@ -4,7 +4,7 @@ Pinto is a stack-based or concatenative, functional programming language that us
 
 With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equation, or an algorithmic trading system into one line of code!
 
-## What can I do it?
+## What can I do with it?
 
 Calculate the Monthly YTD return of an evenly-weighted portfolio of two stocks:
 
