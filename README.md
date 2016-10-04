@@ -21,7 +21,7 @@ pinto> yhoo(aapl,ibm) fill r_chgpct x_mean 1 + log e_sum(2016-01-01) exp -1 + la
 ╚════════════╧══════════════╝
 ```
 
-Or compute daily differences between their 20 and 200-day moving averages for two stocks:
+Or compute daily differences between the 20 and 200-day moving averages for two stocks:
 
 ```
 pinto> yhoo(cmg,taco) copy(3) [-2:] r_mean(20) [2:3] r_mean(200) [3,1] - [1:2] - [:1] label(taco MA diff,cmg MA diff) eval(2016-09-26,2016-09-28)
