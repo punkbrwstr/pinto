@@ -1,60 +1,60 @@
 # Pinto Language Reference
 
-### Terminal commands
+### Terminal functions
 
-These commands tell the interpreter to start executing your Pinto code.  The most common is **eval** which evaluates the preceding stack of commands over the date range that you specify as arguments.  In console mode the resulting data is printed as a table.
+These functions tell the interpreter to start executing your Pinto code.  The most common is **eval** which evaluates the preceding stack of commands over the date range that you specify as arguments.  In console mode the resulting data is printed as a table.
 
-Command(Parameters) | Outputs for *n* inputs|Description
+Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
-**eval(*start date*,*end date*,*periodicity*)**|**n**|Evaluates the preceding commands over the given date range. (defaults: *start date=prior period*,*periodicity=B*,*end date=prior period*)
+**eval(*start date*,*end date*,*periodicity*)**|*n*|Evaluates the preceding commands over the given date range. (defaults: *start date=prior period*,*periodicity=B*,*end date=prior period*)
 **export(*start date*,*end date*,*periodicity*,*filename*)**|*none*|Evaluates the preceding commands over the given date range and exports csv for *filename*. (defaults: *start date=prior period*,*periodicity=B*,*end date=prior period*)
 **def(*name*)**|*none*|Defines the preceding commands as a new command, named *name*. 
 **help(*help type*)**|*none*|Prints help for proceding commands or prints *help type*. 
-**del(*name*)**|*None*|Deletes previously defined command *name*. 
+**del(*name*)**|*none*|Deletes previously defined command *name*. 
 
-### Stack manipulation commands
+### Stack manipulation functions
 
 These commands manipulate stack elements, but do not modify values.
 
-Command(Parameters) | Outputs for *n* inputs|Description
+Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
 **label(*label<sub>1</sub>*,*label<sub>z</sub>*)**|**z**|Sets arguments as labels for inputs 
-**copy(*m*)**|**n* * *m**|Copies stack inputs *m* times (defaults: *m=2*)
+**copy(*m*)**|**n*  *  *m**|Copies stack inputs *m* times (defaults: *m=2*)
 **roll(*m*)**|**n**|Permutes input stack elements *m* times (defaults: *m=2*)
 **clear**|*None*|Removes inputs from stack 
 
-### Data creation commands
+### Data creation functions
 
 These commands generate data values.
 
-Command(Parameters) | Outputs for *n* inputs|Description
+Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
-**yhoo(*ticker<sub>1</sub>*,*ticker<sub>z</sub>*)**|**n* + *z**|Retrieves online price history for each *ticker*. 
-**moon**|**n* + 1*|Calculates moon phase for this day.
+**yhoo(*ticker<sub>1</sub>*,*ticker<sub>z</sub>*)**|*n + z*|Retrieves online price history for each *ticker*. 
+**moon**|*n + 1*|Calculates moon phase for this day. 
 
-### Rolling window commands
+### Rolling window functions
 
-Command(Parameters) | Outputs for *n* inputs|Description
+Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
-**chg(*size*,*periodicity*)**|**n**|Calculates change over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**chg_pct(*size*,*periodicity*)**|**n**|Calculates change in percent over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**chg_log(*size*,*periodicity*)**|**n**|Calculates log change over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_mean(*size*,*periodicity*)**|**n**|Calculates mean over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_max(*size*,*periodicity*)**|**n**|Calculates maximum over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_min(*size*,*periodicity*)**|**n**|Calculates minimum over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_sum(*size*,*periodicity*)**|**n**|Calculates sum over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_geomean(*size*,*periodicity*)**|**n**|Calculates geometric mean over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_var(*size*,*periodicity*)**|**n**|Calculates sample variance over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_varp(*size*,*periodicity*)**|**n**|Calculates variance over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_std(*size*,*periodicity*)**|**n**|Calculates sample standard deviation over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_zscorep(*size*,*periodicity*)**|**n**|Calculates z-score over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_zscore(*size*,*periodicity*)**|**n**|Calculates sample z-score over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_stdp(*size*,*periodicity*)**|**n**|Calculates standard deviation over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**correl(*size*,*periodicity*)**|**n**|Calculates average correlation over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**chg(*size*,*periodicity*)**|*n*|Calculates change over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**chg_pct(*size*,*periodicity*)**|*n*|Calculates change in percent over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**chg_log(*size*,*periodicity*)**|*n*|Calculates log change over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_mean(*size*,*periodicity*)**|*n*|Calculates mean over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_max(*size*,*periodicity*)**|*n*|Calculates maximum over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_min(*size*,*periodicity*)**|*n*|Calculates minimum over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_sum(*size*,*periodicity*)**|*n*|Calculates sum over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_geomean(*size*,*periodicity*)**|*n*|Calculates geometric mean over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_var(*size*,*periodicity*)**|*n*|Calculates sample variance over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_varp(*size*,*periodicity*)**|*n*|Calculates variance over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_std(*size*,*periodicity*)**|*n*|Calculates sample standard deviation over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_zscorep(*size*,*periodicity*)**|*n*|Calculates z-score over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_zscore(*size*,*periodicity*)**|*n*|Calculates sample z-score over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_stdp(*size*,*periodicity*)**|*n*|Calculates standard deviation over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**correl(*size*,*periodicity*)**|*n*|Calculates average correlation over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
 
-### Cross-sectional commands
+### Cross-sectional functions
 
-Command(Parameters) | Outputs for *n* inputs|Description
+Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
 **x_mean**|*1*|Calculates mean across inputs. 
 **x_max**|*1*|Calculates maximum across inputs. 
@@ -66,20 +66,51 @@ Command(Parameters) | Outputs for *n* inputs|Description
 **x_std**|*1*|Calculates sample standard deviation across inputs. 
 **x_zscorep**|*1*|Calculates z-score across inputs. 
 **x_zscore**|*1*|Calculates sample z-score across inputs. 
-**x_stdp**|*1*|Calculates standard deviation across inputs. 
+**r_mean**|*1*|Calculates mean across inputs. 
+
+### Expanding window functions
+
+Function(Parameters) | Outputs for *n* inputs|Description
+:---:|:---|:---
+**e_mean(*size*,*periodicity*)**|*n*|Calculates mean over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**e_max(*start_date*,*periodicity*)**|*n*|Calculates maximum over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_min(*start_date*,*periodicity*)**|*n*|Calculates minimum over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_sum(*start_date*,*periodicity*)**|*n*|Calculates sum over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_geomean(*start_date*,*periodicity*)**|*n*|Calculates geometric mean over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_var(*start_date*,*periodicity*)**|*n*|Calculates sample variance over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_varp(*start_date*,*periodicity*)**|*n*|Calculates variance over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_std(*start_date*,*periodicity*)**|*n*|Calculates sample standard deviation over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_zscorep(*start_date*,*periodicity*)**|*n*|Calculates z-score over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_zscore(*start_date*,*periodicity*)**|*n*|Calculates sample z-score over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_stdp(*start_date*,*periodicity*)**|*n*|Calculates standard deviation over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
 
 ### Data cleaning commands
 
-Command(Parameters) | Outputs for *n* inputs|Description
+Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
 **fill**|**n**|Fills missing data with last good obseration. 
 
-### Binary double operators
+### Binary operators
 
-Command(Parameters) | Outputs for *n* inputs|Description
+Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
-**+**|**n* - 1*|Binary operator for addition. Applies operation to first input combined with each subsequent input. 
-**-**|**n* - 1*|Binary operator for subtraction. Applies operation to first input combined with each subsequent input. 
-**/**|**n* - 1*|Binary operator for division. Applies operation to first input combined with each subsequent input. 
-*****|**n* - 1*|Binary operator for multiplication. Applies operation to first input combined with each subsequent input. 
-**%**|**n* - 1*|Binary operator for modulo. Applies operation to first input combined with each subsequent input. 
+**+**|*n - 1*|Binary operator for addition. Applies operation to first input combined with each subsequent input. 
+**-**|*n - 1*|Binary operator for subtraction. Applies operation to first input combined with each subsequent input. 
+**/**|*n - 1*|Binary operator for division. Applies operation to first input combined with each subsequent input. 
+*****|*n - 1*|Binary operator for multiplication. Applies operation to first input combined with each subsequent input. 
+**%**|*n - 1*|Binary operator for modulo. Applies operation to first input combined with each subsequent input. 
+**==**|*n - 1*|Binary operator for equals. Applies operation to first input combined with each subsequent input. 
+**!=**|*n - 1*|Binary operator for not equals. Applies operation to first input combined with each subsequent input. 
+**>**|*n - 1*|Binary operator for greater than. Applies operation to first input combined with each subsequent input. 
+**<**|*n - 1*|Binary operator for less than. Applies operation to first input combined with each subsequent input. 
+**>=**|*n - 1*|Binary operator for greater than or equal to. Applies operation to first input combined with each subsequent input. 
+**<=**|*n - 1*|Binary operator for less than or equal to. Applies operation to first input combined with each subsequent input. 
+
+### Unary operators
+
+Function(Parameters) | Outputs for *n* inputs|Description
+:---:|:---|:---
+**abs**|*n*|Unary operator for absolute value. Applies operation to each input. 
+**neg**|*n*|Unary operator for negation. Applies operation to each input. 
+**inv**|*n*|Unary operator for inverse. Applies operation to each input. 
+**log**|*n*|Unary operator for natural log. Applies operation to each input. 
