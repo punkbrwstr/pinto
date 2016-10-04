@@ -1,18 +1,27 @@
 # Pinto
 
-Pinto is a stack-oriented programming language for manipulating time series
-data that uses Reverse Polish (postfix) notation.
+Pinto is a domain-specific, stack-based or concatenative language.  Pinto expressions (programs) define the manipulations necessary to create one or more time series of floating-point numeric data.  A Pinto expression can produce values for any range of dates and for any periodicity (frequency).  Pinto was designed for financial time series, but it can be used to create any series that has a fixed periodicity.   With Pinto, you can encapsulate an entire Excel spreadsheet, or a multiple regression equation, or an algorithmic trading system into one line of code!
 
-Pinto was designed for financial time series, but it can be used with any
-series that has a fixed periodicity.
+## Key features
 
-## What does it do?
+ - Concise: One line of pinto code can define an entire table of data
+ - Updateable: Automatically recalculate for any date range or periodicity 
+ - Extensible: Build on other expression that define specific data, or transformation functions
+ - More extensible: Additional functions can be defined in Java 
+ - Interoperable: Pinto is accessible through an http interface from other languages (python/pandas, etc.)
+ - Batteries included:  Functions
 
-Pinto programs define a prodecure for creating one or more time series of numerical data.  Once defined, that prodecure can be evaluated over different ranges of dates and periodicities (frequencies).
+## How does it work?
 
-Programs are comprised of a list of commands that take (zero or more) inputs, perform an operation, and return (one or more) outputs.  These inputs and outputs are stored as a stack, a LIFO (last-in-first-out) collection where command inputs are taken from the most recent outputs of the preceding commands.  
+Pinto expressions are comprised of a sequence of functions.  Expressions are evaluated left-to-right, with the inputs for each function coming from the outputs of the functions to its left.  It is useful to think of the execution of a Pinto expression in terms of a common stack of data.  Each function takes its inputs from the stack, operates on them, and returns them to the stack.  In mathematical terms, a Pinto expression can be thought of as a compositions of functions:  The Pinto expression x f g is equivalent to g(f(x)).
 
-Because inputs come from the stack, arithmetic operators come after all of their operands. This is known as Reverse Polish (or postfix) notation.  The grizzled veterans among you may recognized it as the way HP12C calculators work.  In Pinto, 2 + 2 is ```2 2 +``` (but instead of returning a single 4, Pinto returns a time series of 4s).
+Pinto functions may have multiple inputs and outputs.  By default, all function are variadic, meaning they will accept whatever number of inputs are on the stack when they get called.  (Some functions may have a minimum number of inputs).  An index/slice expression before a function limits the inputs for that function to a certain portion of the stack.  The indexing syntax will look familar to anyone who knows Python.
+
+Pinto functions may optionally take non-data arguments in parentheses after their name that modify how the function operates.  For example, the copy function takes a numeric argument that tells it how many copies of its input data to make.
+
+Pinto functions can be broadly divided into three types: supplier, intermediate and terminal.  Suppliers take no inputs, but return output data.  For example, a function that retrieves online stock closing prices is a supplier.  Intermediate operations take inputs and return outputs.  They may modify their input data or manipulate the composition if the stack.  Terminal functions initiate the evaluation of the expression.  Suppliers and intermediate functions are lazy--they don't perform their operation until a subsequent terminal function tells them to (and specifies the date range over which to operate).  
+
+Any Pinto expression may be saved as a named function.  Named functions may return output data without any inputs (suppliers), or may be a tacit function that require inputs from the stack, or may have some saved ("curried") inputs and take some others from the stack. 
 
 ## What can I do it?
 
