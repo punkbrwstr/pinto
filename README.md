@@ -1,36 +1,48 @@
 # Pinto
 
-Pinto is a stack-oriented programming language for manipulating time series
-data that uses Reverse Polish (postfix) notation.
+Pinto is a stack-based or concatenative, functional programming language that uses Reverse Polish (postfix) notation. It is specialized for numeric time series data.  Programs written in Pinto are one-liners that define the manipulations necessary to create a table of data.  These expressions can produce values for any range of dates and for any frequency.  
 
-Pinto was designed for financial time series, but it can be used with any
-series that has a fixed periodicity.
-
-## What does it do?
-
-Pinto programs define a prodecure for creating one or more time series of numerical data.  Once defined, that prodecure can be evaluated over different ranges of dates and periodicities (frequencies).
-
-Programs are comprised of a list of commands that take (zero or more) inputs, perform an operation, and return (one or more) outputs.  These inputs and outputs are stored as a stack, a LIFO (last-in-first-out) collection where command inputs are taken from the most recent outputs of the preceding commands.  
-
-Because inputs come from the stack, arithmetic operators come after all of their operands. This is known as Reverse Polish (or postfix) notation.  The grizzled veterans among you may recognized it as the way HP12C calculators work.  In Pinto, 2 + 2 is ```2 2 +``` (but instead of returning a single 4, Pinto returns a time series of 4s).
+With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equation, or an algorithmic trading system into one line of code!
 
 ## What can I do it?
 
-Get online stock prices and compute moving averages for each:
+Get online stock prices and compute the difference between their 20 and 200-day moving averages:
 
 ```
-pinto> yhoo(cmg,taco) copy(2) r_mean(20,B,2) label(cmg 20-day MA, taco 20-day MA) eval(2016-09-12,2016-09-13)
-╔════════════╤════════╤═══════╤═══════════════╤════════════════╗
-║ Date       │ cmg    │ taco  │ cmg 20-day MA │ taco 20-day MA ║
-╠════════════╪════════╪═══════╪═══════════════╪════════════════╣
-║ 2016-09-12 │ 428.89 │ 11.2  │ 410.71        │ 10.99          ║
-╟────────────┼────────┼───────┼───────────────┼────────────────╢
-║ 2016-09-13 │ 421.35 │ 11.02 │ 410.62        │ 10.99          ║
-╚════════════╧════════╧═══════╧═══════════════╧════════════════╝
+pinto> yhoo(cmg,taco) copy(3) [-2:] r_mean(20) [2:3] r_mean(200) [3,1] - [1:2] - eval(2016-09-26,2016-09-28)
+╔════════════╤═══════╤═════════╤════════════════════════════════════╤══════════════════════════════════╗
+║ Date       │ taco  │ cmg     │ taco r_mean(20) taco r_mean(200) - │ cmg r_mean(20) cmg r_mean(200) - ║
+╠════════════╪═══════╪═════════╪════════════════════════════════════╪══════════════════════════════════╣
+║ 2016-09-26 │ 11.71 │ 419.88  │ 1.28                               │ -26.27                           ║
+╟────────────┼───────┼─────────┼────────────────────────────────────┼──────────────────────────────────╢
+║ 2016-09-27 │ 11.73 │ 418.95  │ 1.29                               │ -25.68                           ║
+╟────────────┼───────┼─────────┼────────────────────────────────────┼──────────────────────────────────╢
+║ 2016-09-28 │ 11.79 │ 418.30  │ 1.32                               │ -25.03                           ║
+╚════════════╧═══════╧═════════╧════════════════════════════════════╧══════════════════════════════════╝
 ```
 
 For more information see the [Pinto Language Reference](./pinto_reference.md)
 
+## Key features
+
+ - Concise: One line of pinto code can define an entire table of data
+ - Updateable: Recalculate over any date range or periodicity 
+ - Extensible: Build on other expressions that define specific data, or reusable transformation functions
+ - Interoperable: Pinto is accessible through an http interface (works great with python/pandas)
+ - Batteries included: Functions for rolling/expanding/cross window statistics, Bloomberg interface, etc.
+ - Efficient: Lazy evaluation, range-based caching for supplier functions
+
+## How does it work?
+
+Pinto expressions are comprised of a sequence of functions.  Expressions are evaluated left-to-right, with the inputs for each function coming from the outputs of the functions to its left.  It is useful to think of the execution of a Pinto expression in terms of a common stack of data.  Each function takes its inputs from the stack, operates on them, and returns them to the stack.  In mathematical terms, a Pinto expression can be thought of as a compositions of functions:  The Pinto expression x f g is equivalent to g(f(x)).  In finance terms, it works like an HP12C calculator.
+
+Pinto functions may have multiple inputs and outputs.  By default, all function are variadic, meaning they will accept whatever number of inputs are on the stack when they get called.  (Some functions may have a minimum number of inputs).  An index/slice expression before a function limits the inputs for that function to a certain portion of the stack.  The indexing syntax will look familar to Pythonistas.
+
+Pinto functions may optionally take non-data arguments in parentheses after their name that modify how the function operates.  For example, the copy function takes a numeric argument that tells it how many copies of its input data to make.
+
+Pinto functions can be broadly divided into three types: supplier, intermediate and terminal.  Suppliers take no inputs, but return output data.  For example, a function that retrieves online stock closing prices is a supplier.  Intermediate operations take inputs and return outputs.  They may modify their input data or manipulate the composition of the stack.  Terminal functions initiate the evaluation of the expression.  Suppliers and intermediate functions are lazy--they don't perform their operation until a subsequent terminal function tells them to (and specifies the date range over which to operate).  
+
+Any Pinto expression may be saved as a named function.  Named functions may return output data without any inputs (suppliers), may be a tacit function that require inputs from the stack, or may have some saved ("curried") inputs and take some others from the stack. 
 
 
 ## Requirements
