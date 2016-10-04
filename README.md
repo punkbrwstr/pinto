@@ -1,6 +1,6 @@
 # Pinto
 
-Pinto is a stack-based or concatenative programming language that is specialized for time series data.  Programs written in Pinto are one-liners that define the manipulations necessary to create a table of data.  These expressions can produce values for any range of dates and for any frequency.  
+Pinto is a stack-based or concatenative, functional programming language that uses Reverse Polish (postfix) notation. It is specialized for numeric time series data.  Programs written in Pinto are one-liners that define the manipulations necessary to create a table of data.  These expressions can produce values for any range of dates and for any frequency.  
 
 With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equation, or an algorithmic trading system into one line of code!
 
@@ -26,7 +26,7 @@ For more information see the [Pinto Language Reference](./pinto_reference.md)
 ## Key features
 
  - Concise: One line of pinto code can define an entire table of data
- - Updateable: Automatically recalculate for any date range or periodicity 
+ - Updateable: Recalculate over any date range or periodicity 
  - Extensible: Build on other expressions that define specific data, or reusable transformation functions
  - Interoperable: Pinto is accessible through an http interface (works great with python/pandas)
  - Batteries included: Functions for rolling/expanding/cross window statistics, Bloomberg interface, etc.
