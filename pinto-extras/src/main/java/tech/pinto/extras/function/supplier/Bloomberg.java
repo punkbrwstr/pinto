@@ -1,4 +1,4 @@
-package tech.pinto.extras.command.nonedouble;
+package tech.pinto.extras.function.supplier;
 
 import java.util.Arrays;
 import java.util.LinkedList;

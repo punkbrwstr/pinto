@@ -8,7 +8,6 @@ import java.util.function.Function;
 
 import com.google.common.base.Joiner;
 
-import tech.pinto.function.intermediate.Expression;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 

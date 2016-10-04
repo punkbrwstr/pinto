@@ -1,4 +1,4 @@
-package tech.pinto.function.intermediate;
+package tech.pinto;
 
 import java.util.ArrayDeque;
 
@@ -17,9 +17,6 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import tech.pinto.Cache;
-import tech.pinto.PintoSyntaxException;
-import tech.pinto.Vocabulary;
 import tech.pinto.function.Function;
 import tech.pinto.function.IntermediateFunction;
 import tech.pinto.function.TerminalFunction;
@@ -37,9 +34,8 @@ public class Expression extends IntermediateFunction {
 
 	public Expression(Cache cache, Vocabulary vocab, String text, LinkedList<Function> existingStack)
 			throws PintoSyntaxException {
-		super("statement", existingStack);
+		super("statement", new LinkedList<>(existingStack));
 		this.text = text;
-		inputStack.addAll(existingStack);
 		existingStack.clear();
 		Indexer indexer = Indexer.ALL;
 		List<String> expressionToSave = new ArrayList<>();
@@ -51,6 +47,7 @@ public class Expression extends IntermediateFunction {
 					Function c = null;
 					if (sc.hasNextDouble()) { // double literal
 						c = new Literal(sc.nextDouble());
+						expressionToSave.add(c.toString());
 					} else {
 						String s = sc.next();
 						String commandName = s.contains("(") ? s.substring(0, s.indexOf("(")) : s;

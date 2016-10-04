@@ -24,8 +24,8 @@ public class FunctionHelp {
 	
 	public String toTableRowString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("*").append(inputs).append("*|")
-			.append("**").append(name);
+	//	sb.append("*").append(inputs).append("*|")
+		sb.append("**").append(name);
 		if(parameters.size() > 0) {
 			sb.append(parameters.stream().map(p -> p.name).collect(Collectors.joining("*,*", "(*", "*)")));
 		}
@@ -55,10 +55,10 @@ public class FunctionHelp {
 			this.name = name;
 		}
 		
-		public Builder inputs(String inputs) {
-			this.inputs = inputs;
-			return this;
-		}
+//		public Builder inputs(String inputs) {
+//			this.inputs = inputs;
+//			return this;
+//		}
 
 		public Builder outputs(String outputs) {
 			this.outputs = outputs;

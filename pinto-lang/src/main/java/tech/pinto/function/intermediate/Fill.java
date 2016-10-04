@@ -35,8 +35,7 @@ public class Fill extends IntermediateFunction {
 	
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("fill")
-				.inputs("any<sub>1</sub>...any<sub>n</sub>")
-				.outputs("any<sub>1</sub>...any<sub>n</sub>")
+				.outputs("*n*")
 				.description("Fills missing data with last good obseration.")
 				.build();
 	}

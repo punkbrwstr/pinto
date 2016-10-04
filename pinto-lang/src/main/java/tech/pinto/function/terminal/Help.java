@@ -34,7 +34,6 @@ public class Help extends TerminalFunction {
 	
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("help")
-				.inputs("any<sub>1</sub>...any<sub>n</sub>")
 				.outputs("none")
 				.description("Prints help for proceding commands or prints *help type*.")
 				.parameter("help type")

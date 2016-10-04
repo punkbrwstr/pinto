@@ -3,9 +3,11 @@ package tech.pinto.function.intermediate;
 import java.util.LinkedList;
 
 import java.util.function.DoubleUnaryOperator;
+import java.util.function.Supplier;
 
 import tech.pinto.TimeSeries;
 import tech.pinto.function.Function;
+import tech.pinto.function.FunctionHelp;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
@@ -28,6 +30,14 @@ public class UnaryOperator extends Function {
 	@Override
 	public Function getReference() {
 		return this;
+	}
+	
+	public static Supplier<FunctionHelp> getHelp(String name, String desc) {
+		return () -> new FunctionHelp.Builder(name)
+				//.inputs("double<sub>1</sub>, double<sub>2</sub>")
+				.outputs("n")
+				.description("Unary operator for " + desc + ". Applies operation to each input.")
+				.build();
 	}
 
 }

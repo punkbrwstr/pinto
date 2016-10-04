@@ -47,10 +47,8 @@ public class Cross extends Function {
 	
 	public static Supplier<FunctionHelp> getHelp(String name, String description) {
 		return () -> new FunctionHelp.Builder(name)
-				.inputs("double<sub>1</sub>...double<sub>n</sub>")
-				.outputs("double")
-				.description("Calculates " + description + " across *n* inputs.")
-				.parameter("n","all",null)
+				.outputs("1")
+				.description("Calculates " + description + " across inputs.")
 				.build();
 	}
 

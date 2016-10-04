@@ -79,12 +79,10 @@ public class Rolling extends IntermediateFunction {
 
 	public static Supplier<FunctionHelp> getHelp(String name, String description) {
 		return () -> new FunctionHelp.Builder(name)
-				.inputs("double<sub>1</sub>...double<sub>n</sub>")
-				.outputs("double<sub>1</sub>...double<sub>n</sub>")
-				.description("Calculates " + description + " over rolling window starting *size* number of *periodicity* prior for *n* inputs.")
+				.outputs("n")
+				.description("Calculates " + description + " over rolling window starting *size* number of *periodicity* prior for each input.")
 				.parameter("size","1",null)
 				.parameter("periodicity", "B", "{B,W-FRI,BM,BQ,BA}")
-				.parameter("n","all",null)
 				.build();
 	}
 	

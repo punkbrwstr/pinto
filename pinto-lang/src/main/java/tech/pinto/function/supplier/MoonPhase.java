@@ -39,8 +39,7 @@ public class MoonPhase extends Function {
 	
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("moon")
-				.inputs("none")
-				.outputs("double<sub>1</sub>...double<sub>z</sub>")
+				.outputs("n + 1")
 				.description("Calculates moon phase for this day.")
 				.build();
 	}

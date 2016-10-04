@@ -9,7 +9,6 @@ import javax.inject.Inject;
 
 import tech.pinto.function.Function;
 import tech.pinto.function.TerminalFunction;
-import tech.pinto.function.intermediate.Expression;
 
 public class Pinto {
 

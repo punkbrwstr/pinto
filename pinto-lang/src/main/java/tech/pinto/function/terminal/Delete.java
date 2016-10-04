@@ -23,7 +23,6 @@ public class Delete extends TerminalFunction {
 	
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("del")
-				.inputs("none")
 				.outputs("none")
 				.description("Deletes previously defined command *name*.")
 				.parameter("name")

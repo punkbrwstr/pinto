@@ -34,8 +34,7 @@ public class Label extends IntermediateFunction {
 
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("label")
-				.inputs("any<sub>1</sub>...any<sub>z</sub>")
-				.outputs("any<sub>1</sub>...any<sub>z</sub>")
+				.outputs("*z*")
 				.description("Sets arguments as labels for inputs")
 				.parameter("label<sub>1</sub>")
 				.parameter("label<sub>z</sub>")

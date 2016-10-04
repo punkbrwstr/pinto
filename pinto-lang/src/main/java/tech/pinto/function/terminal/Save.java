@@ -23,7 +23,6 @@ public class Save extends TerminalFunction {
 	
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("def")
-				.inputs("any<sub>1</sub>...any<sub>n</sub>")
 				.outputs("none")
 				.description("Defines the preceding commands as a new command, named *name*.")
 				.parameter("name")

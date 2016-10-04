@@ -21,10 +21,8 @@ public class Reverse extends IntermediateFunction {
 
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("rev")
-				.inputs("any<sub>1</sub>...any<sub>n</sub>")
-				.outputs("any<sub>n</sub>...any<sub>1</sub>")
-				.description("Reverses order of *n* stack elements")
-				.parameter("n","all",null)
+				.outputs("*n*")
+				.description("Reverses order of inputs")
 				.build();
 	}
 }

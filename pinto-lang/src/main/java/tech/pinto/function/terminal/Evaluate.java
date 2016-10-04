@@ -30,8 +30,7 @@ public class Evaluate extends TerminalFunction {
 	
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("eval")
-				.outputs("any<sub>1</sub>...any<sub>n</sub>")
-				.inputs("any<sub>1</sub>...any<sub>n</sub>")
+				.outputs("n")
 				.description("Evaluates the preceding commands over the given date range.")
 				.parameter("start date", "prior period", "yyyy-dd-mm")
 				.parameter("end date", "prior period", "yyyy-dd-mm")

@@ -86,8 +86,7 @@ public class Yahoo extends CachedDoubleCommand {
 	
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("yhoo")
-				.inputs("none")
-				.outputs("double<sub>1</sub>...double<sub>z</sub>")
+				.outputs("n + z")
 				.description("Retrieves online price history for each *ticker*.")
 				.parameter("ticker<sub>1</sub>")
 				.parameter("ticker<sub>z</sub>")

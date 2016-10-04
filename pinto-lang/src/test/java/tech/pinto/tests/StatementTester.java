@@ -40,9 +40,9 @@ public class StatementTester {
 	public void testSave() throws Exception {
 		pinto.execute("1.1 def(thing)");
 		pinto.execute("thing 1.2 + def(thing2)");
-		assertEquals("Nested save ref", 3.4, runDoubleDataStatement("thing thing2 +" + EVAL)[0][0], 0.001d);
+		assertEquals("Nested save ref", 3.4, runDoubleDataStatement("thing2 thing +" + EVAL)[0][0], 0.001d);
 		pinto.execute("2 def(thing)");
-		assertEquals("Update nested ref", 5.2, runDoubleDataStatement("thing thing2 +" + EVAL)[0][0], 0.001d);
+		assertEquals("Update nested ref", 5.2, runDoubleDataStatement("thing2 thing +" + EVAL)[0][0], 0.001d);
 		pinto.execute("1 + def(increment)");
 		assertEquals("Saved function", 7.0, runDoubleDataStatement("6 increment" + EVAL)[0][0], 0.001d);
 	}
@@ -53,7 +53,7 @@ public class StatementTester {
 		double[][] d = runDoubleDataStatement("1 2 copy copy +" + EVAL);
 		assertEquals("Correct # dup outputs", 7, d.length);
 		assertEquals("Dup output works in plus", 3.0, d[d.length-1][0], 0.001d);
-		d = runDoubleDataStatement("1 2 copy(2,3)" + EVAL);
+		d = runDoubleDataStatement("1 2 copy(3)" + EVAL);
 		assertEquals("Correct # dup outputs with params", 6, d.length);
 
 	}

@@ -11,7 +11,7 @@ import tech.pinto.function.intermediate.Clear;
 import tech.pinto.function.intermediate.Copy;
 import tech.pinto.function.intermediate.Cross;
 import tech.pinto.function.intermediate.DoubleCollectors;
-import tech.pinto.function.intermediate.DoubleDoubleOperator;
+import tech.pinto.function.intermediate.BinaryOperator;
 import tech.pinto.function.intermediate.Expanding;
 import tech.pinto.function.intermediate.Fill;
 import tech.pinto.function.intermediate.Label;
@@ -39,17 +39,17 @@ public class StandardVocabulary implements Vocabulary {
                 .put("del", (c,i,s,a) -> new Delete(c,i,a))
                 .put("help", (c,i,s,a) -> new Help(c,this,i,a))
                 .put("exec", (c,i,s,a) -> new Execute(c,this,i,a))
-                .put("+", (c,i,s,a) -> new DoubleDoubleOperator("+",i, (x,y) -> x + y))
-                .put("-", (c,i,s,a) -> new DoubleDoubleOperator("-",i, (x,y) -> x - y))
-                .put("*", (c,i,s,a) -> new DoubleDoubleOperator("*",i, (x,y) -> x * y))
-                .put("/", (c,i,s,a) -> new DoubleDoubleOperator("/",i, (x,y) -> x / y))
-                .put("%", (c,i,s,a) -> new DoubleDoubleOperator("%",i, (x,y) -> x % y))
-                .put("==", (c,i,s,a) -> new DoubleDoubleOperator("==",i, (x,y) -> x == y ? 1.0 : 0.0))
-                .put("!=", (c,i,s,a) -> new DoubleDoubleOperator("!=",i, (x,y) -> x != y ? 1.0 : 0.0))
-                .put(">", (c,i,s,a) -> new DoubleDoubleOperator(">",i, (x,y) -> x > y ? 1.0 : 0.0))
-                .put("<", (c,i,s,a) -> new DoubleDoubleOperator("<",i, (x,y) -> x < y ? 1.0 : 0.0))
-                .put(">=", (c,i,s,a) -> new DoubleDoubleOperator(">=",i, (x,y) -> x >= y ? 1.0 : 0.0))
-                .put("<=", (c,i,s,a) -> new DoubleDoubleOperator("<=",i, (x,y) -> x <= y ? 1.0 : 0.0))
+                .put("+", (c,i,s,a) -> new BinaryOperator("+",i, (x,y) -> x + y))
+                .put("-", (c,i,s,a) -> new BinaryOperator("-",i, (x,y) -> x - y))
+                .put("*", (c,i,s,a) -> new BinaryOperator("*",i, (x,y) -> x * y))
+                .put("/", (c,i,s,a) -> new BinaryOperator("/",i, (x,y) -> x / y))
+                .put("%", (c,i,s,a) -> new BinaryOperator("%",i, (x,y) -> x % y))
+                .put("==", (c,i,s,a) -> new BinaryOperator("==",i, (x,y) -> x == y ? 1.0 : 0.0))
+                .put("!=", (c,i,s,a) -> new BinaryOperator("!=",i, (x,y) -> x != y ? 1.0 : 0.0))
+                .put(">", (c,i,s,a) -> new BinaryOperator(">",i, (x,y) -> x > y ? 1.0 : 0.0))
+                .put("<", (c,i,s,a) -> new BinaryOperator("<",i, (x,y) -> x < y ? 1.0 : 0.0))
+                .put(">=", (c,i,s,a) -> new BinaryOperator(">=",i, (x,y) -> x >= y ? 1.0 : 0.0))
+                .put("<=", (c,i,s,a) -> new BinaryOperator("<=",i, (x,y) -> x <= y ? 1.0 : 0.0))
                 .put("abs", (c,i,s,a) -> new UnaryOperator("abs",i, x -> Math.abs(x)))
                 .put("neg", (c,i,s,a) -> new UnaryOperator("neg",i, x -> x * -1d))
                 .put("inv", (c,i,s,a) -> new UnaryOperator("inv",i, x -> 1.0 / x))
@@ -127,6 +127,7 @@ public class StandardVocabulary implements Vocabulary {
                 .put("label", Label.getHelp())
                 .put("copy", Copy.getHelp())
                 .put("roll", Roll.getHelp())
+                .put("clear", Clear.getHelp())
 
             /* initial data commands */
                 .put("yhoo", Yahoo.getHelp())
@@ -160,17 +161,42 @@ public class StandardVocabulary implements Vocabulary {
                 .put("x_std",Cross.getHelp("x_std", "sample standard deviation"))
                 .put("x_zscorep",Cross.getHelp("x_zscorep", "z-score"))
                 .put("x_zscore",Cross.getHelp("x_zscore", "sample z-score"))
-                .put("x_stdp",Cross.getHelp("x_stdp", "standard deviation"))
+                .put("x_stdp",Cross.getHelp("r_mean", "mean"))
+
+            /* expanding commands */
+                .put("e_mean",Rolling.getHelp("e_mean", "mean"))
+                .put("e_max",Expanding.getHelp("e_max", "maximum"))
+                .put("e_min",Expanding.getHelp("e_min", "minimum"))
+                .put("e_sum",Expanding.getHelp("e_sum", "sum"))
+                .put("e_geomean",Expanding.getHelp("e_geomean", "geometric mean"))
+                .put("e_var",Expanding.getHelp("e_var", "sample variance"))
+                .put("e_varp",Expanding.getHelp("e_varp", "variance"))
+                .put("e_std",Expanding.getHelp("e_std", "sample standard deviation"))
+                .put("e_zscorep",Expanding.getHelp("e_zscorep", "z-score"))
+                .put("e_zscore",Expanding.getHelp("e_zscore", "sample z-score"))
+                .put("e_stdp",Expanding.getHelp("e_stdp", "standard deviation"))
                 
            /* other commands */
                 .put("fill",Fill.getHelp())
 
            /* binary operators */
-                .put("+",DoubleDoubleOperator.getHelp("+", "addition"))
-                .put("-",DoubleDoubleOperator.getHelp("-", "subtraction"))
-                .put("/",DoubleDoubleOperator.getHelp("/", "division"))
-                .put("*",DoubleDoubleOperator.getHelp("*", "multiplication"))
-                .put("%",DoubleDoubleOperator.getHelp("%", "modulo"))
+                .put("+",BinaryOperator.getHelp("+", "addition"))
+                .put("-",BinaryOperator.getHelp("-", "subtraction"))
+                .put("/",BinaryOperator.getHelp("/", "division"))
+                .put("*",BinaryOperator.getHelp("*", "multiplication"))
+                .put("%",BinaryOperator.getHelp("%", "modulo"))
+                .put("==",BinaryOperator.getHelp("==", "equals"))
+                .put("!=",BinaryOperator.getHelp("!=", "not equals"))
+                .put(">",BinaryOperator.getHelp(">", "greater than"))
+                .put("<",BinaryOperator.getHelp("<", "less than"))
+                .put(">=",BinaryOperator.getHelp(">=", "greater than or equal to"))
+                .put("<=",BinaryOperator.getHelp("<=", "less than or equal to"))
+                
+                .put("abs",UnaryOperator.getHelp("abs", "absolute value"))
+                .put("neg",UnaryOperator.getHelp("neg", "negation"))
+                .put("inv",UnaryOperator.getHelp("inv", "inverse"))
+                .put("log",UnaryOperator.getHelp("log", "natural log"))
+                
 
                 .build();
     public StandardVocabulary() {

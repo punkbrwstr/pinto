@@ -13,12 +13,12 @@ import java.util.function.Supplier;
 
 
 import tech.pinto.Cache;
+import tech.pinto.Expression;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.Vocabulary;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.Function;
 import tech.pinto.function.TerminalFunction;
-import tech.pinto.function.intermediate.Expression;
 
 public class Execute extends TerminalFunction {
 
@@ -60,8 +60,7 @@ public class Execute extends TerminalFunction {
 	
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("exec")
-				.inputs("none")
-				.outputs("any<sub>1</sub>...any<sub>n</sub>")
+				.outputs("varies")
 				.description("Executes pinto program defined in *filename*.")
 				.parameter("filename")
 				.build();

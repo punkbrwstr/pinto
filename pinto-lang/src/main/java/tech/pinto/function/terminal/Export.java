@@ -51,7 +51,6 @@ public class Export extends TerminalFunction {
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("export")
 				.outputs("none")
-				.inputs("any<sub>1</sub>...any<sub>n</sub>")
 				.description("Evaluates the preceding commands over the given date range and exports csv for *filename*.")
 				.parameter("start date", "prior period", "yyyy-dd-mm")
 				.parameter("end date", "prior period", "yyyy-dd-mm")

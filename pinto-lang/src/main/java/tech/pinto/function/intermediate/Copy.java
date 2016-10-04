@@ -28,10 +28,9 @@ public class Copy extends IntermediateFunction {
 
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("copy")
-				.inputs("any<sub>1</sub>...any<sub>n</sub>")
-				.outputs("any<sub>1</sub>...any<sub>n</sub>")
 				.description("Copies stack inputs *m* times")
 				.parameter("m","2",null)
+				.outputs("*n*  *  *m*")
 				.build();
 	}
 

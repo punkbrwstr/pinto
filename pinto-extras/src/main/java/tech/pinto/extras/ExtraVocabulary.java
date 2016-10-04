@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
-import tech.pinto.extras.command.nonedouble.Bloomberg;
+import tech.pinto.extras.function.supplier.Bloomberg;
 import tech.pinto.function.FunctionFactory;
 import tech.pinto.function.FunctionHelp;
 

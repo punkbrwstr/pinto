@@ -20,11 +20,9 @@ public class Clear extends IntermediateFunction {
 
 
 	public static Supplier<FunctionHelp> getHelp() {
-		return () -> new FunctionHelp.Builder("copy")
-				.inputs("any<sub>1</sub>...any<sub>n</sub>")
-				.outputs("any<sub>1</sub>...any<sub>n</sub>")
-				.description("Copies stack inputs *m* times")
-				.parameter("m","2",null)
+		return () -> new FunctionHelp.Builder("clear")
+				.description("Removes inputs from stack")
+				.outputs("None")
 				.build();
 	}
 

@@ -11,7 +11,7 @@ public class Literal extends NullarySimpleFunction {
 	private final double value;
 
 	public Literal(double value) {
-		super("literal", range ->  new TimeSeries(range, "literal", DoubleStream.iterate(value, r -> value).limit(range.size())));
+		super("literal", range ->  new TimeSeries(range,  Double.toString(value), DoubleStream.iterate(value, r -> value).limit(range.size())));
 		this.value = value;
 	}
 
