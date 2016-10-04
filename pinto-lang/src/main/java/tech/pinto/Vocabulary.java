@@ -1,30 +1,33 @@
 package tech.pinto;
 
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import tech.pinto.command.Command;
-import tech.pinto.command.CommandFactory;
-import tech.pinto.command.CommandHelp;
+import tech.pinto.function.FunctionFactory;
+import tech.pinto.function.FunctionHelp;
+import tech.pinto.function.Function;
 
 public interface Vocabulary {
 	
-	public Map<String,CommandFactory> getCommandMap();
+	public Map<String,FunctionFactory> getCommandMap();
 
-	public Map<String,Supplier<CommandHelp>> getCommandHelpMap();
+	public Map<String,Supplier<FunctionHelp>> getCommandHelpMap();
 
     default public boolean commandExists(String commandName) {
         return getCommandMap().containsKey(commandName);
     }
 
-    default public Command getCommand(String commandName, Cache cache, String... arguments) {
-        return getCommandMap().get(commandName).build(cache, arguments);
+    default public Function getCommand(String commandName, Cache cache,
+    		LinkedList<Function> inputs, List<String> saveString, String... arguments) {
+        return getCommandMap().get(commandName).build(cache, inputs, saveString, arguments);
     }
 
-    default public CommandHelp getHelp(String commandName) {
+    default public FunctionHelp getHelp(String commandName) {
         return getCommandHelpMap().get(commandName).get();
     }
 
@@ -32,7 +35,7 @@ public interface Vocabulary {
         return getCommandMap().keySet();
     }
 
-    default public Collection<CommandHelp> getAllCommandHelp() {
+    default public Collection<FunctionHelp> getAllCommandHelp() {
         return getCommandHelpMap().values().stream().map(s -> s.get())
         		.collect(Collectors.toList());
     }

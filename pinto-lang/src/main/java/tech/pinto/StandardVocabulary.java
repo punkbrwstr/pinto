@@ -5,52 +5,56 @@ import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableMap;
 
-import tech.pinto.command.CommandFactory;
-import tech.pinto.command.CommandHelp;
-import tech.pinto.command.anyany.Copy;
-import tech.pinto.command.anyany.Index;
-import tech.pinto.command.anyany.Label;
-import tech.pinto.command.anyany.Reverse;
-import tech.pinto.command.anyany.Roll;
-import tech.pinto.command.doubledouble.Cross;
-import tech.pinto.command.doubledouble.DoubleCollectors;
-import tech.pinto.command.doubledouble.DoubleDoubleOperator;
-import tech.pinto.command.doubledouble.DoubleOperator;
-import tech.pinto.command.doubledouble.Fill;
-import tech.pinto.command.doubledouble.Rolling;
-import tech.pinto.command.doubledouble.RollingCorrelation;
-import tech.pinto.command.nonedouble.MoonPhase;
-import tech.pinto.command.nonedouble.Yahoo;
-import tech.pinto.command.terminal.Delete;
-import tech.pinto.command.terminal.Evaluate;
-import tech.pinto.command.terminal.Export;
-import tech.pinto.command.terminal.Help;
-import tech.pinto.command.terminal.Save;
+import tech.pinto.function.FunctionFactory;
+import tech.pinto.function.FunctionHelp;
+import tech.pinto.function.intermediate.Clear;
+import tech.pinto.function.intermediate.Copy;
+import tech.pinto.function.intermediate.Cross;
+import tech.pinto.function.intermediate.DoubleCollectors;
+import tech.pinto.function.intermediate.DoubleDoubleOperator;
+import tech.pinto.function.intermediate.Expanding;
+import tech.pinto.function.intermediate.Fill;
+import tech.pinto.function.intermediate.Label;
+import tech.pinto.function.intermediate.Reverse;
+import tech.pinto.function.intermediate.Roll;
+import tech.pinto.function.intermediate.Rolling;
+import tech.pinto.function.intermediate.RollingCorrelation;
+import tech.pinto.function.intermediate.UnaryOperator;
+import tech.pinto.function.supplier.MoonPhase;
+import tech.pinto.function.supplier.Yahoo;
+import tech.pinto.function.terminal.Delete;
+import tech.pinto.function.terminal.Evaluate;
+import tech.pinto.function.terminal.Execute;
+import tech.pinto.function.terminal.Export;
+import tech.pinto.function.terminal.Help;
+import tech.pinto.function.terminal.Save;
 
 public class StandardVocabulary implements Vocabulary {
     
-    private final Map<String,CommandFactory> commands = 
-            new ImmutableMap.Builder<String, CommandFactory>()
-                .put("eval", (c,a) -> new Evaluate(a))
-                .put("export", (c,a) -> new Export(a))
-                .put("def", (c,a) -> new Save(c,a))
-                .put("del", (c,a) -> new Delete(c,a))
-                .put("help", (c,a) -> new Help(c,this,a))
-                .put("+", (c,a) -> new DoubleDoubleOperator("+", (x,y) -> x + y))
-                .put("-", (c,a) -> new DoubleDoubleOperator("-", (x,y) -> x - y))
-                .put("*", (c,a) -> new DoubleDoubleOperator("*", (x,y) -> x * y))
-                .put("/", (c,a) -> new DoubleDoubleOperator("/", (x,y) -> x / y))
-                .put("%", (c,a) -> new DoubleDoubleOperator("%", (x,y) -> x % y))
-                .put("==", (c,a) -> new DoubleDoubleOperator("==", (x,y) -> x == y ? 1.0 : 0.0))
-                .put("!=", (c,a) -> new DoubleDoubleOperator("!=", (x,y) -> x != y ? 1.0 : 0.0))
-                .put(">", (c,a) -> new DoubleDoubleOperator(">", (x,y) -> x > y ? 1.0 : 0.0))
-                .put("<", (c,a) -> new DoubleDoubleOperator("<", (x,y) -> x < y ? 1.0 : 0.0))
-                .put(">=", (c,a) -> new DoubleDoubleOperator(">=", (x,y) -> x >= y ? 1.0 : 0.0))
-                .put("<=", (c,a) -> new DoubleDoubleOperator("<=", (x,y) -> x <= y ? 1.0 : 0.0))
-                .put("abs", (c,a) -> new DoubleOperator("abs", x -> Math.abs(x)))
-                .put("neg", (c,a) -> new DoubleOperator("neg", x -> x * -1d))
-                .put("inv", (c,a) -> new DoubleOperator("inv", x -> 1.0 / x))
-                .put("acgbConvert", (c,a) -> new DoubleOperator("acgbConvert",
+    private final Map<String,FunctionFactory> commands = 
+            new ImmutableMap.Builder<String, FunctionFactory>()
+                .put("eval", (c,i,s,a) -> new Evaluate(i,a))
+                .put("export", (c,i,s,a) -> new Export(i,a))
+                .put("def", (c,i,s,a) -> new Save(c,s,a))
+                .put("del", (c,i,s,a) -> new Delete(c,i,a))
+                .put("help", (c,i,s,a) -> new Help(c,this,i,a))
+                .put("exec", (c,i,s,a) -> new Execute(c,this,i,a))
+                .put("+", (c,i,s,a) -> new DoubleDoubleOperator("+",i, (x,y) -> x + y))
+                .put("-", (c,i,s,a) -> new DoubleDoubleOperator("-",i, (x,y) -> x - y))
+                .put("*", (c,i,s,a) -> new DoubleDoubleOperator("*",i, (x,y) -> x * y))
+                .put("/", (c,i,s,a) -> new DoubleDoubleOperator("/",i, (x,y) -> x / y))
+                .put("%", (c,i,s,a) -> new DoubleDoubleOperator("%",i, (x,y) -> x % y))
+                .put("==", (c,i,s,a) -> new DoubleDoubleOperator("==",i, (x,y) -> x == y ? 1.0 : 0.0))
+                .put("!=", (c,i,s,a) -> new DoubleDoubleOperator("!=",i, (x,y) -> x != y ? 1.0 : 0.0))
+                .put(">", (c,i,s,a) -> new DoubleDoubleOperator(">",i, (x,y) -> x > y ? 1.0 : 0.0))
+                .put("<", (c,i,s,a) -> new DoubleDoubleOperator("<",i, (x,y) -> x < y ? 1.0 : 0.0))
+                .put(">=", (c,i,s,a) -> new DoubleDoubleOperator(">=",i, (x,y) -> x >= y ? 1.0 : 0.0))
+                .put("<=", (c,i,s,a) -> new DoubleDoubleOperator("<=",i, (x,y) -> x <= y ? 1.0 : 0.0))
+                .put("abs", (c,i,s,a) -> new UnaryOperator("abs",i, x -> Math.abs(x)))
+                .put("neg", (c,i,s,a) -> new UnaryOperator("neg",i, x -> x * -1d))
+                .put("inv", (c,i,s,a) -> new UnaryOperator("inv",i, x -> 1.0 / x))
+                .put("log", (c,i,s,a) -> new UnaryOperator("log",i, x -> Math.log(x)))
+                .put("acgbConvert", (c,j,s,a) -> new UnaryOperator("acgbConvert",j,
                     quote -> {
                         double TERM = 10, RATE = 6, price = 0; 
                         for (int i = 0; i < TERM * 2; i++) {
@@ -58,46 +62,60 @@ public class StandardVocabulary implements Vocabulary {
                         }
                         price += 100 / Math.pow(1 + (100 - quote) / 2 / 100, TERM * 2);
                         return price; }))
-                .put("moon", (c,a) -> new MoonPhase())
-                .put("label", (c,a) -> new Label(a))
-                .put("index", (c,a) -> new Index(a))
-                .put("rev", (c,a) -> new Reverse())
-                .put("copy", (c,a) -> new Copy(a))
-                .put("roll", (c,a) -> new Roll(a))
-                .put("yhoo", (c,a) -> new Yahoo(c,a))
-                .put("lag", (c,a) -> new Rolling("lag",DoubleCollectors.first,false, a))
-	            .put("last", (c,a) -> new Rolling("last",DoubleCollectors.last, false, a))
-	            .put("chg", (c,a) -> new Rolling("chg",DoubleCollectors.change,false, a))
-	            .put("chg_pct", (c,a) -> new Rolling("chg_pct",DoubleCollectors.changepct,false, a))
-	            .put("chg_log", (c,a) -> new Rolling("chg_log",DoubleCollectors.changelog,false, a))
-	            .put("r_mean", (c,a) -> new Rolling("r_mean",DoubleCollectors.average, true, a))
-	            .put("x_mean", (c,a) -> new Cross("x_mean",DoubleCollectors.average, a))
-	            .put("r_max", (c,a) -> new Rolling("r_max",DoubleCollectors.max, true, a))
-	            .put("x_max", (c,a) -> new Cross("x_max",DoubleCollectors.max, a))
-	            .put("r_min", (c,a) -> new Rolling("r_max",DoubleCollectors.min, true, a))
-	            .put("x_min", (c,a) -> new Cross("x_max",DoubleCollectors.min, a))
-	            .put("r_sum", (c,a) -> new Rolling("r_sum",DoubleCollectors.sum, true, a))
-	            .put("x_sum", (c,a) -> new Cross("x_sum",DoubleCollectors.sum, a))
-	            .put("r_geomean", (c,a) -> new Rolling("r_geomean",DoubleCollectors.geomean, true, a))
-	            .put("x_geomean", (c,a) -> new Cross("x_geomean",DoubleCollectors.geomean, a))
-	            .put("r_var", (c,a) -> new Rolling("r_var",DoubleCollectors.var, true,a))
-	            .put("x_var", (c,a) -> new Cross("x_var",DoubleCollectors.var,a))
-	            .put("r_varp", (c,a) -> new Rolling("r_varp",DoubleCollectors.varp, true, a))
-	            .put("x_varp", (c,a) -> new Cross("x_varp",DoubleCollectors.varp, a))
-	            .put("r_std", (c,a) -> new Rolling("r_std",DoubleCollectors.stdev, true, a))
-	            .put("x_std", (c,a) -> new Cross("x_std",DoubleCollectors.stdev, a))
-	            .put("r_stdp", (c,a) -> new Rolling("r_stdp",DoubleCollectors.stdevp, true, a))
-	            .put("x_stdp", (c,a) -> new Cross("x_stdp",DoubleCollectors.stdevp, a))
-	            .put("r_zscore", (c,a) -> new Rolling("r_zscore",DoubleCollectors.zscore, true, a))
-	            .put("x_zscore", (c,a) -> new Cross("x_zscore",DoubleCollectors.zscore, a))
-	            .put("r_zscorep", (c,a) -> new Rolling("r_zscorep",DoubleCollectors.zscorep, true, a))
-	            .put("x_zscorep", (c,a) -> new Cross("x_zscorep",DoubleCollectors.zscorep, a))
-	            .put("fill", (c,a) -> new Fill(a))
-	            .put("correl", (c,a) -> new RollingCorrelation(a))
+                .put("moon", (c,i,s,a) -> new MoonPhase())
+                .put("label", (c,i,s,a) -> new Label(i,a))
+                .put("rev", (c,i,s,a) -> new Reverse(i))
+                .put("copy", (c,i,s,a) -> new Copy(i,a))
+                .put("roll", (c,i,s,a) -> new Roll(i,a))
+                .put("clear", (c,i,s,a) -> new Clear(i,a))
+                .put("yhoo", (c,i,s,a) -> new Yahoo(c,i,a))
+	            .put("last", (c,i,s,a) -> new Rolling("last",i,DoubleCollectors.last, false, a))
+                .put("r_lag", (c,i,s,a) -> new Rolling("r_lag",i,DoubleCollectors.first,false, a))
+	            .put("r_chg", (c,i,s,a) -> new Rolling("r_chg",i,DoubleCollectors.change,false, a))
+	            .put("e_chg", (c,i,s,a) -> new Expanding("e_chg",i,DoubleCollectors.change, a))
+	            .put("r_chgpct", (c,i,s,a) -> new Rolling("r_chgpct",i,DoubleCollectors.changepct,false, a))
+	            .put("e_chgpct", (c,i,s,a) -> new Expanding("e_chgpct",i,DoubleCollectors.changepct, a))
+	            .put("r_chglog", (c,i,s,a) -> new Rolling("r_chglog",i,DoubleCollectors.changelog,false, a))
+	            .put("e_chglog", (c,i,s,a) -> new Expanding("e_chglog",i,DoubleCollectors.changelog, a))
+	            .put("r_mean", (c,i,s,a) -> new Rolling("r_mean",i,DoubleCollectors.average, true, a))
+	            .put("e_mean", (c,i,s,a) -> new Expanding("e_mean",i,DoubleCollectors.average, a))
+	            .put("x_mean", (c,i,s,a) -> new Cross("x_mean",i,DoubleCollectors.average, a))
+	            .put("r_max", (c,i,s,a) -> new Rolling("r_max",i,DoubleCollectors.max, true, a))
+	            .put("e_max", (c,i,s,a) -> new Expanding("e_max",i,DoubleCollectors.max, a))
+	            .put("x_max", (c,i,s,a) -> new Cross("x_max",i,DoubleCollectors.max, a))
+	            .put("r_min", (c,i,s,a) -> new Rolling("r_max",i,DoubleCollectors.min, true, a))
+	            .put("e_min", (c,i,s,a) -> new Expanding("e_max",i,DoubleCollectors.min, a))
+	            .put("x_min", (c,i,s,a) -> new Cross("x_max",i,DoubleCollectors.min, a))
+	            .put("r_sum", (c,i,s,a) -> new Rolling("r_sum",i,DoubleCollectors.sum, true, a))
+	            .put("e_sum", (c,i,s,a) -> new Expanding("e_sum",i,DoubleCollectors.sum, a))
+	            .put("x_sum", (c,i,s,a) -> new Cross("x_sum",i,DoubleCollectors.sum, a))
+	            .put("r_geomean", (c,i,s,a) -> new Rolling("r_geomean",i,DoubleCollectors.geomean, true, a))
+	            .put("e_geomean", (c,i,s,a) -> new Expanding("e_geomean",i,DoubleCollectors.geomean, a))
+	            .put("x_geomean", (c,i,s,a) -> new Cross("x_geomean",i,DoubleCollectors.geomean, a))
+	            .put("r_var", (c,i,s,a) -> new Rolling("r_var",i,DoubleCollectors.var, true,a))
+	            .put("e_var", (c,i,s,a) -> new Expanding("e_var",i,DoubleCollectors.var, a))
+	            .put("x_var", (c,i,s,a) -> new Cross("x_var",i,DoubleCollectors.var,a))
+	            .put("r_varp", (c,i,s,a) -> new Rolling("r_varp",i,DoubleCollectors.varp, true, a))
+	            .put("e_varp", (c,i,s,a) -> new Expanding("e_varp",i,DoubleCollectors.varp, a))
+	            .put("x_varp", (c,i,s,a) -> new Cross("x_varp",i,DoubleCollectors.varp, a))
+	            .put("r_std", (c,i,s,a) -> new Rolling("r_std",i,DoubleCollectors.stdev, true, a))
+	            .put("e_std", (c,i,s,a) -> new Expanding("e_std",i,DoubleCollectors.stdev, a))
+	            .put("x_std", (c,i,s,a) -> new Cross("x_std",i,DoubleCollectors.stdev, a))
+	            .put("r_stdp", (c,i,s,a) -> new Rolling("r_stdp",i,DoubleCollectors.stdevp, true, a))
+	            .put("e_stdp", (c,i,s,a) -> new Expanding("e_stdp",i,DoubleCollectors.stdevp, a))
+	            .put("x_stdp", (c,i,s,a) -> new Cross("x_stdp",i,DoubleCollectors.stdevp, a))
+	            .put("r_zscore", (c,i,s,a) -> new Rolling("r_zscore",i,DoubleCollectors.zscore, true, a))
+	            .put("e_zscore", (c,i,s,a) -> new Expanding("e_zscore",i,DoubleCollectors.zscore, a))
+	            .put("x_zscore", (c,i,s,a) -> new Cross("x_zscore",i,DoubleCollectors.zscore, a))
+	            .put("r_zscorep", (c,i,s,a) -> new Rolling("r_zscorep",i,DoubleCollectors.zscorep, true, a))
+	            .put("e_zscorep", (c,i,s,a) -> new Expanding("e_zscorep",i,DoubleCollectors.zscorep, a))
+	            .put("x_zscorep", (c,i,s,a) -> new Cross("x_zscorep",i,DoubleCollectors.zscorep, a))
+	            .put("fill", (c,i,s,a) -> new Fill(i,a))
+	            .put("correl", (c,i,s,a) -> new RollingCorrelation(i,a))
                 .build();
 
-    private final Map<String,Supplier<CommandHelp>> commandHelp = 
-            new ImmutableMap.Builder<String, Supplier<CommandHelp>>()
+    private final Map<String,Supplier<FunctionHelp>> commandHelp = 
+            new ImmutableMap.Builder<String, Supplier<FunctionHelp>>()
             /* terminal commands */
                 .put("eval", Evaluate.getHelp())
                 .put("export", Export.getHelp())
@@ -109,7 +127,6 @@ public class StandardVocabulary implements Vocabulary {
                 .put("label", Label.getHelp())
                 .put("copy", Copy.getHelp())
                 .put("roll", Roll.getHelp())
-                .put("index", Index.getHelp())
 
             /* initial data commands */
                 .put("yhoo", Yahoo.getHelp())
@@ -161,12 +178,12 @@ public class StandardVocabulary implements Vocabulary {
     }
 
 	@Override
-	public Map<String, CommandFactory> getCommandMap() {
+	public Map<String, FunctionFactory> getCommandMap() {
 		return commands;
 	}
 
 	@Override
-	public Map<String, Supplier<CommandHelp>> getCommandHelpMap() {
+	public Map<String, Supplier<FunctionHelp>> getCommandHelpMap() {
 		return commandHelp;
 	}
     

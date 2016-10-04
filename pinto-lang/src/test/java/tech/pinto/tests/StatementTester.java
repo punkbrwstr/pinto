@@ -1,24 +1,25 @@
 package tech.pinto.tests;
 
 import org.junit.BeforeClass;
+
 import org.junit.Rule;
 
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import tech.pinto.Pinto;
+import tech.pinto.Pinto.Response;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.data.Data;
-import tech.pinto.data.DoubleData;
+import tech.pinto.TimeSeries;
 import tech.pinto.time.PeriodicRange;
 
 import static org.junit.Assert.*;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class StatementTester {
 
@@ -37,12 +38,12 @@ public class StatementTester {
 
 	@Test
 	public void testSave() throws Exception {
-		pinto.evaluateStatement("1.1 save(thing)");
-		pinto.evaluateStatement("thing 1.2 + save(thing2)");
+		pinto.execute("1.1 def(thing)");
+		pinto.execute("thing 1.2 + def(thing2)");
 		assertEquals("Nested save ref", 3.4, runDoubleDataStatement("thing thing2 +" + EVAL)[0][0], 0.001d);
-		pinto.evaluateStatement("2 save(thing)");
+		pinto.execute("2 def(thing)");
 		assertEquals("Update nested ref", 5.2, runDoubleDataStatement("thing thing2 +" + EVAL)[0][0], 0.001d);
-		pinto.evaluateStatement("1 + save(increment)");
+		pinto.execute("1 + def(increment)");
 		assertEquals("Saved function", 7.0, runDoubleDataStatement("6 increment" + EVAL)[0][0], 0.001d);
 	}
 
@@ -53,23 +54,23 @@ public class StatementTester {
 		assertEquals("Correct # dup outputs", 7, d.length);
 		assertEquals("Dup output works in plus", 3.0, d[d.length-1][0], 0.001d);
 		d = runDoubleDataStatement("1 2 copy(2,3)" + EVAL);
-		assertEquals("Correct # dup outputs with params", 7, d.length);
+		assertEquals("Correct # dup outputs with params", 6, d.length);
 
 	}
 
 
 	@Test(expected=PintoSyntaxException.class)
 	public void testDelete() throws Exception {
-		pinto.evaluateStatement("1 save(deleteme)");
-		pinto.evaluateStatement("1 del(deleteme)");
-		pinto.evaluateStatement("deleteme save(doesntmatter)");
+		pinto.execute("1 save(deleteme)");
+		pinto.execute("1 del(deleteme)");
+		pinto.execute("deleteme save(doesntmatter)");
 	}
 
 	@Test(expected=Exception.class)
 	public void testDeleteFail() throws Exception {
-		pinto.evaluateStatement("1 save(deleteme)");
-		pinto.evaluateStatement("deleteme 1 + del(needsdeleteme)");
-		pinto.evaluateStatement("1 del(deleteme)");
+		pinto.execute("1 save(deleteme)");
+		pinto.execute("deleteme 1 + del(needsdeleteme)");
+		pinto.execute("1 del(deleteme)");
 	}
 	
 	
@@ -88,6 +89,13 @@ public class StatementTester {
 
 		d = runDoubleDataStatement("moon lag(1,BM) eval(2016-08-06,2016-09-09,B)");
 		assertEquals("lag (diff freqs range > window)", -27.3281, d[0][0],0.001d);
+	}
+	
+	public void testExpanding() throws Exception {
+		double[][] d = runDoubleDataStatement("1 e_sum(2016-09-14) eval(2016-09-12,2016-09-23,B)");
+		assertEquals("NAs before expanding start", Double.NaN, d[0][0],0.001d);
+		assertEquals("sum from expanding start", Double.NaN, d[0][d.length - 1],0.001d);
+		
 	}
 	
 	/**
@@ -126,19 +134,15 @@ public class StatementTester {
 	}
 
 	private double[][] runDoubleDataStatement(String line) throws Exception {
-		ArrayDeque<Data<?>> output = (ArrayDeque<Data<?>>) pinto.evaluateStatement(line);
-		List<DoubleData> dd = new ArrayList<>();
-		while(!output.isEmpty()) {
-			if(output.peekFirst() instanceof DoubleData) {
-				dd.add((DoubleData) output.removeFirst());
-			}
-		}
+		List<Response> output = pinto.execute(line);
+		List<TimeSeries> dd = output.stream().map(Pinto.Response::getTimeseriesOutput).filter(Optional::isPresent)
+								.map(Optional::get).flatMap(List::stream).collect(Collectors.toList());
 		if(dd.size() > 0) {
 			PeriodicRange<?> range = dd.get(0).getRange();
 			double[][] table = new double[dd.size()][(int) range.size()];
 			for(AtomicInteger i = new AtomicInteger(0); i.get() < dd.size();i.incrementAndGet()) {
 				AtomicInteger j = new AtomicInteger(0);
-				dd.get(i.get()).getData().forEach(
+				dd.get(i.get()).stream().forEach(
 						d -> table[i.get()][j.getAndIncrement()] = d);
 			}
 			return table;

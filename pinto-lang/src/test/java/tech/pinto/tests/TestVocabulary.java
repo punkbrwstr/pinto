@@ -6,29 +6,28 @@ import java.util.function.Supplier;
 
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
-import tech.pinto.command.CommandFactory;
-import tech.pinto.command.CommandHelp;
+import tech.pinto.function.FunctionFactory;
+import tech.pinto.function.FunctionHelp;
 import tech.pinto.tests.command.CallCounter;
 
 public class TestVocabulary implements Vocabulary {
-	public Map<String, CommandFactory> commands = new HashMap<>();
+	public Map<String, FunctionFactory> commands = new HashMap<>();
 
 	
 	public TestVocabulary() {
 		commands.putAll(new StandardVocabulary().getCommandMap());
-		commands.put("counter", (c,a) -> new CallCounter(c,a));
+		commands.put("counter", (c,i,s,a) -> new CallCounter(c,i,a));
 	}
 
 
 	@Override
-	public Map<String, CommandFactory> getCommandMap() {
+	public Map<String, FunctionFactory> getCommandMap() {
 		return commands;
 	}
 
 
 	@Override
-	public Map<String, Supplier<CommandHelp>> getCommandHelpMap() {
-		// TODO Auto-generated method stub
+	public Map<String, Supplier<FunctionHelp>> getCommandHelpMap() {
 		return null;
 	}
 

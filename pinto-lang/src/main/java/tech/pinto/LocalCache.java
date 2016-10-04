@@ -21,7 +21,6 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
 
-import tech.pinto.data.DoubleData;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicity;
@@ -31,7 +30,7 @@ public class LocalCache extends Cache {
 	
 	public HashMap<String,String> statementCache = new HashMap<>();
 	public TreeSet<String> statementDependencyGraph = new TreeSet<>();
-	public HashMap<String,RangeMap<Long,List<DoubleData>>> doubleDataCache = new HashMap<>();
+	public HashMap<String,RangeMap<Long,List<TimeSeries>>> doubleDataCache = new HashMap<>();
 
 	Vocabulary vocabulary;
 	
@@ -88,13 +87,13 @@ public class LocalCache extends Cache {
 	}
 	
 	@Override
-    public <P extends Period> List<DoubleData> evaluateCached(String k, int streamCount, PeriodicRange<P> range,
-                Function<PeriodicRange<P>,List<DoubleData>> filler) {
+    public <P extends Period> List<TimeSeries> evaluateCached(String k, int streamCount, PeriodicRange<P> range,
+                Function<PeriodicRange<P>,List<TimeSeries>> filler) {
  
         // unique identifier for function call comprised of function name, and parameters
     	Periodicity<P> freq = range.periodicity();
         String wholeKey = k + ":" + range.periodicity().code();
-        RangeMap<Long,List<DoubleData>> cache = null;
+        RangeMap<Long,List<TimeSeries>> cache = null;
         synchronized(doubleDataCache) {
             if(range.clearCache() || !doubleDataCache.containsKey(wholeKey)) {
                 doubleDataCache.put(wholeKey, TreeRangeMap.create());
@@ -104,11 +103,11 @@ public class LocalCache extends Cache {
         synchronized(cache) {
         	Range<Long> requestedRange = Range.closed(range.start().longValue(), range.end().longValue());
     		Set<Range<Long>> toRemove = new HashSet<>();
-            List<DoubleData> chunkData = IntStream.range(0,streamCount).mapToObj( i -> new DoubleData(null,null,DoubleStream.empty()))
+            List<TimeSeries> chunkData = IntStream.range(0,streamCount).mapToObj( i -> new TimeSeries(null,null,DoubleStream.empty()))
             		.collect(Collectors.toList());
             long current = requestedRange.lowerEndpoint();
             long chunkStart = current;
-    		for(Map.Entry<Range<Long>, List<DoubleData>> e : cache.subRangeMap(requestedRange).asMapOfRanges().entrySet()) {
+    		for(Map.Entry<Range<Long>, List<TimeSeries>> e : cache.subRangeMap(requestedRange).asMapOfRanges().entrySet()) {
     			long thisChunkStart = e.getValue().get(0).getRange().start().longValue();
     			long thisChunkEnd = e.getValue().get(0).getRange().end().longValue();
     			chunkStart = Long.min(chunkStart, thisChunkStart);
@@ -128,19 +127,19 @@ public class LocalCache extends Cache {
     		final long endToSave = Math.min(current - 1, freq.from(LocalDate.now()).longValue() - 1); // don't save anything from this period
     		if(finalStart <= endToSave) {
     			chunkData.stream().forEach(s -> s.setRange(freq.range(finalStart, endToSave, false)));
-    			cache.put(Range.closed(finalStart, endToSave), DoubleData.dup(chunkData, (int) (endToSave - finalStart + 1)));
+    			cache.put(Range.closed(finalStart, endToSave), TimeSeries.dup(chunkData, (int) (endToSave - finalStart + 1)));
     		}
 
     		chunkData.stream().forEach(s -> s.setRange(range));
-    		chunkData.stream().forEach(s -> s.setData(s.getData()
+    		chunkData.stream().forEach(s -> s.setStream(s.stream()
     				.skip(requestedRange.lowerEndpoint() - finalStart).limit(range.size())));
     		return chunkData;
     	}
     }
     
-    private void concat(List<DoubleData> a, List<DoubleData> b) {
+    private void concat(List<TimeSeries> a, List<TimeSeries> b) {
     	for(int i = 0; i < a.size(); i++) {
-    		a.get(i).setData(DoubleStream.concat(a.get(i).getData(), b.get(i).getData()).sequential());
+    		a.get(i).setStream(DoubleStream.concat(a.get(i).stream(), b.get(i).stream()).sequential());
     		if(a.get(i).getLabel() == null) {
     			a.get(i).setLabel(b.get(i).getLabel());
     		}

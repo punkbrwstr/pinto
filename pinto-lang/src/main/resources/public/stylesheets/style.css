@@ -1,0 +1,36 @@
+
+body {
+  padding: 15;
+  margin: 15;
+  border: 0;
+  font: 14px Helvetica, Arial, sans-serif;
+  position: relative;
+}
+
+a {
+  color: #00B7FF;
+}
+
+h1#mainTitle {
+	color: #433447;
+}
+
+
+.pintoDataTable {
+    border-collapse:collapse;
+    border: 3px solid #433447;
+}
+
+.pintoDataTable tbody {
+}
+
+
+.pintoDataTable col:first-child {border-right: 2px solid #CCC;}
+.pintoDataTable col:nth-child(2n+3) {background: #CCC}
+
+.pintoDataTable thead th {
+        background-color: #433447;
+        color: #ffffff;
+        border: 0;
+        border-right: 2px solid #433447;
+}

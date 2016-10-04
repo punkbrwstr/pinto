@@ -1,5 +1,6 @@
 package tech.pinto;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.concurrent.locks.ReentrantLock;
@@ -7,8 +8,7 @@ import java.util.function.Function;
 
 import com.google.common.base.Joiner;
 
-import tech.pinto.command.anyany.Statement;
-import tech.pinto.data.DoubleData;
+import tech.pinto.function.intermediate.Expression;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
@@ -25,27 +25,21 @@ abstract public class Cache {
 	abstract protected void addDependency(String key);
 	abstract protected void removeDependency(String key);
 	abstract protected SortedSet<String> dependenciesStartingWith(String query);
-    abstract public <P extends Period> List<DoubleData> evaluateCached(String k, int streamCount, PeriodicRange<P> range,
-            Function<PeriodicRange<P>,List<DoubleData>> filler);
+    abstract public <P extends Period> List<TimeSeries> evaluateCached(String k, int streamCount, PeriodicRange<P> range,
+            Function<PeriodicRange<P>,List<TimeSeries>> filler);
 
 	public void save(String code, String statement) {
 		statementCacheLock.lock();
 		try {
 			if(isSavedStatement(code)) {
-				Statement oldStatement = null;
-				try {
-					oldStatement = new Statement(this, getVocabulary(), getSaved(code),true);
-				} catch(PintoSyntaxException e) {
-					throw new RuntimeException("Unparseable saved query.",e);
-				}
-				for(String dependencyCode : oldStatement.getDependencies()) {
+				for(String dependencyCode : getDependsOn(code)) {
 					removeDependency(join(code, "dependsOn", dependencyCode));
 					removeDependency(join(dependencyCode, "dependedOnBy", code));
 				}
 			}
-			Statement newStatement = null;
+			Expression newStatement = null;
 			try {
-				newStatement = new Statement(this, getVocabulary(), statement, true);
+				newStatement = new Expression(this, getVocabulary(), statement, new LinkedList<>());
 			} catch(PintoSyntaxException e) {
 				throw new RuntimeException("Unparseable saved query.",e);
 			}
@@ -62,17 +56,11 @@ abstract public class Cache {
 	public void deleteSaved(String code) throws IllegalArgumentException {
 		statementCacheLock.lock();
 		try {
-			if(getDependencies(code).size() != 0) {
+			if(getDependedOnBy(code).size() != 0) {
 				throw new IllegalArgumentException("Cannot delete \"" + code + "\" because other "
 						+ "saved commands depend on it.");
 			}
-			Statement oldStatement;
-			try {
-				oldStatement = new Statement(this, getVocabulary(), getSaved(code), true);
-			} catch (PintoSyntaxException e) {
-				throw new RuntimeException();
-			}
-			for(String dependencyCode : oldStatement.getDependencies()) {
+			for(String dependencyCode : getDependsOn(code)) {
 				removeDependency(join(code, "dependsOn", dependencyCode));
 				removeDependency(join(dependencyCode, "dependedOnBy", code));
 			}
@@ -91,8 +79,12 @@ abstract public class Cache {
 		}
 	}
 	
-	private SortedSet<String> getDependencies(String code) {
+	private SortedSet<String> getDependedOnBy(String code) {
 		return dependenciesStartingWith(join(code, "dependedOnBy"));
+	}
+
+	private SortedSet<String> getDependsOn(String code) {
+		return dependenciesStartingWith(join(code, "dependedsOn"));
 	}
 	
 	private String join(String... parts) {
