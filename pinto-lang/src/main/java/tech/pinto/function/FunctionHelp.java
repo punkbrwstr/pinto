@@ -42,6 +42,29 @@ public class FunctionHelp {
 		}
 		return sb.toString();
 	}
+
+	public String toConsoleHelpString() {
+		String crlf = System.getProperty("line.separator");
+		StringBuilder sb = new StringBuilder();
+	//	sb.append("*").append(inputs).append("*|")
+		sb.append(name).append(crlf);
+		sb.append("\t").append(description).append(crlf);
+		if(parameters.size() > 0) {
+			sb.append(parameters.stream().map(p -> p.name).collect(Collectors.joining(", ", "\tParameters: ", crlf)));
+		}
+		Map<String,String> defs = new HashMap<>();
+		for(Parameter p : parameters) {
+			if(p.defaultValue != null) {
+				defs.put(p.name, p.defaultValue);
+			}
+		}
+		if(defs.size() > 0) {
+			sb.append(defs.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue())
+					.collect(Collectors.joining(", ", "\t(defaults: ", ")" + crlf)));
+		}
+		sb.append("\tOutput count for n inputs: ").append(outputs).append(crlf);
+		return sb.toString();
+	}
 	
 	public static class Builder {
 		

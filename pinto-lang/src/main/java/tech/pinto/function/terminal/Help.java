@@ -19,14 +19,22 @@ public class Help extends TerminalFunction {
 		super("help", inputs, arguments);
 		StringBuilder sb = new StringBuilder();
 		String crlf = System.getProperty("line.separator");
-		if(arguments.length == 0) {
+		if(arguments.length == 1 && arguments[0].equals("full")) {
+			sb.append(vocab.getAllCommandHelp().stream().map(FunctionHelp::toTableRowString).collect(Collectors.joining(crlf))).append(crlf);
+		} else if(arguments.length == 1) {
+			String functionName = arguments[0].trim();
+			if(vocab.getCommandHelpMap().containsKey(functionName)) {
+				sb.append(vocab.getCommandHelpMap().get(functionName).get().toConsoleHelpString());
+			} else {
+				sb.append("Function " + functionName + " not found.");
+			}
+		} else {
 			sb.append("Pinto help").append(crlf);
 			sb.append("Built-in commands:").append(crlf);
 			sb.append(vocab.getCommandNames().stream().collect(Collectors.joining(", "))).append(crlf);
-			sb.append("For extended help type: help(full)").append(crlf);
-			sb.append("For help with a specific command type: command help").append(crlf);
-		} else if(arguments.length == 1 && arguments[0].equals("full")) {
-			sb.append(vocab.getAllCommandHelp().stream().map(FunctionHelp::toTableRowString).collect(Collectors.joining(crlf))).append(crlf);
+			sb.append("For extended description of functions type: help(full)").append(crlf);
+			sb.append("For help with a specific function type: help(<function>)").append(crlf);
+			
 		}
 		message = Optional.of(sb.toString());
 	}
