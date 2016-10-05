@@ -54,6 +54,7 @@ public class StandardVocabulary implements Vocabulary {
                 .put("neg", (c,i,s,a) -> new UnaryOperator("neg",i, x -> x * -1d))
                 .put("inv", (c,i,s,a) -> new UnaryOperator("inv",i, x -> 1.0 / x))
                 .put("log", (c,i,s,a) -> new UnaryOperator("log",i, x -> Math.log(x)))
+                .put("exp", (c,i,s,a) -> new UnaryOperator("exp",i, x -> Math.exp(x)))
                 .put("acgbConvert", (c,j,s,a) -> new UnaryOperator("acgbConvert",j,
                     quote -> {
                         double TERM = 10, RATE = 6, price = 0; 
