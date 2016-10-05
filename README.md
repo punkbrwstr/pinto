@@ -4,22 +4,39 @@ Pinto is a stack-based or concatenative, functional programming language that us
 
 With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equation, or an algorithmic trading system into one line of code!
 
-## What can I do it?
+## What can I do with it?
 
-Get online stock prices and compute the difference between their 20 and 200-day moving averages:
+Calculate the Monthly YTD return of an evenly-weighted portfolio of two stocks:
 
 ```
-pinto> yhoo(cmg,taco) copy(3) [-2:] r_mean(20) [2:3] r_mean(200) [3,1] - [1:2] - eval(2016-09-26,2016-09-28)
-╔════════════╤═══════╤═════════╤════════════════════════════════════╤══════════════════════════════════╗
-║ Date       │ taco  │ cmg     │ taco r_mean(20) taco r_mean(200) - │ cmg r_mean(20) cmg r_mean(200) - ║
-╠════════════╪═══════╪═════════╪════════════════════════════════════╪══════════════════════════════════╣
-║ 2016-09-26 │ 11.71 │ 419.88  │ 1.28                               │ -26.27                           ║
-╟────────────┼───────┼─────────┼────────────────────────────────────┼──────────────────────────────────╢
-║ 2016-09-27 │ 11.73 │ 418.95  │ 1.29                               │ -25.68                           ║
-╟────────────┼───────┼─────────┼────────────────────────────────────┼──────────────────────────────────╢
-║ 2016-09-28 │ 11.79 │ 418.30  │ 1.32                               │ -25.03                           ║
-╚════════════╧═══════╧═════════╧════════════════════════════════════╧══════════════════════════════════╝
+pinto> yhoo(aapl,ibm) fill r_chgpct x_mean 1 + log e_sum(2016-01-01) exp -1 + label(YTD return) eval(2016-01-01,2016-03-30,BM)
+╔════════════╤══════════════╗
+║ Date       │ YTD return   ║
+╠════════════╪══════════════╣
+║ 2016-01-29 │ -0.08423500  ║
+╟────────────┼──────────────╢
+║ 2016-02-29 │ -0.06439658  ║
+╟────────────┼──────────────╢
+║ 2016-03-31 │ 0.068015989  ║
+╚════════════╧══════════════╝
 ```
+
+Or compute daily differences between the 20 and 200-day moving averages for two stocks:
+
+```
+pinto> yhoo(cmg,taco) copy(3) [-2:] r_mean(20) [2:3] r_mean(200) [3,1] - [1:2] - [:1] label(taco MA diff,cmg MA diff) eval(2016-09-26,2016-09-28)
+╔════════════╤═══════╤════════════╤════════════════════╤═════════════════════╗
+║ Date       │ taco  │ cmg        │ taco MA diff       │ cmg MA diff         ║
+╠════════════╪═══════╪════════════╪════════════════════╪═════════════════════╣
+║ 2016-09-26 │ 11.71 │ 419.880005 │ 1.28143914473684   │ -26.278440367050678 ║
+╟────────────┼───────┼────────────┼────────────────────┼─────────────────────╢
+║ 2016-09-27 │ 11.73 │ 418.950012 │ 1.2977686403508741 │ -25.6843770603071   ║
+╟────────────┼───────┼────────────┼────────────────────┼─────────────────────╢
+║ 2016-09-28 │ 11.79 │ 418.309998 │ 1.3223985745614009 │ -25.030981295230447 ║
+╚════════════╧═══════╧════════════╧════════════════════╧═════════════════════╝
+```
+
+
 
 For more information see the [Pinto Language Reference](./pinto_reference.md)
 
@@ -62,7 +79,7 @@ If you have the requirements, it's easy to get up and running with the pinto con
 git clone https://github.com/punkbrwstr/pinto.git
 cd pinto
 mvn -pl pinto-lang compile
-mvn exec:java -pl pinto-lang -Dexec.mainClass=tech.pinto.Console
+mvn exec:java -pl pinto-lang -Dexec.mainClass=tech.pinto.Main
 ```
 
 
