@@ -73,7 +73,6 @@ Function(Parameters) | Outputs for *n* inputs|Description
 **x_std**|*1*|Calculates sample standard deviation across inputs. 
 **x_zscorep**|*1*|Calculates z-score across inputs. 
 **x_zscore**|*1*|Calculates sample z-score across inputs. 
-**r_mean**|*1*|Calculates mean across inputs. 
 
 ### Expanding window functions
 
