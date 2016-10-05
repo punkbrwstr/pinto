@@ -44,6 +44,19 @@
                 </includes>
             </configuration>
         </plugin>
+        <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>tech.pinto.Main</mainClass>
+                    <systemProperties>
+                        <systemProperty>
+                            <key>pinto.port</key>
+                            <value>5556</value>
+                       </systemProperty>
+                   </systemProperties>
+                </configuration>
+            </plugin>
     </plugins>
   </build>
   <dependencies>

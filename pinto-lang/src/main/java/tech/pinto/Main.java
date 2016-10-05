@@ -45,7 +45,8 @@ public class Main {
 		GsonBuilder b = new GsonBuilder();
 		b.serializeSpecialFloatingPointValues();
 		Gson gson = b.create();
-		port(5556);
+		int port = System.getProperties().containsKey("pinto.port") ? Integer.parseInt(System.getProperty("pinto.port")) : 5556;
+		port(port);
 		staticFiles.location("/public");
 		get("/pinto","application/json", (request, response) -> {
 			try {
