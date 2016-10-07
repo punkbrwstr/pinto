@@ -26,7 +26,7 @@ These commands manipulate stack elements, but do not modify values.
 Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
 **label(*label<sub>1</sub>*,*label<sub>z</sub>*)**|**z**|Sets arguments as labels for inputs 
-**copy(*m*)**|**n*  *  *m**|Copies stack inputs *m* times (defaults: *m=2*)
+**copy(*m*)**|*n * m*|Copies stack inputs *m* times (defaults: *m=2*)
 **roll(*m*)**|**n**|Permutes input stack elements *m* times (defaults: *m=2*)
 **clear**|*None*|Removes inputs from stack 
 
@@ -95,6 +95,7 @@ Function(Parameters) | Outputs for *n* inputs|Description
 Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
 **fill**|**n**|Fills missing data with last good obseration. 
+**join(*date<sub>1</sub>, date<sub>z</sub>*)**|*1*|Fills missing data with last good obseration. 
 
 ### Binary operators
 
