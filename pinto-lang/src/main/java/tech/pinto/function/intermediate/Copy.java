@@ -30,7 +30,7 @@ public class Copy extends IntermediateFunction {
 		return () -> new FunctionHelp.Builder("copy")
 				.description("Copies stack inputs *m* times")
 				.parameter("m","2",null)
-				.outputs("*n*  *  *m*")
+				.outputs("n * m")
 				.build();
 	}
 

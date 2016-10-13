@@ -30,7 +30,7 @@ import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicity;
 
-public class Yahoo extends CachedDoubleCommand {
+public class Yahoo extends CachedSupplierFunction {
 
 	static private final Map<Periodicity<?>, String> FREQ = new ImmutableMap.Builder<Periodicity<?>, String>()
 			.put(new BusinessDaily(), "d").put(new FridayWeekly(), "w").put(new BusinessMonthly(), "m").build();

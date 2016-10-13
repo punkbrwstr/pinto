@@ -9,11 +9,11 @@ import java.util.stream.DoubleStream;
 import tech.pinto.Cache;
 import tech.pinto.TimeSeries;
 import tech.pinto.function.Function;
-import tech.pinto.function.supplier.CachedDoubleCommand;
+import tech.pinto.function.supplier.CachedSupplierFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class CallCounter extends CachedDoubleCommand {
+public class CallCounter extends CachedSupplierFunction {
 	
 	private static AtomicInteger count = new AtomicInteger();
 

@@ -22,7 +22,7 @@ public class Clear extends IntermediateFunction {
 	public static Supplier<FunctionHelp> getHelp() {
 		return () -> new FunctionHelp.Builder("clear")
 				.description("Removes inputs from stack")
-				.outputs("None")
+				.outputs("none")
 				.build();
 	}
 

@@ -42,7 +42,7 @@ public class BinaryOperator extends Function {
 		TimeSeries b = inputStack.removeFirst().evaluate(range);
 	 	OfDouble bIterator = b.stream().iterator();
 		DoubleStream outputStream = a.stream()
-				.map(aValue -> operator.applyAsDouble(aValue, bIterator.nextDouble())); 
+				.map(aValue -> operator.applyAsDouble(bIterator.nextDouble(), aValue)); 
 		return new TimeSeries(range, joinWithSpaces(a.getLabel(),b.getLabel(),toString()),outputStream);
 	}
 

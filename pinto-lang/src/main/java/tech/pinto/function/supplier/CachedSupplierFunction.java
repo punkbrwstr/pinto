@@ -11,12 +11,12 @@ import tech.pinto.function.NullarySimpleFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-abstract public class CachedDoubleCommand extends NullaryReferenceFunction {
+abstract public class CachedSupplierFunction extends NullaryReferenceFunction {
 	
 	protected final Cache cache;
 	private int referenceCount = 0;
 	
-	public CachedDoubleCommand(String name, Cache cache, LinkedList<Function> inputs, String...arguments) {
+	public CachedSupplierFunction(String name, Cache cache, LinkedList<Function> inputs, String...arguments) {
 		super(name, inputs, arguments);
 		this.cache = cache;
 	}

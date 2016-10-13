@@ -10,11 +10,11 @@ import tech.pinto.Cache;
 import tech.pinto.TimeSeries;
 import tech.pinto.extras.BloombergClient;
 import tech.pinto.function.Function;
-import tech.pinto.function.supplier.CachedDoubleCommand;
+import tech.pinto.function.supplier.CachedSupplierFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class Bloomberg extends CachedDoubleCommand {
+public class Bloomberg extends CachedSupplierFunction {
 	
 	private final java.util.function.Function<PeriodicRange<?>, List<TimeSeries>> function;
 	private final int myOutputCount;

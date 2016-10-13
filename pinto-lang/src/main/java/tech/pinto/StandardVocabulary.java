@@ -1,5 +1,6 @@
 package tech.pinto;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -8,19 +9,21 @@ import com.google.common.collect.ImmutableMap;
 import tech.pinto.function.FunctionFactory;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.intermediate.Clear;
+import tech.pinto.function.intermediate.Comment;
 import tech.pinto.function.intermediate.Copy;
 import tech.pinto.function.intermediate.Cross;
 import tech.pinto.function.intermediate.DoubleCollectors;
 import tech.pinto.function.intermediate.BinaryOperator;
 import tech.pinto.function.intermediate.Expanding;
 import tech.pinto.function.intermediate.Fill;
+import tech.pinto.function.intermediate.Join;
 import tech.pinto.function.intermediate.Label;
 import tech.pinto.function.intermediate.Reverse;
 import tech.pinto.function.intermediate.Roll;
 import tech.pinto.function.intermediate.Rolling;
 import tech.pinto.function.intermediate.RollingCorrelation;
 import tech.pinto.function.intermediate.UnaryOperator;
-import tech.pinto.function.supplier.MoonPhase;
+import tech.pinto.function.supplier.Moon;
 import tech.pinto.function.supplier.Yahoo;
 import tech.pinto.function.terminal.Delete;
 import tech.pinto.function.terminal.Evaluate;
@@ -31,8 +34,13 @@ import tech.pinto.function.terminal.Save;
 
 public class StandardVocabulary implements Vocabulary {
     
-    private final Map<String,FunctionFactory> commands = 
-            new ImmutableMap.Builder<String, FunctionFactory>()
+    protected final Map<String,FunctionFactory> commands;
+    protected final Map<String,Supplier<FunctionHelp>> commandHelp;
+    
+    
+    
+    public StandardVocabulary() {
+    	commands = new HashMap<String,FunctionFactory>(new ImmutableMap.Builder<String, FunctionFactory>()
                 .put("eval", (c,i,s,a) -> new Evaluate(i,a))
                 .put("export", (c,i,s,a) -> new Export(i,a))
                 .put("def", (c,i,s,a) -> new Save(c,s,a))
@@ -63,7 +71,7 @@ public class StandardVocabulary implements Vocabulary {
                         }
                         price += 100 / Math.pow(1 + (100 - quote) / 2 / 100, TERM * 2);
                         return price; }))
-                .put("moon", (c,i,s,a) -> new MoonPhase())
+                .put("moon", (c,i,s,a) -> new Moon())
                 .put("label", (c,i,s,a) -> new Label(i,a))
                 .put("rev", (c,i,s,a) -> new Reverse(i))
                 .put("copy", (c,i,s,a) -> new Copy(i,a))
@@ -112,11 +120,12 @@ public class StandardVocabulary implements Vocabulary {
 	            .put("e_zscorep", (c,i,s,a) -> new Expanding("e_zscorep",i,DoubleCollectors.zscorep, a))
 	            .put("x_zscorep", (c,i,s,a) -> new Cross("x_zscorep",i,DoubleCollectors.zscorep, a))
 	            .put("fill", (c,i,s,a) -> new Fill(i,a))
+	            .put("join", (c,i,s,a) -> new Join(i,a))
 	            .put("correl", (c,i,s,a) -> new RollingCorrelation(i,a))
-                .build();
+	            .put("#", (c,i,s,a) -> new Comment(i))
+                .build());
 
-    private final Map<String,Supplier<FunctionHelp>> commandHelp = 
-            new ImmutableMap.Builder<String, Supplier<FunctionHelp>>()
+            commandHelp = new HashMap<String,Supplier<FunctionHelp>>(new ImmutableMap.Builder<String, Supplier<FunctionHelp>>()
             /* terminal commands */
                 .put("eval", Evaluate.getHelp())
                 .put("export", Export.getHelp())
@@ -132,7 +141,7 @@ public class StandardVocabulary implements Vocabulary {
 
             /* initial data commands */
                 .put("yhoo", Yahoo.getHelp())
-                .put("moon", MoonPhase.getHelp())
+                .put("moon", Moon.getHelp())
 
             /* rolling window commands */
                 .put("chg",Rolling.getHelp("chg", "change"))
@@ -179,6 +188,7 @@ public class StandardVocabulary implements Vocabulary {
                 
            /* other commands */
                 .put("fill",Fill.getHelp())
+                .put("join",Join.getHelp())
 
            /* binary operators */
                 .put("+",BinaryOperator.getHelp("+", "addition"))
@@ -199,9 +209,7 @@ public class StandardVocabulary implements Vocabulary {
                 .put("log",UnaryOperator.getHelp("log", "natural log"))
                 
 
-                .build();
-    public StandardVocabulary() {
-    	
+                .build());
     }
 
 	@Override

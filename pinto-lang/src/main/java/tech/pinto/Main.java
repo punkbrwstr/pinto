@@ -124,7 +124,10 @@ public class Main {
 							}
 						}
 						output.stream().map(Pinto.Response::getMessageOutput).filter(Optional::isPresent)
-							.map(Optional::get).forEach(out::println);
+							.forEach(m -> {
+								String s = m.get();
+								out.println(m.get());
+							});
 					} catch (PintoSyntaxException pse) {
 						System.out.println("Incorrect syntax: " + pse.getMessage());
 						pse.printStackTrace();

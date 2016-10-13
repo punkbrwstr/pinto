@@ -42,7 +42,7 @@ public class Execute extends TerminalFunction {
 		    				if(!message.isPresent()) {
 		    					message = Optional.of("");
 		    				}
-		    				message = Optional.of(message.get() + " " + terminal.getText()); 
+		    				message = Optional.of(message.get() + "\n" + terminal.getText().get()); 
 		    			}
 		    		}
 		    	}

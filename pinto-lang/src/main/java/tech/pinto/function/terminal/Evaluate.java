@@ -37,7 +37,5 @@ public class Evaluate extends TerminalFunction {
 				.parameter("periodicity", "B", "{B,W-FRI,BM,BQ,BA}")
 				.build();
 	}
-	
-	
 
 }

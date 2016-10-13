@@ -16,7 +16,7 @@ public class Reverse extends IntermediateFunction {
 	}
 	
 	@Override public Function getReference() {
-		return inputStack.removeLast();
+		return inputStack.removeFirst();
 	}
 
 	public static Supplier<FunctionHelp> getHelp() {
