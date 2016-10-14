@@ -11,26 +11,49 @@ a {
   color: #00B7FF;
 }
 
+header {
+    color: #fff;
+    background: #433447;
+    padding: 5px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+}
+
 h1#mainTitle {
 	color: #433447;
 }
 
+#pintoWorksheet {
+	margin-top: 120px;
+}
 
-.pintoDataTable {
+table.pintoDataTable {
+    width: 750px;
+    height: 400px;
+    overflow: auto;
+    display: block;
     border-collapse:collapse;
     border: 3px solid #433447;
 }
 
-.pintoDataTable tbody {
+table.pintoDataTable thead, table.pintoDataTable tbody {
 }
 
-
-.pintoDataTable col:first-child {border-right: 2px solid #CCC;}
-.pintoDataTable col:nth-child(2n+3) {background: #CCC}
-
-.pintoDataTable thead th {
+table.pintoDataTable thead th {
         background-color: #433447;
         color: #ffffff;
         border: 0;
         border-right: 2px solid #433447;
 }
+
+table.pintoDataTable tbody {
+    overflow: auto;
+    height: 350px;
+}
+
+
+table.pintoDataTable col:first-child {border-right: 2px solid #CCC;}
+table.pintoDataTable col:nth-child(2n+3) {background: #CCC}
+

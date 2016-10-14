@@ -6,12 +6,17 @@
         <script src="javascripts/jquery-3.1.1.min.js"></script>
     </head>
     <body>
-        <h1 id="mainTitle">Pinto language interpreter</h1>
-        <form>
-        <textarea id="pintoInput" cols="60" rows="5"></textarea>
-        </form>
-        <br/>
-        <div id="pintoResponse"></div>
+    	<header>
+        	<h2 id="mainTitle">Pinto Interpreter</h2>
+        	<h4>(build: ${buildNumber})</h4>
+        </header>
+        <div id="pintoWorksheet">
+        	<form>
+        		<textarea id="pintoInput" cols="75" rows="5"></textarea>
+        	</form>
+        	<br/>
+        	<div id="pintoResponse"></div>
+        </div>
     </body>
     <script src="javascripts/pinto.js"></script>
 </html>

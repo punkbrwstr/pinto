@@ -9,6 +9,8 @@
   <artifactId>pinto-lang</artifactId>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.build.timestamp.format>yyMMdd_HHmm</maven.build.timestamp.format>
+    <buildNumber>${maven.build.timestamp}</buildNumber>
   </properties>
   <scm>
     <connection>scm:svn:http://none</connection>
@@ -16,7 +18,14 @@
                                                                                                     -->
     <url>scm:svn:https://none</url>
   </scm>
+
   <build>
+    <resources>
+ <resource>
+   <directory>src/main/resources</directory>
+   <filtering>true</filtering>
+ </resource>
+</resources>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -57,9 +66,35 @@
                    </systemProperties>
                 </configuration>
             </plugin>
+            <plugin>
+ 				<groupId>org.apache.maven.plugins</groupId>
+ 				<artifactId>maven-resources-plugin</artifactId>
+ 				<version>3.0.1</version>
+ 				<configuration>
+   					<encoding>UTF-8</encoding>
+   					    <nonFilteredFileExtensions>
+            				<nonFilteredFileExtension>js</nonFilteredFileExtension>
+            				<nonFilteredFileExtension>css</nonFilteredFileExtension></nonFilteredFileExtensions>
+ 				</configuration>
+		</plugin>
     </plugins>
   </build>
   <dependencies>
+  	<dependency>
+	<groupId>org.eclipse.jetty</groupId>
+	<artifactId>jetty-server</artifactId>
+	<version>9.3.0.M2</version>
+</dependency>
+	<dependency>
+	<groupId>org.eclipse.jetty</groupId>
+	<artifactId>jetty-servlet</artifactId>
+	<version>9.3.0.M2</version>
+</dependency>
+	<dependency>
+	<groupId>org.eclipse.jetty</groupId>
+	<artifactId>jetty-webapp</artifactId>
+	<version>9.3.0.M2</version>
+</dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -92,25 +127,20 @@
     <version>2.2</version>
     <optional>true</optional>
   </dependency>
-  <dependency>
-    <groupId>com.sparkjava</groupId>
-    <artifactId>spark-core</artifactId>
-    <version>2.5</version>
-</dependency>
 <dependency>
     <groupId>com.google.code.gson</groupId>
     <artifactId>gson</artifactId>
     <version>2.7</version>
 </dependency>
-<dependency>
-    <groupId>com.sparkjava</groupId>
-    <artifactId>spark-template-jade</artifactId>
-    <version>2.3</version>
-</dependency>
-<dependency>
-    <groupId>org.slf4j</groupId>
-    <artifactId>slf4j-nop</artifactId>
-    <version>1.7.21</version>
-</dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.21</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.1.2</version>
+        </dependency>
   </dependencies>
 </project>
