@@ -1,45 +1,43 @@
 package tech.pinto;
 
 import java.io.File;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import javax.inject.Singleton;
 
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Slf4jLog;
-
-import com.google.common.collect.ImmutableMap;
 
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import jline.TerminalFactory;
+import tech.pinto.function.Function;
+import tech.pinto.function.TerminalFunction;
+import tech.pinto.tools.LogAppender;
 
-public class Main {
+public class Demo {
 
-	protected final MainComponent component;
+	protected final DemoComponent component;
 	protected String build;
 	protected final int port;
 	protected final String httpPath;
 
-	protected Main() {
-		component = DaggerMain_MainComponent.builder().mainModule(new MainModule()).build();
+	protected Demo() {
+		component = DaggerDemo_DemoComponent.builder().demoModule(new DemoModule()).build();
 		ClassLoader loader = Thread.currentThread().getContextClassLoader();
 		Properties props = new Properties();
 		try(InputStream resourceStream = loader.getResourceAsStream("pinto.properties")) {
@@ -48,7 +46,7 @@ public class Main {
 		} catch(IOException io) {
 			build = "Unknown";
 		}
-		port = System.getProperties().containsKey("pinto.port") ? Integer.parseInt(System.getProperty("pinto.port")) : 5556;
+		port = System.getProperties().containsKey("pinto.port") ? Integer.parseInt(System.getProperty("pinto.port")) : 5559;
 		List<String> path = Arrays.asList(tech.pinto.Main.class.getResource("Main.class")
 						.toString().split("/"));
 		path = new ArrayList<>(path.subList(0, path.size()-3));
@@ -61,13 +59,11 @@ public class Main {
 	}
 
 	public void run() throws Exception {
-		new Thread(new Console(getPinto(),port,build), "console_thread").start();
-
 		org.eclipse.jetty.util.log.Log.setLog(new Slf4jLog());
 		Server server = new Server(port);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-//        context.setWelcomeFiles(new String[]{ "index.html" });
+        context.setWelcomeFiles(new String[]{ "demo.html" });
         context.setResourceBase(httpPath);
         HashSessionIdManager idmanager = new HashSessionIdManager();
         server.setSessionIdManager(idmanager);
@@ -84,7 +80,16 @@ public class Main {
 
 	public static void main(String[] args) throws IOException {
 		try {
-			new Main().run();
+			new Thread(() -> {
+				while(true) {
+					try {
+						System.out.println(LogAppender.LOG.take());
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			},"log_printer").start();
+			new Demo().run();
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
@@ -96,24 +101,39 @@ public class Main {
 		}
 	}
 
+	public static class DemoVocabulary extends StandardVocabulary {
+		
+		public DemoVocabulary() {
+			commands.put("exec", (c,i,s,a) -> new DummyFunction("exec", null));
+			commands.put("export", (c,i,s,a) -> new DummyFunction("export",null));
+		}
+		
+	}
+	
+	public static class DummyFunction extends TerminalFunction {
+
+		public DummyFunction(String name, LinkedList<Function> inputStack, String... arguments) {
+			super(name, inputStack, arguments);
+			throw new UnsupportedOperationException("Demo does not support " + name + " function.");
+		}
+		
+	}
+
 	@Module
-	public static class MainModule {
+	public static class DemoModule {
 		@Provides
-		@Singleton
 		Cache provideCache(Vocabulary vocabulary) {
 			return new LocalCache(vocabulary);
 		}
 
 		@Provides
-		@Singleton
 		Vocabulary provideVocabulary() {
-			return new StandardVocabulary();
+			return new DemoVocabulary();
 		}
 	}
 
-	@Component(modules = MainModule.class)
-	@Singleton
-	public interface MainComponent {
+	@Component(modules = DemoModule.class)
+	public interface DemoComponent {
 		Pinto pinto();
 	}
 

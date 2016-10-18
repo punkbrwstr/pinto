@@ -77,6 +77,30 @@
             				<nonFilteredFileExtension>css</nonFilteredFileExtension></nonFilteredFileExtensions>
  				</configuration>
 		</plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>demo-jar</id>
+						<configuration>
+							<appendAssemblyId>false</appendAssemblyId>
+							<archive>
+								<manifest>
+									<mainClass>tech.pinto.Demo</mainClass>
+								</manifest>
+							</archive>
+							<descriptorRefs>
+								<descriptorRef>jar-with-dependencies</descriptorRef>
+							</descriptorRefs>
+							<finalName>pinto_demo_server-${buildNumber}</finalName>
+						</configuration>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
     </plugins>
   </build>
   <dependencies>

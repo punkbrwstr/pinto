@@ -8,7 +8,6 @@ import tech.pinto.time.PeriodicRange;
 
 public class UnaryFunction extends Function {
 
-	protected Function input;
 	java.util.function.Function<Function,java.util.function.Function<PeriodicRange<?>,TimeSeries>> evaluationFunction;
 
 	public UnaryFunction(String name, Function input,
@@ -22,7 +21,7 @@ public class UnaryFunction extends Function {
 
 	@Override
 	public <P extends Period> TimeSeries evaluate(PeriodicRange<P> range) {
-		return evaluationFunction.apply(inputStack.removeFirst()).apply(range);
+		return evaluationFunction.apply(inputStack.getFirst()).apply(range);
 	}
 
 	@Override
@@ -33,7 +32,6 @@ public class UnaryFunction extends Function {
 	@Override
 	public UnaryFunction clone() {
 		UnaryFunction clone = (UnaryFunction) super.clone();
-		clone.input = input.clone();
 		return clone;
     }
 

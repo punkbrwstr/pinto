@@ -9,9 +9,6 @@
 	</appender>
 
 
-	<!--<logger name="org.springframework" level="debug" />
-	<logger name="com.lcgerke.springbase" level="trace" />-->
-
 	<root level="trace">
 		<appender-ref ref="PINTO" />
 	</root>

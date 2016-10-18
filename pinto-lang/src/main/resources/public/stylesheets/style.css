@@ -3,30 +3,69 @@ body {
   padding: 15;
   margin: 15;
   border: 0;
-  font: 14px Helvetica, Arial, sans-serif;
   position: relative;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 90%;
 }
 
 a {
-  color: #00B7FF;
+  color: #0d646b;
+}
+
+p {
+    text-indent: 15px;
+	width: 600px;
+    color: #16383a;
+}
+
+p.examples {
+	font-style: italic;
 }
 
 header {
     color: #fff;
-    background: #433447;
-    padding: 5px;
+	background: linear-gradient(#e27812,#ffd2b5 );
     position: fixed;
     left: 0;
     top: 0;
     width: 100%;
 }
 
-h1#mainTitle {
-	color: #433447;
+h2#mainTitle {
+	font-family: 'Geo', sans-serif;
+	margin-bottom: 0; padding-bottom: 0;
+    color: #16383a;
+    font-size: 250%
 }
 
-#pintoWorksheet {
-	margin-top: 120px;
+h3 {
+	font-family: 'Geo', sans-serif;
+	margin-bottom: 0; padding-bottom: 0;
+    color: #16383a;
+    font-size: 150%
+}
+
+h4#buildNumber {
+	margin-top: 0; padding-top: 0;
+	font-size: 50%;
+	font-style: italic;
+    color: #16383a;
+}
+
+footer {
+  margin-top: 75px;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+#pintoBody {
+	margin-top: 100px;
+}
+
+.pintoCell {
+	margin-top: 25px;
+	margin-bottom: 25px;
 }
 
 table.pintoDataTable {
@@ -36,6 +75,8 @@ table.pintoDataTable {
     display: block;
     border-collapse:collapse;
     border: 3px solid #433447;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 65%;
 }
 
 table.pintoDataTable thead, table.pintoDataTable tbody {

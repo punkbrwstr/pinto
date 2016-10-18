@@ -8,10 +8,10 @@ import java.util.function.Supplier;
 import tech.pinto.TimeSeries;
 import tech.pinto.function.Function;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.time.Period;
-import tech.pinto.time.PeriodicRange;
+import tech.pinto.function.IntermediateFunction;
+import tech.pinto.function.UnaryFunction;
 
-public class UnaryOperator extends Function {
+public class UnaryOperator extends IntermediateFunction {
 
 	protected final DoubleUnaryOperator operator;
 	
@@ -22,14 +22,12 @@ public class UnaryOperator extends Function {
 	}
 
 	@Override
-	public <P extends Period> TimeSeries evaluate(PeriodicRange<P> range) {
-		TimeSeries d = (TimeSeries) inputStack.removeFirst().evaluate(range);
-		return new TimeSeries(range, joinWithSpaces(d.getLabel(),toString()), d.stream().map(operator));
-	}
-
-	@Override
 	public Function getReference() {
-		return this;
+		Function function = inputStack.removeFirst();
+		return new UnaryFunction(joinWithSpaces(function.toString(),name),function, 
+			f -> range -> {
+				return new TimeSeries(range,this.toString(),f.evaluate(range).stream().map(operator));
+			});
 	}
 	
 	public static Supplier<FunctionHelp> getHelp(String name, String desc) {

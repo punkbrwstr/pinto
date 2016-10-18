@@ -30,7 +30,8 @@ import tech.pinto.function.terminal.Evaluate;
 import tech.pinto.function.terminal.Execute;
 import tech.pinto.function.terminal.Export;
 import tech.pinto.function.terminal.Help;
-import tech.pinto.function.terminal.Save;
+import tech.pinto.function.terminal.Reset;
+import tech.pinto.function.terminal.Define;
 
 public class StandardVocabulary implements Vocabulary {
     
@@ -43,10 +44,11 @@ public class StandardVocabulary implements Vocabulary {
     	commands = new HashMap<String,FunctionFactory>(new ImmutableMap.Builder<String, FunctionFactory>()
                 .put("eval", (c,i,s,a) -> new Evaluate(i,a))
                 .put("export", (c,i,s,a) -> new Export(i,a))
-                .put("def", (c,i,s,a) -> new Save(c,s,a))
+                .put("def", (c,i,s,a) -> new Define(c,s,a))
                 .put("del", (c,i,s,a) -> new Delete(c,i,a))
                 .put("help", (c,i,s,a) -> new Help(c,this,i,a))
                 .put("exec", (c,i,s,a) -> new Execute(c,this,i,a))
+                .put("reset", (c,i,s,a) -> new Reset(i,a))
                 .put("+", (c,i,s,a) -> new BinaryOperator("+",i, (x,y) -> x + y))
                 .put("-", (c,i,s,a) -> new BinaryOperator("-",i, (x,y) -> x - y))
                 .put("*", (c,i,s,a) -> new BinaryOperator("*",i, (x,y) -> x * y))
@@ -71,7 +73,7 @@ public class StandardVocabulary implements Vocabulary {
                         }
                         price += 100 / Math.pow(1 + (100 - quote) / 2 / 100, TERM * 2);
                         return price; }))
-                .put("moon", (c,i,s,a) -> new Moon())
+                .put("moon", (c,i,s,a) -> new Moon(i))
                 .put("label", (c,i,s,a) -> new Label(i,a))
                 .put("rev", (c,i,s,a) -> new Reverse(i))
                 .put("copy", (c,i,s,a) -> new Copy(i,a))
@@ -121,7 +123,7 @@ public class StandardVocabulary implements Vocabulary {
 	            .put("x_zscorep", (c,i,s,a) -> new Cross("x_zscorep",i,DoubleCollectors.zscorep, a))
 	            .put("fill", (c,i,s,a) -> new Fill(i,a))
 	            .put("join", (c,i,s,a) -> new Join(i,a))
-	            .put("correl", (c,i,s,a) -> new RollingCorrelation(i,a))
+	            .put("r_correl", (c,i,s,a) -> new RollingCorrelation(i,a))
 	            .put("#", (c,i,s,a) -> new Comment(i))
                 .build());
 
@@ -129,7 +131,7 @@ public class StandardVocabulary implements Vocabulary {
             /* terminal commands */
                 .put("eval", Evaluate.getHelp())
                 .put("export", Export.getHelp())
-                .put("def", Save.getHelp())
+                .put("def", Define.getHelp())
                 .put("help", Help.getHelp())
                 .put("del", Delete.getHelp())
 

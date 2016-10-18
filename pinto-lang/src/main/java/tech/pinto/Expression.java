@@ -10,8 +10,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -158,7 +160,7 @@ public class Expression extends IntermediateFunction {
 		private boolean everything = true;
 		private Integer start = null;
 		private Integer end = null;
-		private TreeSet<Integer> indicies = new TreeSet<>(Collections.reverseOrder());
+		private TreeMap<Integer,Integer> indicies = new TreeMap<>(Collections.reverseOrder());
 		
 		public static Indexer ALL = new Indexer();
 		
@@ -169,8 +171,10 @@ public class Expression extends IntermediateFunction {
 			if(indexString.contains(":") && indexString.contains(",")) {
 				throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Cannot combine range indexing with multiple indexing.");
 			} else if (!indexString.contains(":")) {
-				Stream.of(indexString.split(",")).map(Integer::parseInt)
-					.map(i -> i < 0 ? i + stackSize : i).forEach(indicies::add);
+				int[] ia = Stream.of(indexString.split(",")).mapToInt(Integer::parseInt).toArray();
+				for(int i = 0; i < ia.length; i++) {
+					indicies.put(ia[i] < 0 ? ia[i] + stackSize : ia[i], i);
+				}
 			} else if(indexString.equals(":")) {
 				start = 0;
 				end = -1;
@@ -197,7 +201,7 @@ public class Expression extends IntermediateFunction {
 					throw new PintoSyntaxException("Invalid index \"" + indexString + "\". End too high for stack size.");
 				}
 			} else {
-				for(int i : indicies) {
+				for(int i : indicies.keySet()) {
 					if (i < 0) {
 						throw new PintoSyntaxException("Invalid index \"" + i + "\". Start is too low.");
 					} else if (i >= stackSize) {
@@ -215,14 +219,16 @@ public class Expression extends IntermediateFunction {
 				stack.clear();
 			} else {
 				if(start != null) {
-					IntStream.range(start,end + 1).forEach(indicies::add);
+					IntStream.range(start,end + 1).forEach(i -> indicies.put(i,i));
 				} 
-				for(int i : indicies) {
+				TreeMap<Integer,Function> functions = new TreeMap<>();
+				for(Map.Entry<Integer, Integer> i : indicies.entrySet()) {
 					if(stack.size() == 0) {
 						throw new PintoSyntaxException();
 					}
-					indexed.addLast(stack.remove(i));
+					functions.put(i.getValue(), stack.remove(i.getKey().intValue()));
 				}
+				functions.values().stream().forEach(indexed::addLast);
 			}
 			return indexed;
 		}

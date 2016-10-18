@@ -10,9 +10,9 @@ import tech.pinto.Cache;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.TerminalFunction;
 
-public class Save extends TerminalFunction {
+public class Define extends TerminalFunction {
 
-	public Save(Cache cache, List<String> saveString, String[] arguments) {
+	public Define(Cache cache, List<String> saveString, String[] arguments) {
 		super("def", new LinkedList<>(), arguments);
 		if(arguments.length < 1) {
 			throw new IllegalArgumentException("save requires one argument.");

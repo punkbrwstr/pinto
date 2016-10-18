@@ -25,7 +25,7 @@ public class RollingCorrelation extends IntermediateFunction {
 	private final Optional<Periodicity<?>> windowFrequency;
 	
 	public RollingCorrelation(LinkedList<Function> inputs, String... args) {
-		super("correl", inputs, args);
+		super("r_correl", inputs, args);
 		if(args.length < 1) {
 			throw new IllegalArgumentException("window requires at least one parameter (window size)");
 		} else {

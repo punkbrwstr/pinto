@@ -3,20 +3,30 @@
     <head>
         <title>pinto</title>
         <link rel="stylesheet" href="/stylesheets/style.css">
-        <script src="javascripts/jquery-3.1.1.min.js"></script>
+        <link href="https://fonts.googleapis.com/css?family=Geo|Montserrat|Source+Sans+Pro" rel="stylesheet">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="//d3js.org/d3.v3.min.js"></script>
+  		<script src="//vega.github.io/vega/vega.js"></script>
+  		<script src="//vega.github.io/vega-lite/vega-lite.js"></script>
+  		<script src="//vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
     </head>
     <body>
     	<header>
-        	<h2 id="mainTitle">Pinto Interpreter</h2>
-        	<h4>(build: ${buildNumber})</h4>
+        	<h2 id="mainTitle">Pinto Worksheet</h2>
+        	<h4 id="buildNumber">(build: ${buildNumber})</h4>
+        	<a id="addCellLink" >Add cell</a>
         </header>
-        <div id="pintoWorksheet">
-        	<form>
-        		<textarea id="pintoInput" cols="75" rows="5"></textarea>
-        	</form>
-        	<br/>
-        	<div id="pintoResponse"></div>
+        <div id="pintoBody">
+        	<div id="pintoWorksheet"></div>
         </div>
     </body>
     <script src="javascripts/pinto.js"></script>
+    <script type="text/javascript">
+    	$(document).ready(function() {
+    		for(var i = 0; i < 3; i++) {
+				addCell(true);
+			}
+			$('#addCellLink').click(addCell(true));
+		});
+	</script>
 </html>

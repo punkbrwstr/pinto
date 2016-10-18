@@ -5,17 +5,19 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.function.Supplier;
 
 import tech.pinto.TimeSeries;
+import tech.pinto.function.Function;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.NullarySimpleFunction;
 
 public class Moon extends NullarySimpleFunction {
 	
 
-	public Moon() {
-		super("moon", range ->  new TimeSeries(range,  "moon", 
+	public Moon(LinkedList<Function> inputStack) {
+		super("moon", inputStack, range ->  new TimeSeries(range,  "moon", 
 				range.dates().stream().map(d -> dateToCalendar(d)).mapToDouble(c -> new tech.pinto.tools.MoonPhase(c).getPhase())));
 	}
 

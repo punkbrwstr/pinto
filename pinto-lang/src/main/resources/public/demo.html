@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>pinto</title>
+        <link rel="stylesheet" href="/stylesheets/style.css">
+        <link href="https://fonts.googleapis.com/css?family=Geo|Montserrat|Source+Sans+Pro" rel="stylesheet">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="//d3js.org/d3.v3.min.js"></script>
+  		<script src="//vega.github.io/vega/vega.js"></script>
+		<script src="//vega.github.io/vega-lite/vega-lite.js"></script>
+		<script src="//vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
+    </head>
+    <body>
+    	<header>
+        	<h2 id="mainTitle">Pinto Programming Language</h2>
+        </header>
+        <div id="pintoBody">
+        	<h3>What is Pinto?</h3>
+        	<p>Pinto is a programming language for manipulating time series data.  Technically, it is a stack-based or concatenative, functional programming language that uses Reverse Polish notation (operators come after operands, like an HP12c calculator). Expressions written in Pinto define the manipulations necessary to create a table of data. (Pinto programs are called expressions and are almost always one-liners.)  Pinto expressions can be evaluated over any range of dates and for any frequency.</p>
+        	<p>With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equation, or an algorithmic trading system into one line of code!</p>
+        	<h3>Get Pinto</h3>
+        	<p>The latest version of Pinto, as well as <a href="https://github.com/punkbrwstr/pinto/blob/master/pinto_reference.md">documentation</a> and a <a href="https://github.com/punkbrwstr/pinto/wiki">wiki</a>, are available on <a href="https://github.com/punkbrwstr/pinto">GitHub</a>.</p>
+        	<h3>Try Pinto!</h3>
+        	<div id="pintoWorksheet"></div>
+        	<p>Here are some sample Pinto expressions to try:</p>
+        	<p class="examples">(Hit enter to evaluate the Pinto expressions and show data as a table or graph.)</p>
+        	<ul>
+        		<li>Weekly ratio between Transportation and Utility stocks: <code>yhoo(XTN,XLU) / label(ratio) eval(2015-10-01,2016-09-30,W-FRI)</code></li>
+        		<li>Daily Dow with 20 and 200-day moving averages: <code>yhoo(^DJI) copy(3) [0] r_mean(20) [1] r_mean(200) eval(2016-01-01,2016-09-30,B)</code></li>
+        		<li>Save a list of stocks: <code>yhoo(aapl,ibm,csco,msft) def(my_stocks)</code></li>
+        		<li>Define a function: <code>fill r_chgpct x_mean 1 + log e_sum exp -1 + def(portfolio_return)</code></li>
+        		<li>Apply the function to your stocks: <code>my_stocks portfolio_return eval(2015-09-30)</code></li>
+        	</ul>
+        </div>
+    	<footer>
+    		<p>Pinto was created by <a href="mailto:magnumpi@gmail.com">Peter Graf</a><p>
+       		<p><h4 id="buildNumber">(build: ${buildNumber})</h4></p>
+    	</footer>
+    </body>
+    <script src="javascripts/pinto.js"></script>
+    <script type="text/javascript">
+       	$(document).ready(function() {
+			addCell(false);
+		});
+    </script>
+</html>
