@@ -1,6 +1,6 @@
 # Pinto
 
-Pinto is a stack-based or concatenative, functional programming language that uses Reverse Polish (postfix) notation. It is specialized for numeric time series data.  Programs written in Pinto are one-liners that define the manipulations necessary to create a table of data.  These expressions can produce values for any range of dates and for any frequency.  
+Pinto is a programming language for manipulating time series data. Technically, it is a stack-based or concatenative, functional programming language that uses Reverse Polish notation (operators come after operands, like an HP12c calculator). Expressions written in Pinto define the manipulations necessary to create a table of data. (Pinto programs are called expressions and are almost always one-liners). Pinto expressions can be evaluated over any range of dates and for any frequency.
 
 With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equation, or an algorithmic trading system into one line of code!
 
@@ -8,37 +8,20 @@ With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equati
 
 Calculate the Monthly YTD return of an evenly-weighted portfolio of two stocks:
 
-```
-pinto> yhoo(aapl,ibm) fill r_chgpct x_mean 1 + log e_sum(2016-01-01) exp -1 + label(YTD return) eval(2016-01-01,2016-03-30,BM)
-╔════════════╤══════════════╗
-║ Date       │ YTD return   ║
-╠════════════╪══════════════╣
-║ 2016-01-29 │ -0.08423500  ║
-╟────────────┼──────────────╢
-║ 2016-02-29 │ -0.06439658  ║
-╟────────────┼──────────────╢
-║ 2016-03-31 │ 0.068015989  ║
-╚════════════╧══════════════╝
-```
+![alt text](http://pinto.tech/files/example0.png "Stock portfolio example")
 
-Or compute daily differences between the 20 and 200-day moving averages for two stocks:
+Or find when 20 and 200-day moving averages cross for two stocks:
 
-```
-pinto> yhoo(cmg,taco) copy(3) [-2:] r_mean(20) [2:3] r_mean(200) [3,1] - [1:2] - [:1] label(taco MA diff,cmg MA diff) eval(2016-09-26,2016-09-28)
-╔════════════╤═══════╤════════════╤════════════════════╤═════════════════════╗
-║ Date       │ taco  │ cmg        │ taco MA diff       │ cmg MA diff         ║
-╠════════════╪═══════╪════════════╪════════════════════╪═════════════════════╣
-║ 2016-09-26 │ 11.71 │ 419.880005 │ 1.28143914473684   │ -26.278440367050678 ║
-╟────────────┼───────┼────────────┼────────────────────┼─────────────────────╢
-║ 2016-09-27 │ 11.73 │ 418.950012 │ 1.2977686403508741 │ -25.6843770603071   ║
-╟────────────┼───────┼────────────┼────────────────────┼─────────────────────╢
-║ 2016-09-28 │ 11.79 │ 418.309998 │ 1.3223985745614009 │ -25.030981295230447 ║
-╚════════════╧═══════╧════════════╧════════════════════╧═════════════════════╝
-```
+![alt text](http://pinto.tech/files/example1.png "Stock MA cross")
 
 
 
-For more information see the [Pinto Language Reference](./pinto_reference.md)
+For language details see the [Pinto Language Reference](./pinto_reference.md).  For examples and additional information see the  [Pinto Wiki](./wiki).
+
+
+## Try Pinto!
+Try Pinto live [online](http://pinto.tech/)
+
 
 ## Key features
 
@@ -51,7 +34,7 @@ For more information see the [Pinto Language Reference](./pinto_reference.md)
 
 ## How does it work?
 
-Pinto expressions are comprised of a sequence of functions.  Expressions are evaluated left-to-right, with the inputs for each function coming from the outputs of the functions to its left.  It is useful to think of the execution of a Pinto expression in terms of a common stack of data.  Each function takes its inputs from the stack, operates on them, and returns them to the stack.  In mathematical terms, a Pinto expression can be thought of as a compositions of functions:  The Pinto expression x f g is equivalent to g(f(x)).  In finance terms, it works like an HP12C calculator.
+Pinto expressions are comprised of a sequence of functions.  Expressions are evaluated left-to-right, with the inputs for each function coming from the outputs of the functions to its left.  It is useful to think of the execution of a Pinto expression in terms of a common stack of data.  Each function takes its inputs from the stack, operates on them, and returns them to the stack.  In mathematical terms, a Pinto expression can be thought of as a compositions of functions:  The Pinto expression x f g is equivalent to g(f(x)).  In finance terms, it works like an HP12c calculator.
 
 Pinto functions may have multiple inputs and outputs.  By default, all function are variadic, meaning they will accept whatever number of inputs are on the stack when they get called.  (Some functions may have a minimum number of inputs).  An index/slice expression before a function limits the inputs for that function to a certain portion of the stack.  The indexing syntax will look familar to Pythonistas.
 
@@ -70,7 +53,7 @@ The Pinto interpreter is built in Java using Maven. It requires:
  - [Maven](https://maven.apache.org/download.cgi)
 
 
-## How to get up and running
+## How to get up and running locally
 
 If you have the requirements, it's easy to get up and running with the pinto console:
 
