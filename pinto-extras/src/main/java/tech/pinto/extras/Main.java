@@ -4,16 +4,21 @@ package tech.pinto.extras;
 import java.io.IOException;
 
 
+
 import javax.inject.Singleton;
 
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import jline.TerminalFactory;
-import tech.pinto.Cache;
-import tech.pinto.LocalCache;
+import tech.pinto.Name;
+import tech.pinto.Namespace;
 import tech.pinto.Pinto;
+import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
+import tech.pinto.extras.function.supplier.Bloomberg;
+import tech.pinto.extras.function.supplier.Futures;
+import tech.pinto.function.FunctionHelp;
 
 public class Main extends tech.pinto.Main {
 	
@@ -44,13 +49,22 @@ public class Main extends tech.pinto.Main {
 		}
 	}
 
+	public static class ExtraVocabulary extends StandardVocabulary {
+		public BloombergClient bc = new BloombergClient();
+		
+		public ExtraVocabulary() {
+			names.put("bbg", new Name((n,c,i,s,a) -> new Bloomberg(n,bc,i,a), n -> new FunctionHelp.Builder(n).build()));
+			names.put("fut", new Name((n,c,i,s,a) -> new Futures(n,c,i,a), n -> new FunctionHelp.Builder(n).build()));
+
+		}
+	}
 	
 	@Module
 	public static class ExtrasModule {
 		@Provides
 		@Singleton
-		Cache provideCache(Vocabulary vocabulary) {
-			return new LocalCache(vocabulary);
+		Namespace provideNamespace(Vocabulary vocabulary) {
+			return new Namespace(vocabulary);
 		}
 
 		@Provides

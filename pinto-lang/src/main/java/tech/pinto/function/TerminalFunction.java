@@ -15,7 +15,6 @@ public class TerminalFunction extends Function {
 
 	public TerminalFunction(String name, LinkedList<Function> inputStack, String... arguments) {
 		super(name, inputStack, arguments);
-		outputCount = 0;
 	}
 	
 	public Optional<List<TimeSeries>> getTimeSeries() {
@@ -39,6 +38,11 @@ public class TerminalFunction extends Function {
 	@Override
 	public Function clone() {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public int getOutputCount() {
+		return 0;
 	}
 
 

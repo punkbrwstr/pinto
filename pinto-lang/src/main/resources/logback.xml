@@ -9,7 +9,7 @@
 	</appender>
 
 
-	<root level="trace">
+	<root level="info">
 		<appender-ref ref="PINTO" />
 	</root>
 </configuration>

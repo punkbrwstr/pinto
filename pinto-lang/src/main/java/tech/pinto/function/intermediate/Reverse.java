@@ -1,28 +1,31 @@
 package tech.pinto.function.intermediate;
 
 import java.util.LinkedList;
-import java.util.function.Supplier;
 
 
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.Function;
-import tech.pinto.function.IntermediateFunction;
+import tech.pinto.function.ReferenceFunction;
 
-public class Reverse extends IntermediateFunction {
+public class Reverse extends ReferenceFunction {
 
-	public Reverse(LinkedList<Function> inputs, String...args) {
-		super("rev", inputs, args);
-		outputCount = inputStack.size();
+	public Reverse(String name, LinkedList<Function> inputs, String...args) {
+		super(name, inputs, args);
 	}
 	
 	@Override public Function getReference() {
 		return inputStack.removeFirst();
 	}
 
-	public static Supplier<FunctionHelp> getHelp() {
-		return () -> new FunctionHelp.Builder("rev")
+	public static FunctionHelp getHelp(String name) {
+		return new FunctionHelp.Builder(name)
 				.outputs("*n*")
 				.description("Reverses order of inputs")
 				.build();
+	}
+
+	@Override
+	public int getOutputCount() {
+		return inputStack.size();
 	}
 }

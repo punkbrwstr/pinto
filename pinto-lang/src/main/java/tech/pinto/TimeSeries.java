@@ -58,6 +58,7 @@ public class TimeSeries  {
 		return dup(a,0);
 	}
 	
+	@SuppressWarnings("unused")
 	private void peek() {
 		DoubleStream.Builder b = DoubleStream.builder();
 		stream.peek(System.out::println).forEachOrdered(b::accept); // trick to duplicate streams

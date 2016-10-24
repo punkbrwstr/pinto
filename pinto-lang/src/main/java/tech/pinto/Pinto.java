@@ -13,9 +13,7 @@ import tech.pinto.function.TerminalFunction;
 public class Pinto {
 
 	@Inject
-	Cache cache;
-	@Inject
-	Vocabulary vocab;
+	Namespace namespace;
 
 	private final LinkedList<Function> stack = new LinkedList<>();
 
@@ -26,7 +24,7 @@ public class Pinto {
 	public List<Response> execute(String statement) throws Exception {
 		try {
 			List<Response> output = new ArrayList<>();
-			Expression s = new Expression(cache, vocab, statement, stack);
+			Expression s = new Expression(namespace, statement, stack);
 			while(!s.getTerminalCommands().isEmpty()) {
 				TerminalFunction terminal = s.getTerminalCommands().removeLast();
 				output.add(new Response(terminal.getTimeSeries(),terminal.getText()));
@@ -39,14 +37,10 @@ public class Pinto {
 		}
 	}
 
-	public Cache getCache() {
-		return cache;
+	public Namespace getNamespace() {
+		return namespace;
 	}
 
-	public Vocabulary getVocab() {
-		return vocab;
-	}
-	
 	public static class Response {
 		
 		private final Optional<List<TimeSeries>> timeseriesOutput;

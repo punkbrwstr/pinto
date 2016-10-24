@@ -1,5 +1,7 @@
 package tech.pinto.tools;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
@@ -90,8 +92,19 @@ public class MoonPhase {
 	 * 
 	 * }
 	 */
+	private static Calendar dateToCalendar(LocalDate localDate) {
+		java.util.Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		return calendar;
+
+	}
+	
+	public MoonPhase(LocalDate d) {
+		this(dateToCalendar(d));
+	}
+
 	public MoonPhase(Calendar c) {
-		// / TODO: Add timezone adjustments here
 		_curCal = c;
 		// _curCal = adjustTimeZone(c, getCurrentTimeZone());
 
@@ -554,6 +567,7 @@ public class MoonPhase {
 	// System.out.printf("N 07-Mar-2008 2454533.2179779503 %.8f\n",
 	// phase(2454533.2179779503));
 
+	@SuppressWarnings("unused")
 	private static Calendar adjustTimeZone(Calendar c, int offsetInHours) {
 		long currTime = c.getTime().getTime();
 		c.setTime(new Date(currTime + offsetInHours * 1000 * 60 * 60));

@@ -26,6 +26,7 @@ import dagger.Module;
 import dagger.Provides;
 import jline.TerminalFactory;
 import tech.pinto.function.Function;
+import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.TerminalFunction;
 import tech.pinto.tools.LogAppender;
 
@@ -104,8 +105,8 @@ public class Demo {
 	public static class DemoVocabulary extends StandardVocabulary {
 		
 		public DemoVocabulary() {
-			commands.put("exec", (c,i,s,a) -> new DummyFunction("exec", null));
-			commands.put("export", (c,i,s,a) -> new DummyFunction("export",null));
+			names.put("exec", new Name((n,c,i,s,a) -> new DummyFunction(n, null), n -> new FunctionHelp.Builder(n).build()));
+			names.put("export", new Name((n,c,i,s,a) -> new DummyFunction(n,null),  n -> new FunctionHelp.Builder(n).build()));
 		}
 		
 	}
@@ -122,11 +123,6 @@ public class Demo {
 	@Module
 	public static class DemoModule {
 		@Provides
-		Cache provideCache(Vocabulary vocabulary) {
-			return new LocalCache(vocabulary);
-		}
-
-		@Provides
 		Vocabulary provideVocabulary() {
 			return new DemoVocabulary();
 		}
@@ -135,6 +131,7 @@ public class Demo {
 	@Component(modules = DemoModule.class)
 	public interface DemoComponent {
 		Pinto pinto();
+		Namespace namespace();
 	}
 
 }

@@ -1,17 +1,15 @@
 package tech.pinto.function.intermediate;
 
 import java.util.LinkedList;
-import java.util.function.Supplier;
 
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.Function;
-import tech.pinto.function.IntermediateFunction;
+import tech.pinto.function.ReferenceFunction;
 
-public class Clear extends IntermediateFunction {
+final public class Clear extends ReferenceFunction {
 	
-	public Clear(LinkedList<Function> inputs, String...args) {
-		super("clear", inputs, args);
-		outputCount = 0;
+	public Clear(String name, LinkedList<Function> inputs, String...args) {
+		super(name, inputs, args);
 	}
 	
 	@Override public Function getReference() {
@@ -19,11 +17,16 @@ public class Clear extends IntermediateFunction {
 	}
 
 
-	public static Supplier<FunctionHelp> getHelp() {
-		return () -> new FunctionHelp.Builder("clear")
+	public static FunctionHelp getHelp(String name) {
+		return new FunctionHelp.Builder(name)
 				.description("Removes inputs from stack")
 				.outputs("none")
 				.build();
+	}
+
+	@Override
+	public int getOutputCount() {
+		return 0;
 	}
 
 	

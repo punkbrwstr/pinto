@@ -1,6 +1,8 @@
 package tech.pinto;
 
 import java.io.File;
+
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -11,35 +13,34 @@ import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Slf4jLog;
-
-import com.google.common.collect.ImmutableMap;
 
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import jline.TerminalFactory;
+import tech.pinto.tools.NonSingletonScope;
 
 public class Main {
 
-	protected final MainComponent component;
+	protected final PintoComponent component;
 	protected String build;
 	protected final int port;
 	protected final String httpPath;
 
 	protected Main() {
-		component = DaggerMain_MainComponent.builder().mainModule(new MainModule()).build();
+		//component = DaggerMain_MainComponent.builder().mainModule(new MainModule()).build();
+		component = DaggerMain_PintoComponent.builder()
+					.namespaceComponent(DaggerMain_NamespaceComponent.builder()
+						.vocabularyComponent(DaggerMain_VocabularyComponent.builder()
+								.vocabularyModule(new VocabularyModule()).build()).build()).build();
 		ClassLoader loader = Thread.currentThread().getContextClassLoader();
 		Properties props = new Properties();
 		try(InputStream resourceStream = loader.getResourceAsStream("pinto.properties")) {
@@ -67,7 +68,6 @@ public class Main {
 		Server server = new Server(port);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-//        context.setWelcomeFiles(new String[]{ "index.html" });
         context.setResourceBase(httpPath);
         HashSessionIdManager idmanager = new HashSessionIdManager();
         server.setSessionIdManager(idmanager);
@@ -97,24 +97,27 @@ public class Main {
 	}
 
 	@Module
-	public static class MainModule {
-		@Provides
-		@Singleton
-		Cache provideCache(Vocabulary vocabulary) {
-			return new LocalCache(vocabulary);
-		}
-
-		@Provides
-		@Singleton
-		Vocabulary provideVocabulary() {
+	public static class VocabularyModule {
+		@Provides Vocabulary vocabulary() {
 			return new StandardVocabulary();
 		}
 	}
 
-	@Component(modules = MainModule.class)
-	@Singleton
-	public interface MainComponent {
+	@NonSingletonScope
+	@Component(dependencies = NamespaceComponent.class)
+	public interface PintoComponent {
 		Pinto pinto();
+	}
+
+	@Singleton
+	@Component(dependencies = VocabularyComponent.class)
+	public interface NamespaceComponent {
+		Namespace namespace();
+	}
+
+	@Component(modules = VocabularyModule.class)
+	public interface VocabularyComponent {
+		Vocabulary vocabulary();
 	}
 
 }

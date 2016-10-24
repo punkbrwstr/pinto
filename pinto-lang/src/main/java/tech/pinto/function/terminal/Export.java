@@ -2,6 +2,7 @@ package tech.pinto.function.terminal;
 
 import java.io.BufferedWriter;
 
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -9,7 +10,6 @@ import java.time.LocalDate;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,8 +25,8 @@ import tech.pinto.tools.Outputs;
 public class Export extends TerminalFunction {
 
 
-	public Export(LinkedList<Function> inputs, String[] arguments) {
-		super("export", inputs, arguments);
+	public Export(String name, LinkedList<Function> inputs, String[] arguments) {
+		super(name, inputs, arguments);
 		LocalDate start = LocalDate.parse(arguments[0]);
 		LocalDate end = LocalDate.parse(arguments[1]);
 		Periodicity<?> p = Periodicities.get(arguments.length > 2 ? arguments[2] : "B");
@@ -48,8 +48,8 @@ public class Export extends TerminalFunction {
 
 	}
 	
-	public static Supplier<FunctionHelp> getHelp() {
-		return () -> new FunctionHelp.Builder("export")
+	public static FunctionHelp getHelp(String name) {
+		return new FunctionHelp.Builder(name)
 				.outputs("none")
 				.description("Evaluates the preceding commands over the given date range and exports csv for *filename*.")
 				.parameter("start date", "prior period", "yyyy-dd-mm")

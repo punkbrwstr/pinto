@@ -24,7 +24,6 @@ public class Cross extends Function {
 			Supplier<DoubleCollector> collectorSupplier, String... args) {
 		super(name, inputs, args);
 		this.collectorSupplier = collectorSupplier;
-		outputCount = 1;
 	}
 	
 	@Override
@@ -45,11 +44,16 @@ public class Cross extends Function {
 		return this;
 	}
 	
-	public static Supplier<FunctionHelp> getHelp(String name, String description) {
-		return () -> new FunctionHelp.Builder(name)
+	public static FunctionHelp getHelp(String name, String description) {
+		return new FunctionHelp.Builder(name)
 				.outputs("1")
 				.description("Calculates " + description + " across inputs.")
 				.build();
+	}
+
+	@Override
+	public int getOutputCount() {
+		return 1;
 	}
 
 

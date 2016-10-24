@@ -40,20 +40,20 @@ public class StatementTester {
 	public void testSave() throws Exception {
 		pinto.execute("1.1 def(thing)");
 		pinto.execute("thing 1.2 + def(thing2)");
-		assertEquals("Nested save ref", 3.4, runDoubleDataStatement("thing2 thing +" + EVAL)[0][0], 0.001d);
+		assertEquals("Nested save ref", 3.4, run("thing2 thing +" + EVAL)[0][0], 0.001d);
 		pinto.execute("2 def(thing)");
-		assertEquals("Update nested ref", 5.2, runDoubleDataStatement("thing2 thing +" + EVAL)[0][0], 0.001d);
+		assertEquals("Update nested ref", 5.2, run("thing2 thing +" + EVAL)[0][0], 0.001d);
 		pinto.execute("1 + def(increment)");
-		assertEquals("Saved function", 7.0, runDoubleDataStatement("6 increment" + EVAL)[0][0], 0.001d);
+		assertEquals("Saved function", 7.0, run("6 increment" + EVAL)[0][0], 0.001d);
 	}
 
 	@Test
 	public void testCopy() throws Exception {
 		log.info("START testDup");
-		double[][] d = runDoubleDataStatement("1 2 copy copy +" + EVAL);
+		double[][] d = run("1 2 copy copy +" + EVAL);
 		assertEquals("Correct # dup outputs", 7, d.length);
 		assertEquals("Dup output works in plus", 3.0, d[d.length-1][0], 0.001d);
-		d = runDoubleDataStatement("1 2 copy(3)" + EVAL);
+		d = run("1 2 copy(3)" + EVAL);
 		assertEquals("Correct # dup outputs with params", 6, d.length);
 
 	}
@@ -81,22 +81,24 @@ public class StatementTester {
 	
 	
 	public void testRolling() throws Exception {
-		double[][] d = runDoubleDataStatement("moon r_mean(10) eval(2016-09-06,2016-09-09,B)");
+		double[][] d = run("moon r_mean(10) eval(2016-09-06,2016-09-09,B)");
 		assertEquals("rolling mean", 12.0096, d[0][d[0].length-1],0.001d);
 
-		d = runDoubleDataStatement("moon r_mean(10,B) eval(2016-08-06,2016-09-09,W-FRI)");
+		d = run("moon r_mean(10,B) eval(2016-08-06,2016-09-09,W-FRI)");
 		assertEquals("rolling mean (diff freqs window < range)", -33.2738, d[0][d[0].length-2],0.001d);
 
-		d = runDoubleDataStatement("moon lag(1,BM) eval(2016-08-06,2016-09-09,B)");
+		d = run("moon lag(1,BM) eval(2016-08-06,2016-09-09,B)");
 		assertEquals("lag (diff freqs range > window)", -27.3281, d[0][0],0.001d);
 	}
 	
 	public void testExpanding() throws Exception {
-		double[][] d = runDoubleDataStatement("1 e_sum(2016-09-14) eval(2016-09-12,2016-09-23,B)");
+		double[][] d = run("1 e_sum(2016-09-14) eval(2016-09-12,2016-09-23,B)");
 		assertEquals("NAs before expanding start", Double.NaN, d[0][0],0.001d);
 		assertEquals("sum from expanding start", Double.NaN, d[0][d.length - 1],0.001d);
 		
 	}
+	
+	
 	
 	/**
 	 *   July 2014
@@ -122,18 +124,18 @@ public class StatementTester {
 	public void testCaching() throws Exception {
 		String formula = "counter ";
 		// 5 * 0.0
-		assertEquals("Range B", 0.0, Arrays.stream(runDoubleDataStatement(formula + B)[0]).sum(), 0.001d);
+		assertEquals("Range B", 0.0, Arrays.stream(run(formula + B)[0]).sum(), 0.001d);
 		// 1 * 1.0
-		assertEquals("Range C", 1.0, Arrays.stream(runDoubleDataStatement(formula + C)[0]).sum(), 0.001d);
+		assertEquals("Range C", 1.0, Arrays.stream(run(formula + C)[0]).sum(), 0.001d);
 		// 3 * 2.0
-		assertEquals("Range D", 6.0, Arrays.stream(runDoubleDataStatement(formula + D)[0]).sum(), 0.001d);
+		assertEquals("Range D", 6.0, Arrays.stream(run(formula + D)[0]).sum(), 0.001d);
 		// 0, 3, 1, 4, 2
-		assertEquals("Range A", 10.0, Arrays.stream(runDoubleDataStatement(formula + A)[0]).sum(), 0.001d);
+		assertEquals("Range A", 10.0, Arrays.stream(run(formula + A)[0]).sum(), 0.001d);
 		
 		log.info("END testRanges");
 	}
 
-	private double[][] runDoubleDataStatement(String line) throws Exception {
+	private double[][] run(String line) throws Exception {
 		List<Response> output = pinto.execute(line);
 		List<TimeSeries> dd = output.stream().map(Pinto.Response::getTimeseriesOutput).filter(Optional::isPresent)
 								.map(Optional::get).flatMap(List::stream).collect(Collectors.toList());

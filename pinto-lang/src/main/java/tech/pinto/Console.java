@@ -1,6 +1,7 @@
 package tech.pinto;
 
 import java.io.IOException;
+
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Optional;
@@ -9,7 +10,6 @@ import java.util.stream.Collectors;
 import com.jakewharton.fliptables.FlipTable;
 
 import jline.console.ConsoleReader;
-import jline.console.completer.StringsCompleter;
 import tech.pinto.tools.LogAppender;
 import tech.pinto.tools.Outputs;
 
@@ -30,7 +30,7 @@ public class Console implements Runnable {
 		try {
 			ConsoleReader reader = new ConsoleReader();
 			reader.setPrompt("pinto> ");
-			reader.addCompleter(new StringsCompleter(pinto.getVocab().getCommandNames()));
+			reader.addCompleter(pinto.getNamespace());
 			String line;
 			PrintWriter out = new PrintWriter(reader.getOutput());
 			out.println("Pinto (build: " + build + ")");

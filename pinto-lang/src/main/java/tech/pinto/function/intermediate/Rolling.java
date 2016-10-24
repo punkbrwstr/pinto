@@ -12,15 +12,15 @@ import com.google.common.base.Joiner;
 import tech.pinto.TimeSeries;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.Function;
-import tech.pinto.function.IntermediateFunction;
-import tech.pinto.function.UnaryFunction;
+import tech.pinto.function.ReferenceFunction;
+import tech.pinto.function.LambdaFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 
 
-public class Rolling extends IntermediateFunction {
+public class Rolling extends ReferenceFunction {
 
 	private final Supplier<DoubleCollector> collectorSupplier;
 	private int size;
@@ -54,17 +54,17 @@ public class Rolling extends IntermediateFunction {
 			}
 			windowFrequency =  Optional.of(p);
 		}
-		outputCount = inputStack.size();
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Override public Function getReference() {
-		return new UnaryFunction(toString(),inputStack.removeFirst(), f -> range -> {
+		final Function function = inputStack.removeFirst();
+		return new LambdaFunction(f -> join(f.getStack().getFirst().toString(),toString()), f -> range -> {
 			Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
 			Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
 			Period windowEnd = wf.from(range.end().endDate());
 			PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
-			TimeSeries input = (TimeSeries) f.evaluate(expandedWindow);
+			TimeSeries input = f.removeFirst().evaluate(expandedWindow);
 			Builder b = DoubleStream.builder();
 			double[] data = input.stream().toArray();
 			for(Period p : range.values()) {
@@ -73,17 +73,22 @@ public class Rolling extends IntermediateFunction {
 							.collect(collectorSupplier, (v,d) -> v.add(d), (v,v1) -> v.combine(v1));
 				b.accept(dc.finish());
 			}
-			return new TimeSeries(range,joinWithSpaces(input.getLabel(),toString()),b.build());
-		});
+			return b.build();
+		}, function);
 	}
 
-	public static Supplier<FunctionHelp> getHelp(String name, String description) {
-		return () -> new FunctionHelp.Builder(name)
+	public static FunctionHelp getHelp(String name, String description) {
+		return new FunctionHelp.Builder(name)
 				.outputs("n")
 				.description("Calculates " + description + " over rolling window starting *size* number of *periodicity* prior for each input.")
 				.parameter("size","1",null)
 				.parameter("periodicity", "B", "{B,W-FRI,BM,BQ,BA}")
 				.build();
+	}
+
+	@Override
+	public int getOutputCount() {
+		return inputStack.size();
 	}
 	
 }

@@ -12,14 +12,13 @@ import com.google.common.base.Joiner;
 
 import tech.pinto.TimeSeries;
 import tech.pinto.function.Function;
-import tech.pinto.function.IntermediateFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 
 
-public class RollingCorrelation extends IntermediateFunction {
+public class RollingCorrelation extends Function {
 
 	private int size;
 	private final Optional<Periodicity<?>> windowFrequency;
@@ -45,7 +44,6 @@ public class RollingCorrelation extends IntermediateFunction {
 			}
 			windowFrequency =  Optional.of(p);
 		}
-		outputCount = 1;
 	}
 	
 	@Override
@@ -80,6 +78,11 @@ public class RollingCorrelation extends IntermediateFunction {
 	@Override
 	public Function getReference() {
 		return this;
+	}
+
+	@Override
+	public int getOutputCount() {
+		return 1;
 	}
 	
 }

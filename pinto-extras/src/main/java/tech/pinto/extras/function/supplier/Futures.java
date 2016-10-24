@@ -2,6 +2,8 @@ package tech.pinto.extras.function.supplier;
 
 
 import java.text.MessageFormat;
+
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
@@ -13,11 +15,9 @@ import java.util.Map;
 import java.util.stream.DoubleStream;
 import java.util.stream.DoubleStream.Builder;
 
-import tech.pinto.Cache;
 import tech.pinto.Expression;
+import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.TimeSeries;
-import tech.pinto.Vocabulary;
 import tech.pinto.function.Function;
 import tech.pinto.function.supplier.CachedSupplierFunction;
 import tech.pinto.time.Period;
@@ -28,16 +28,16 @@ public class Futures extends CachedSupplierFunction {
 	
     final static String[] monthCodes = new String[]{"H","M","U","Z"};
 
-    final private Vocabulary vocab;
     final private String contractCode, criteriaFieldCode, priceModifierFormula, priceFieldCode, pricePreviousCode;
     final private int previousOffset;
+    final private Namespace namespace;
 
-	public Futures(Cache cache, Vocabulary vocab, LinkedList<Function> inputs, String[] args) {
-		super("futures", cache, inputs, args);
+	public Futures(String name, Namespace namespace, LinkedList<Function> inputs, String[] args) {
+		super("futures", inputs, args);
+		this.namespace = namespace;
         if(args.length == 0) {
             throw new IllegalArgumentException("Wrong arguments for futures return");
         }
-        this.vocab = vocab;
         contractCode = args[0].toUpperCase(); // don't trim because of "G "
         criteriaFieldCode = args.length > 1 ?
                 args[1].toUpperCase().replaceAll("\\s+","_") : "OPEN_INT";
@@ -48,7 +48,7 @@ public class Futures extends CachedSupplierFunction {
 	}
 
 	@Override
-	public <P extends Period> List<TimeSeries> evaluateAllUncached(PeriodicRange<P> range) {
+	public <P extends Period> List<DoubleStream> evaluateAll(PeriodicRange<P> range) {
         int numberOfContracts = 0;
         // key is code ("Z-2010") and value is column index for data
         HashMap<String,Integer> contracts = new HashMap<>();
@@ -156,13 +156,15 @@ public class Futures extends CachedSupplierFunction {
             }
             d.accept(prices[currentRow][i] / pricesPrev[currentRow][i + previousOffset] - 1.0d);
         }
-        return Arrays.asList(new TimeSeries(range,toString(),d.build()));
+        return Arrays.asList(d.build());
 	}
 
 	@Override
-	protected int myOutputCount() {
+	protected int additionalOutputCount() {
 		return 1;
 	}
+	
+	
 	
     private boolean isNG(double d) {
         return Double.isNaN(d) || d == 0.0d || Double.isInfinite(d);
@@ -172,13 +174,18 @@ public class Futures extends CachedSupplierFunction {
     	try {
     		String e = exp + " eval(" + range.start().endDate().toString() + ","
     					+ range.end().endDate().toString() + "," + range.periodicity().code() + ")";
-    		return new Expression(cache, vocab, e, new LinkedList<Function>())
+    		return new Expression(namespace, e, new LinkedList<Function>())
     				.getTerminalCommands().getFirst().getTimeSeries().get().get(0)
     				.stream().toArray();
     	} catch(PintoSyntaxException pse) {
     		throw new RuntimeException();
     	}
     }
+
+	@Override
+	protected List<String> allLabels() {
+		return Arrays.asList(toString());
+	}
 
 	
 

@@ -1,9 +1,9 @@
 package tech.pinto.extras;
 
 import java.io.IOException;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -33,7 +33,6 @@ import com.bloomberglp.blpapi.Service;
 import com.bloomberglp.blpapi.Session;
 import com.bloomberglp.blpapi.SessionOptions;
 
-import tech.pinto.TimeSeries;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
@@ -121,7 +120,7 @@ public class BloombergClient {
 		}
 	}
 
-	public <P extends Period> Function<PeriodicRange<?>, List<TimeSeries>> 
+	public <P extends Period> Function<PeriodicRange<?>, List<DoubleStream>> 
 					getFunction(List<String> securities, List<String> fields ) {
 		if (session == null) {
 			connect();
@@ -136,7 +135,7 @@ public class BloombergClient {
 						.collect(Collectors.toMap((i) -> securityCodeFieldCode.get(i), Function.identity()));
 			final double[][] data = new double[securityCodeFieldCode.size()][(int) range.size()];
 			Arrays.stream(data).forEach(d -> Arrays.fill(d, Double.NaN));
-			final CompletableFuture<List<TimeSeries>> futureDS = new CompletableFuture<>();
+			final CompletableFuture<List<DoubleStream>> futureDS = new CompletableFuture<>();
 //			final Map<String,DoubleStream.Builder> builders = securityCodeFieldCode.stream()
 //						.collect(Collectors.toMap(Function.identity(), (s) -> DoubleStream.builder()));
 //			final Map<String,AtomicInteger> stillNeeded = securityCodeFieldCode.stream()
@@ -198,8 +197,7 @@ public class BloombergClient {
 //							}
 //						}
 						futureDS.complete(IntStream.range(0, securityCodeFieldCode.size())
-								.mapToObj(i -> new TimeSeries(range, securityCodeFieldCode.get(i), DoubleStream.of(data[i])))
-								.collect(Collectors.toList()));
+								.mapToObj(i -> DoubleStream.of(data[i])).collect(Collectors.toList()));
 //						futureDS.complete(builders.entrySet().stream()
 //								.map(e -> new DoubleData(d, e.getKey(), e.getValue().build()))
 //								.collect(Collectors.toCollection(() -> new ArrayDeque<DoubleData>())));

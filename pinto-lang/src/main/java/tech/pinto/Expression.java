@@ -1,88 +1,74 @@
 package tech.pinto;
 
 import java.util.ArrayDeque;
-
-
-
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import tech.pinto.function.Function;
-import tech.pinto.function.IntermediateFunction;
+import tech.pinto.function.LambdaFunction;
+import tech.pinto.function.ReferenceFunction;
 import tech.pinto.function.TerminalFunction;
-import tech.pinto.function.supplier.Literal;
 
-public class Expression extends IntermediateFunction {
+public class Expression extends ReferenceFunction {
 
 	private final ArrayDeque<TerminalFunction> terminalCommands = new ArrayDeque<>();
 	private final Set<String> dependencies = new HashSet<>();
-	private final String text;
 
-	public Expression(Cache cache, Vocabulary vocab, String text) throws PintoSyntaxException {
-		this(cache, vocab, text, new LinkedList<>());
+	public Expression(Namespace namespace, String text) throws PintoSyntaxException {
+		this(namespace, text, new LinkedList<>());
 	}
 
-	public Expression(Cache cache, Vocabulary vocab, String text, LinkedList<Function> existingStack)
+	public Expression(Namespace namespace, String text, LinkedList<Function> existingStack)
 			throws PintoSyntaxException {
 		super("statement", new LinkedList<>(existingStack));
-		this.text = text;
+		labeller = f -> text;
 		existingStack.clear();
 		Indexer indexer = Indexer.ALL;
 		List<String> expressionToSave = new ArrayList<>();
 		try (Scanner sc = new Scanner(text)) {
 			while (sc.hasNext()) {
 				if (sc.hasNext(Pattern.compile("\\[.*"))) { // index
-					indexer = new Indexer(parseIndexString(sc), inputStack.size());
+					indexer = new Indexer(parseIndexString(sc), inputStack);
 				} else {
 					Function c = null;
 					if (sc.hasNextDouble()) { // double literal
-						c = new Literal(sc.nextDouble());
-						expressionToSave.add(c.toString());
+						final double d = sc.nextDouble();
+						c = new LambdaFunction(f -> Double.toString(d),
+								x -> range -> DoubleStream.iterate(d, r -> d).limit(range.size()));
 					} else {
 						String s = sc.next();
 						String commandName = s.contains("(") ? s.substring(0, s.indexOf("(")) : s;
-						if (vocab.commandExists(commandName)) { // it's a known command
-							try {
-								c = vocab.getCommand(commandName, cache, 
+						if (!namespace.contains(commandName)) {
+							throw new PintoSyntaxException("Name \"" + s + "\" not found.");
+						}
+						try {
+							c = namespace.getFunction(commandName, 
 										indexer.index(inputStack), new ArrayList<>(expressionToSave), parseCommandArguments(text, s, sc));
-							} catch (IllegalArgumentException e) {
+						} catch (IllegalArgumentException e) {
 								throw new PintoSyntaxException("Wrong arguments for " + commandName + ": " + e.getMessage(), e);
-							}
-							expressionToSave.add(c.toString());
-						} else { // it's the name of a saved statement (hopefully)
-							if (!cache.isSavedStatement(s)) {
-								throw new PintoSyntaxException("Command \"" + s + "\" not found.");
-							}
-							dependencies.add(s);
-							c = new Expression(cache, vocab, cache.getSaved(s), indexer.index(inputStack));
-							expressionToSave.add(s);
 						}
 						indexer = Indexer.ALL;
 					}
+					expressionToSave.add(c.toString());
 					if (c instanceof TerminalFunction) {
 						terminalCommands.addFirst((TerminalFunction) c);
 						expressionToSave.clear();
 					} else {
-						for (int i = 0; i < c.getOutputCount(); i++) {
+						int count = c.getOutputCount();
+						for (int i = 0; i < count; i++) {
 							inputStack.addFirst(c.getReference());
 						}
 					}
 				}
 			}
 		}
-		outputCount = inputStack.size();
 	}
 
 	@Override
@@ -101,11 +87,6 @@ public class Expression extends IntermediateFunction {
 
 	public ArrayDeque<TerminalFunction> getTerminalCommands() {
 		return terminalCommands;
-	}
-
-	@Override
-	public String toString() {
-		return text;
 	}
 
 	private String[] parseCommandArguments(String statement, String s, Scanner sc) {
@@ -153,85 +134,10 @@ public class Expression extends IntermediateFunction {
 			} while (!next.contains("]"));
 			return sb.toString().replaceAll("\\[|\\]", "").replaceAll("\\s", "");
 	}
-	
 
-	private static class Indexer {
-		
-		private boolean everything = true;
-		private Integer start = null;
-		private Integer end = null;
-		private TreeMap<Integer,Integer> indicies = new TreeMap<>(Collections.reverseOrder());
-		
-		public static Indexer ALL = new Indexer();
-		
-		private Indexer() {}
-
-		Indexer(String indexString, int stackSize) throws PintoSyntaxException {
-			everything = false;
-			if(indexString.contains(":") && indexString.contains(",")) {
-				throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Cannot combine range indexing with multiple indexing.");
-			} else if (!indexString.contains(":")) {
-				int[] ia = Stream.of(indexString.split(",")).mapToInt(Integer::parseInt).toArray();
-				for(int i = 0; i < ia.length; i++) {
-					indicies.put(ia[i] < 0 ? ia[i] + stackSize : ia[i], i);
-				}
-			} else if(indexString.equals(":")) {
-				start = 0;
-				end = -1;
-			} else if(indexString.indexOf(":") == 0) {
-				start = 0;
-				end = Integer.parseInt(indexString.substring(1));
-			} else if(indexString.indexOf(":") == indexString.length() - 1) {
-				end = -1;
-				start = Integer.parseInt(indexString.substring(0, indexString.length() - 1));
-			} else {
-				String[] parts = indexString.split(":");
-				start = Integer.parseInt(parts[0]);
-				end = Integer.parseInt(parts[1]);
-			} 
-			
-			if(start != null) {
-				start = start < 0 ? start + stackSize : start;
-				end = end < 0 ? end + stackSize : end;
-				if (start > end) {
-					throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Start is after end.");
-				} else if (start < 0) {
-					throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Start is too low.");
-				} else if (end >= stackSize) {
-					throw new PintoSyntaxException("Invalid index \"" + indexString + "\". End too high for stack size.");
-				}
-			} else {
-				for(int i : indicies.keySet()) {
-					if (i < 0) {
-						throw new PintoSyntaxException("Invalid index \"" + i + "\". Start is too low.");
-					} else if (i >= stackSize) {
-						throw new PintoSyntaxException("Invalid index \"" + i + "\". End too high for stack size.");
-					}
-					
-				}
-			}
-		}
-		
-		LinkedList<Function> index(LinkedList<Function> stack) throws PintoSyntaxException {
-			LinkedList<Function> indexed = new LinkedList<>();
-			if(everything) {
-				indexed.addAll(stack);
-				stack.clear();
-			} else {
-				if(start != null) {
-					IntStream.range(start,end + 1).forEach(i -> indicies.put(i,i));
-				} 
-				TreeMap<Integer,Function> functions = new TreeMap<>();
-				for(Map.Entry<Integer, Integer> i : indicies.entrySet()) {
-					if(stack.size() == 0) {
-						throw new PintoSyntaxException();
-					}
-					functions.put(i.getValue(), stack.remove(i.getKey().intValue()));
-				}
-				functions.values().stream().forEach(indexed::addLast);
-			}
-			return indexed;
-		}
+	@Override
+	public int getOutputCount() {
+		return inputStack.size();
 	}
 
 }

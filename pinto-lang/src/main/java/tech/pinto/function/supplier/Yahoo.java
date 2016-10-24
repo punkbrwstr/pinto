@@ -7,20 +7,15 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.time.LocalDate;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
-
 import com.google.common.collect.ImmutableMap;
 
-import tech.pinto.Cache;
-import tech.pinto.TimeSeries;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.Function;
 import tech.pinto.time.BusinessDaily;
@@ -34,19 +29,29 @@ public class Yahoo extends CachedSupplierFunction {
 
 	static private final Map<Periodicity<?>, String> FREQ = new ImmutableMap.Builder<Periodicity<?>, String>()
 			.put(new BusinessDaily(), "d").put(new FridayWeekly(), "w").put(new BusinessMonthly(), "m").build();
-	private final ArrayDeque<String> tickers = new ArrayDeque<>();
+	private final List<String> tickers;
 
-	public Yahoo(Cache cache, LinkedList<Function> inputs, String... args) {
-		super("yhoo", cache, inputs, args);
-		Stream.of(args).forEach(tickers::addLast);
+	public Yahoo(LinkedList<Function> inputs, String... args) {
+		super("yhoo", inputs, args);
+		tickers = Arrays.asList(args);
 	}
 
 	@Override
-	public <P extends Period> List<TimeSeries> evaluateAllUncached(PeriodicRange<P> range) {
+	protected int additionalOutputCount() {
+		return tickers.size();
+	}
+
+	@Override
+	protected List<String> allLabels() {
+		return tickers;
+	}
+
+	@Override
+	protected <P extends Period> List<DoubleStream> evaluateAll(PeriodicRange<P> range) {
 		if (!FREQ.containsKey(range.periodicity())) {
 			throw new IllegalArgumentException("Unsupported periodicity for yahoo finance data.");
 		}
-		List<TimeSeries> output = new ArrayList<>();
+		List<DoubleStream> output = new ArrayList<>();
 		for (String ticker : tickers) {
 			LocalDate start = range.start().endDate();
 			LocalDate end = range.end().endDate();
@@ -79,13 +84,13 @@ public class Yahoo extends CachedSupplierFunction {
 					b.accept(Double.NaN);
 				}
 			}
-			output.add(new TimeSeries(range, ticker, b.build()));
+			output.add(b.build());
 		}
 		return output;
 	}
 	
-	public static Supplier<FunctionHelp> getHelp() {
-		return () -> new FunctionHelp.Builder("yhoo")
+	public static FunctionHelp getHelp(String name) {
+		return new FunctionHelp.Builder(name)
 				.outputs("n + z")
 				.description("Retrieves online price history for each *ticker*.")
 				.parameter("ticker<sub>1</sub>")
@@ -93,9 +98,5 @@ public class Yahoo extends CachedSupplierFunction {
 				.build();
 	}
 
-	@Override
-	protected int myOutputCount() {
-		return tickers.size();
-	}
 
 }

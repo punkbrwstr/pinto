@@ -8,15 +8,16 @@ import java.util.stream.DoubleStream;
 
 import tech.pinto.TimeSeries;
 import tech.pinto.function.FunctionHelp;
+import tech.pinto.function.LambdaFunction;
 import tech.pinto.function.Function;
-import tech.pinto.function.IntermediateFunction;
+import tech.pinto.function.ReferenceFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 
 
-public class Expanding extends IntermediateFunction {
+public class Expanding extends ReferenceFunction {
 
 	private final Supplier<DoubleCollector> collectorSupplier;
 	private final Optional<LocalDate> start;
@@ -35,40 +36,42 @@ public class Expanding extends IntermediateFunction {
 			}
 			windowFrequency =  Optional.of(p);
 		}
-		outputCount = inputStack.size();
 	}
 	
-	@Override
-	public <P extends Period> TimeSeries evaluate(PeriodicRange<P> range) {
-		@SuppressWarnings("unchecked")
-		Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
-		LocalDate startDate = start.orElse(range.start().endDate());
-		Period windowStart = wf.from(startDate);
-		Period windowEnd = wf.from(range.end().endDate());
-		windowEnd = windowEnd.isBefore(windowStart) ? windowStart : windowEnd;
-		PeriodicRange<Period> window = wf.range(windowStart, windowEnd, range.clearCache());
+	@SuppressWarnings("unchecked")
+	@Override public Function getReference() {
+		final Function function = inputStack.removeFirst();
+		return new LambdaFunction(f -> join(f.getStack().getFirst().toString(),toString()), 
+				inputs -> range -> {
+			Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
+			LocalDate startDate = start.orElse(range.start().endDate());
+			Period windowStart = wf.from(startDate);
+			Period windowEnd = wf.from(range.end().endDate());
+			windowEnd = windowEnd.isBefore(windowStart) ? windowStart : windowEnd;
+			PeriodicRange<Period> window = wf.range(windowStart, windowEnd, range.clearCache());
 		
-		DoubleStream.Builder b = DoubleStream.builder();
-		TimeSeries input = null;
-		DoubleCollector dc = collectorSupplier.get();
-		input = (TimeSeries) inputStack.removeFirst().evaluate(window);
-		double[] output = input.stream().map(d -> {
-				dc.add(d);
-				return dc.finish();
-		}).toArray();
-		for(Period p : range.values()) {
-			int index = (int) window.indexOf(p.endDate());
-			if(index >= 0) {
-				b.accept(output[index]);
-			} else  {
-				b.accept(Double.NaN);
-			}	
-		}
-		return new TimeSeries(range,joinWithSpaces(input.getLabel(),toString()),b.build());
+			DoubleStream.Builder b = DoubleStream.builder();
+			TimeSeries input = null;
+			DoubleCollector dc = collectorSupplier.get();
+			input = (TimeSeries) inputs.removeFirst().evaluate(window);
+			double[] output = input.stream().map(d -> {
+					dc.add(d);
+					return dc.finish();
+			}).toArray();
+			for(Period p : range.values()) {
+				int index = (int) window.indexOf(p.endDate());
+				if(index >= 0) {
+					b.accept(output[index]);
+				} else  {
+					b.accept(Double.NaN);
+				}	
+			}
+			return b.build();
+		}, function);
 	}
 	
-	public static Supplier<FunctionHelp> getHelp(String name, String description) {
-		return () -> new FunctionHelp.Builder(name)
+	public static FunctionHelp getHelp(String name, String description) {
+		return new FunctionHelp.Builder(name)
 				.outputs("n")
 				.description("Calculates " + description + " over an expanding window starting *start_date* over *periodicity*.")
 				.parameter("start_date","1",null)
@@ -77,8 +80,8 @@ public class Expanding extends IntermediateFunction {
 	}
 
 	@Override
-	public Function getReference() {
-		return this;
+	public int getOutputCount() {
+		return inputStack.size();
 	}
-	
+
 }

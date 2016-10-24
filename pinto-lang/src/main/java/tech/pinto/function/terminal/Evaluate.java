@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import tech.pinto.function.FunctionHelp;
@@ -16,8 +15,8 @@ import tech.pinto.time.Periodicity;
 public class Evaluate extends TerminalFunction {
 
 
-	public Evaluate(LinkedList<Function> inputs, String[] args) {
-		super("eval", inputs, args);
+	public Evaluate(String name, LinkedList<Function> inputs, String[] args) {
+		super(name, inputs, args);
 		Periodicity<?> p =  Periodicities.get(args.length > 2 ? args[2] : "B");
 		LocalDate start = args.length > 0 ? LocalDate.parse(args[0]) : 
 							p.from(LocalDate.now()).previous().endDate();
@@ -28,8 +27,8 @@ public class Evaluate extends TerminalFunction {
 		Collections.reverse(timeSeriesOutput.get());
 	}
 	
-	public static Supplier<FunctionHelp> getHelp() {
-		return () -> new FunctionHelp.Builder("eval")
+	public static FunctionHelp getHelp(String name) {
+		return  new FunctionHelp.Builder(name)
 				.outputs("n")
 				.description("Evaluates the preceding commands over the given date range.")
 				.parameter("start date", "prior period", "yyyy-dd-mm")

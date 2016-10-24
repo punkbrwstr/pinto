@@ -2,43 +2,42 @@ package tech.pinto.function.intermediate;
 
 import java.util.ArrayDeque;
 
+
 import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.function.Supplier;
 
-import tech.pinto.TimeSeries;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.Function;
-import tech.pinto.function.IntermediateFunction;
-import tech.pinto.function.UnaryFunction;
+import tech.pinto.function.ReferenceFunction;
 
-public class Label extends IntermediateFunction {
+public class Label extends ReferenceFunction {
 	
 	private final ArrayDeque<String> labels = new ArrayDeque<>();
 
-	public Label(LinkedList<Function> inputs, String... arguments) {
-		super("label", inputs, arguments);
-		outputCount = inputStack.size();
+	public Label(String name, LinkedList<Function> inputs, String... arguments) {
+		super(name, inputs, arguments);
 		labels.addAll(Arrays.asList(arguments));
 	}
 	
 	@Override public Function getReference() {
 		String label = labels.removeFirst();
-		return new UnaryFunction("label",inputStack.removeFirst(), 
-			f -> range -> {
-				TimeSeries data = f.evaluate(range);
-				data.setLabel(label);
-				return data;
-		});
+		Function function = inputStack.removeFirst();
+		function.setLabeller(f -> label);
+		return function;
 	}
 
-	public static Supplier<FunctionHelp> getHelp() {
-		return () -> new FunctionHelp.Builder("label")
+	public static FunctionHelp getHelp(String name) {
+		return new FunctionHelp.Builder(name)
 				.outputs("*z*")
 				.description("Sets arguments as labels for inputs")
 				.parameter("label<sub>1</sub>")
 				.parameter("label<sub>z</sub>")
 				.build();
+	}
+
+	@Override
+	public int getOutputCount() {
+		return inputStack.size();
 	}
 	
 

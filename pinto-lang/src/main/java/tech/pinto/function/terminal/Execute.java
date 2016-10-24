@@ -3,27 +3,27 @@ package tech.pinto.function.terminal;
 import java.io.BufferedReader;
 
 
+
+
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 
-import tech.pinto.Cache;
 import tech.pinto.Expression;
+import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.Vocabulary;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.Function;
 import tech.pinto.function.TerminalFunction;
 
 public class Execute extends TerminalFunction {
 
-	public Execute(Cache cache, Vocabulary vocab, LinkedList<Function> inputs,  String... arguments) {
-		super("exec", inputs, arguments);
+	public Execute(String name, Namespace namespace, LinkedList<Function> inputs,  String... arguments) {
+		super(name, inputs, arguments);
 		if(arguments.length < 1) {
 			throw new IllegalArgumentException("exec requires one argument.");
 		}
@@ -31,7 +31,7 @@ public class Execute extends TerminalFunction {
 		try (BufferedReader reader = new BufferedReader(new FileReader(arguments[0]))) {
 		    String line = null;
 		    while ((line = reader.readLine()) != null) {
-		    	Expression s = new Expression(cache, vocab, line, inputStack);
+		    	Expression s = new Expression(namespace, line, inputStack);
 		    	if (s.getTerminalCommands().size() != 0) {
 		    		while(!s.getTerminalCommands().isEmpty()) {
 		    			TerminalFunction terminal = s.getTerminalCommands().removeLast();
@@ -58,8 +58,8 @@ public class Execute extends TerminalFunction {
 		}
 	}
 	
-	public static Supplier<FunctionHelp> getHelp() {
-		return () -> new FunctionHelp.Builder("exec")
+	public static FunctionHelp getHelp(String name) {
+		return new FunctionHelp.Builder(name)
 				.outputs("varies")
 				.description("Executes pinto program defined in *filename*.")
 				.parameter("filename")
