@@ -2,11 +2,18 @@ package tech.pinto;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -17,6 +24,8 @@ import javax.servlet.http.HttpSession;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import tech.pinto.function.TerminalFunction;
 
 public class Servlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
@@ -49,12 +58,13 @@ public class Servlet extends HttpServlet {
 				session.setAttribute("pinto", pintoSupplier.get());
 			}
 			Pinto pinto = (Pinto) session.getAttribute("pinto");
-			List<Pinto.Response> output = pinto.execute(statement);
-			List<TimeSeries> data = output.stream().map(Pinto.Response::getTimeseriesOutput)
-					.filter(Optional::isPresent).map(Optional::get).flatMap(List::stream)
-					.collect(Collectors.toList());
-			List<String> messages = output.stream().map(Pinto.Response::getMessageOutput)
-					.filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
+			LinkedList<TimeSeries> data = new LinkedList<>();
+			List<String> messages = new ArrayList<>();
+	    	for(TerminalFunction tf : pinto.execute(statement)) {
+	    		Optional<LinkedList<TimeSeries>> list = tf.getTimeSeries();
+	    		list.ifPresent(data::addAll); 
+	    		tf.getText().ifPresent(messages::add);
+	    	}
 			if (data.size() == 0 && messages.size() == 0) {
 				writeResponse(response, new ImmutableMap.Builder<String, Object>().put("responseType", "none").build());
 			} else if (data.size() > 0) {
@@ -68,12 +78,9 @@ public class Servlet extends HttpServlet {
 								omitDates ? ""
 										: data.get(0).getRange().dates().stream().map(LocalDate::toString)
 												.collect(Collectors.toList()))
-						.put("columns", data.stream().map(TimeSeries::getLabel).collect(Collectors.toList()))
-						.put("data",
-								numbersAsString
-										? data.stream().map(TimeSeries::stream)
-												.map(ds -> ds.mapToObj(Double::toString)
-														.collect(Collectors.toList()))
+						.put("columns", streamInReverse(data).map(TimeSeries::getLabel).collect(Collectors.toList()))
+						.put("data", numbersAsString ? streamInReverse(data).map(TimeSeries::stream)
+												.map(ds -> ds.mapToObj(Double::toString).collect(Collectors.toList()))
 												.collect(Collectors.toList())
 										: data.stream().map(TimeSeries::stream).map(DoubleStream::toArray)
 												.collect(Collectors.toList()))
@@ -91,6 +98,12 @@ public class Servlet extends HttpServlet {
 	
 	protected void writeResponse(HttpServletResponse response, Object o) throws IOException {
 		response.getOutputStream().print(gson.toJson(o));
+	}
+	
+	private static <T> Stream<T> streamInReverse(LinkedList<T> input) {
+		  Iterator<T> descendingIterator = input.descendingIterator();
+		  return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+		    descendingIterator, Spliterator.ORDERED), false);
 	}
 
 }

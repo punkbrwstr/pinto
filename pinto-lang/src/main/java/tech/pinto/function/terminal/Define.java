@@ -1,44 +1,43 @@
 package tech.pinto.function.terminal;
 
-import java.util.LinkedList;
 
-import java.util.List;
 import java.util.Optional;
 
-
+import tech.pinto.Indexer;
 import tech.pinto.Namespace;
-import tech.pinto.function.Function;
+import tech.pinto.PintoSyntaxException;
+import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.TerminalFunction;
-import tech.pinto.function.intermediate.Copy;
 
 public class Define extends TerminalFunction {
 
-	public Define(String name, Namespace namespace, LinkedList<Function> inputs, List<String> saveString, String[] arguments) {
-		super(name, new LinkedList<>(), arguments);
-		if(arguments.length < 1) {
-			throw new IllegalArgumentException("save requires one argument.");
+	public Define(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, namespace, previousFunction, indexer, args);
+	}
+	
+	public Optional<String> getText() throws PintoSyntaxException {
+		if(args.length < 1) {
+			throw new IllegalArgumentException("Define requires a name argument.");
 		}
-		Function f = new Copy(inputs,"1");
-		f.setLabeller(func -> arguments[0]);
-		String desc = join(saveString);
-		if(arguments.length > 1) {
-			desc += " (" + arguments[1] + ")";
+		ComposableFunction f = new ComposableFunction(args[0], previousFunction.orElseThrow(() ->
+					new PintoSyntaxException("Cannot define an empty expression.")), indexer, args);
+		previousFunction.get().setIsSubFunction();
+		String desc = previousFunction.get().toExpression().toString();
+		if(args.length > 1) {
+			desc += " (" + args[1] + ")";
 		}
-		namespace.define(arguments[0], desc, f);
-		message = Optional.of("Successfully saved.");
+		namespace.define(args[0], desc, f);
+		return Optional.of("Successfully saved.");
 	}
 	
 	public static FunctionHelp getHelp(String name) {
 		return new FunctionHelp.Builder(name)
 				.outputs("none")
-				.description("Defines the preceding commands as a new command, named *name*.")
+				.description("Defines the preceding function as *name*.")
 				.parameter("name")
 				.parameter("description (Optional)")
 				.build();
 	}
-	
-	
-	
 
 }

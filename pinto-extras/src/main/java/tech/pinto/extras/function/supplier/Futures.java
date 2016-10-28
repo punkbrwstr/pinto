@@ -4,21 +4,21 @@ package tech.pinto.extras.function.supplier;
 import java.text.MessageFormat;
 
 
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.DoubleStream;
 import java.util.stream.DoubleStream.Builder;
 
-import tech.pinto.Expression;
-import tech.pinto.Namespace;
+import tech.pinto.Indexer;
+import tech.pinto.Pinto;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.function.Function;
+import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.supplier.CachedSupplierFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
@@ -30,11 +30,11 @@ public class Futures extends CachedSupplierFunction {
 
     final private String contractCode, criteriaFieldCode, priceModifierFormula, priceFieldCode, pricePreviousCode;
     final private int previousOffset;
-    final private Namespace namespace;
+    final private Pinto pinto;
 
-	public Futures(String name, Namespace namespace, LinkedList<Function> inputs, String[] args) {
-		super("futures", inputs, args);
-		this.namespace = namespace;
+	public Futures(String name, Pinto pinto, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
+		this.pinto = pinto;
         if(args.length == 0) {
             throw new IllegalArgumentException("Wrong arguments for futures return");
         }
@@ -170,12 +170,11 @@ public class Futures extends CachedSupplierFunction {
         return Double.isNaN(d) || d == 0.0d || Double.isInfinite(d);
     }
     
-    private <P extends Period> double[] runExpression(PeriodicRange<P> range, String exp) {
+    private <P extends Period> double[] runExpression(PeriodicRange<P> range, String exp) throws Exception {
     	try {
     		String e = exp + " eval(" + range.start().endDate().toString() + ","
     					+ range.end().endDate().toString() + "," + range.periodicity().code() + ")";
-    		return new Expression(namespace, e, new LinkedList<Function>())
-    				.getTerminalCommands().getFirst().getTimeSeries().get().get(0)
+    		return pinto.execute(e).get(0).getTimeSeries().get().get(0)
     				.stream().toArray();
     	} catch(PintoSyntaxException pse) {
     		throw new RuntimeException();

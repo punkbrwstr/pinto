@@ -3,19 +3,23 @@ package tech.pinto.function.intermediate;
 import java.util.LinkedList;
 
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.Function;
-import tech.pinto.function.ReferenceFunction;
+import tech.pinto.function.EvaluableFunction;
+import tech.pinto.Indexer;
+import tech.pinto.function.ComposableFunction;
 
-final public class Clear extends ReferenceFunction {
+final public class Clear extends ComposableFunction {
 	
-	public Clear(String name, LinkedList<Function> inputs, String...args) {
-		super(name, inputs, args);
-	}
 	
-	@Override public Function getReference() {
-		throw new UnsupportedOperationException();
+
+	public Clear(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
 	}
 
+	@Override
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+		stack.clear();
+		return stack;
+	}
 
 	public static FunctionHelp getHelp(String name) {
 		return new FunctionHelp.Builder(name)
@@ -23,11 +27,5 @@ final public class Clear extends ReferenceFunction {
 				.outputs("none")
 				.build();
 	}
-
-	@Override
-	public int getOutputCount() {
-		return 0;
-	}
-
 	
 }

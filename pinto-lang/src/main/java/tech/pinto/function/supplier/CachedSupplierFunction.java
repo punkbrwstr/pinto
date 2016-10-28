@@ -16,24 +16,22 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
 
+import tech.pinto.Indexer;
 import tech.pinto.TimeSeries;
-import tech.pinto.function.Function;
-import tech.pinto.function.LambdaFunction;
-import tech.pinto.function.ReferenceFunction;
+import tech.pinto.function.ComposableFunction;
+import tech.pinto.function.EvaluableFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicity;
 
-abstract public class CachedSupplierFunction extends ReferenceFunction {
+abstract public class CachedSupplierFunction extends ComposableFunction {
 
-	public HashMap<String,RangeMap<Long,List<TimeSeries>>> doubleDataCache = new HashMap<>();
+	public static HashMap<String,RangeMap<Long,List<TimeSeries>>> doubleDataCache = new HashMap<>();
 
-	private int referenceCount = 0;
-	
-	public CachedSupplierFunction(String name, LinkedList<Function> inputs, String...arguments) {
-		super(name, inputs, arguments);
+	public CachedSupplierFunction(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
 	}
-	
+
 	abstract protected <P extends Period> List<DoubleStream> evaluateAll(PeriodicRange<P> range);
 	abstract protected List<String> allLabels();
 	abstract protected int additionalOutputCount();
@@ -43,19 +41,14 @@ abstract public class CachedSupplierFunction extends ReferenceFunction {
 	}
 	
 	@Override
-	public Function getReference() {
-		if(!inputStack.isEmpty()) {
-			return inputStack.removeLast();
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+		for(int i = 0; i < additionalOutputCount(); i++) {
+			final int index = i;
+			stack.addFirst(new EvaluableFunction(f -> allLabels().get(index),inputs -> range -> this.evaluateOne(index, range)));
 		}
-		final int i = referenceCount++;
-		return new LambdaFunction(f -> allLabels().get(i),inputs -> range -> this.evaluateOne(i, range));
+		return stack;
 	}
-	
-	@Override
-	public int getOutputCount() {
-		 return inputStack.size() + additionalOutputCount();
-	}
-	
+
     public <P extends Period> List<DoubleStream> evaluateCached(String k, int streamCount, PeriodicRange<P> range,
                 java.util.function.Function<PeriodicRange<P>,List<DoubleStream>> f) {
 		java.util.function.Function<PeriodicRange<P>,List<TimeSeries>> filler = 

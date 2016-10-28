@@ -5,36 +5,29 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import tech.pinto.function.FunctionHelp;
+import tech.pinto.function.EvaluableFunction;
 import tech.pinto.Indexer;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.function.Function;
-import tech.pinto.function.ReferenceFunction;
+import tech.pinto.function.ComposableFunction;
 
-public class Only extends ReferenceFunction {
+public class Only extends ComposableFunction {
 	
-	private LinkedList<Function> outputs;
 	
-	public Only(String name, LinkedList<Function> inputs, String...args) {
-		super(name, inputs, args);
+
+	public Only(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
+	}
+
+	@Override
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
 		String indexString = Stream.of(args).collect(Collectors.joining(","));
 		try {
-			outputs = new Indexer(indexString, inputStack).index(inputStack);
+			return new Indexer(indexString).index(stack);
 		} catch (PintoSyntaxException e) {
-			e.printStackTrace();
+			throw new RuntimeException("Syntax error in arguments of " + name + ".",e);
 		}
 	}
 	
-	@Override public Function getReference() {
-		return outputs.removeFirst();
-	}
-	
-	@Override public Only clone() {
-		Only clone = (Only) super.clone();
-		clone.outputs = new LinkedList<>();
-		outputs.stream().map(Function::clone).forEach(clone.outputs::addLast);
-		return clone;
-	}
-
 	public static FunctionHelp getHelp(String name) {
 		return new FunctionHelp.Builder(name)
 				.description("Clears stack except for functions specified by indexing expression.")
@@ -43,10 +36,4 @@ public class Only extends ReferenceFunction {
 				.build();
 	}
 
-	@Override
-	public int getOutputCount() {
-		return outputs.size();
-	}
-
-	
 }

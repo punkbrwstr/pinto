@@ -1,37 +1,27 @@
 package tech.pinto.function;
 
-import java.util.LinkedList;
-import java.util.List;
+import com.google.common.collect.ObjectArrays;
 
+import tech.pinto.Indexer;
 import tech.pinto.Namespace;
+import tech.pinto.Pinto;
 
-public class PintoFunctionFactory implements FunctionFactory {
+public class PintoFunctionFactory implements ComposableFunctionFactory {
 
-	private final Function function;
+	private final ComposableFunction function;
 	
-	public PintoFunctionFactory(Function function) {
+	public PintoFunctionFactory(ComposableFunction function) {
 		this.function = function;
 	}
 
 	@Override
-	public Function build(String name, Namespace namespace, LinkedList<Function> inputs, List<String> saveString,
+	public ComposableFunction build(String name, Pinto pinto, Namespace namespace, ComposableFunction previousFunction, Indexer indexer,
 			String... arguments) {
-		Function clone = function.clone();
-		LinkedList<PlaceholderFunction> placeholders = new LinkedList<>();
-		clone.getPlaceholders(placeholders);
-		for(PlaceholderFunction ph : placeholders) {
-			if(inputs.isEmpty()) {
-				throw ph.getError();
-			}
-			ph.setDelagate(inputs.removeFirst());
-		}
-		if(placeholders.size() == 0) {
-			LinkedList<Function> leaves = new LinkedList<>();
-			clone.getLeafNodes(leaves);
-			Function lastLeaf = leaves.getFirst();
-			inputs.stream().forEach(lastLeaf.inputStack::addFirst);
-		} else {
-			inputs.stream().forEach(clone.inputStack::addFirst);
+		ComposableFunction clone = (ComposableFunction) function.clone();
+		ComposableFunction head = clone.getHead();
+		head.setPrevious(previousFunction);
+		if(arguments.length > 0) {
+			head.args = ObjectArrays.concat(head.args, arguments, String.class);
 		}
 		return clone;
 	}

@@ -11,8 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import tech.pinto.function.Function;
-import tech.pinto.function.PlaceholderFunction;
+import tech.pinto.function.EvaluableFunction;
 
 public class Indexer {
 	
@@ -21,12 +20,14 @@ public class Indexer {
 	private Integer end = null;
 	private TreeMap<Integer,Integer> indicies = new TreeMap<>(Collections.reverseOrder());
 	private List<String> labelIndicies = null;
+	private String indexString;
 	
 	public static Indexer ALL = new Indexer();
 	
 	private Indexer() {}
 
-	public Indexer(String indexString, LinkedList<Function> stack) throws PintoSyntaxException {
+	public Indexer(String indexString) throws PintoSyntaxException {
+		this.indexString = indexString;
 		everything = false;
 		if(indexString.contains(":") && indexString.contains(",")) {
 			throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Cannot combine range indexing with multiple indexing.");
@@ -38,7 +39,7 @@ public class Indexer {
 			if(isNumeric(s[0])) {
 				int[] ia = Stream.of(s).mapToInt(Integer::parseInt).toArray();
 				for(int i = 0; i < ia.length; i++) {
-					indicies.put(ia[i] < 0 ? ia[i] + stack.size() : ia[i], i);
+					indicies.put(ia[i], i);
 				}
 			} else {
 				labelIndicies = Arrays.asList(s);
@@ -57,49 +58,27 @@ public class Indexer {
 			start = Integer.parseInt(parts[0]);
 			end = Integer.parseInt(parts[1]);
 		} 
-		
-		int placeholdersNeeded = 0;
-		if(start != null) {
-			start = start < 0 ? start + stack.size() : start;
-			end = end < 0 ? end + stack.size() : end;
-			if (start > end) {
-				throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Start is after end.");
-			} else if (start < 0) {
-				//throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Start is too low.");
-				placeholdersNeeded = -1 * start;
-			} else if (end >= stack.size()) {
-				//throw new PintoSyntaxException("Invalid index \"" + indexString + "\". End too high for stack size.");
-				placeholdersNeeded = end - stack.size() + 1;
-			}
-		} else {
-			for(int i : indicies.keySet()) {
-				if (i < 0) {
-					//throw new PintoSyntaxException("Invalid index \"" + i + "\". Start is too low.");
-					placeholdersNeeded = Math.max(placeholdersNeeded, -1 * i);
-				} else if (i >= stack.size()) {
-					//throw new PintoSyntaxException("Invalid index \"" + i + "\". End too high for stack size.");
-					placeholdersNeeded = Math.max(placeholdersNeeded, i - stack.size() + 1);
-				}
-				
-			}
-		}
-		for(int i = 0; i < placeholdersNeeded; i++) {
-			stack.addLast(new PlaceholderFunction("Index(" + indexString + ")"));
-		}
 	}
 	
-	public LinkedList<Function> index(LinkedList<Function> stack) throws PintoSyntaxException {
-		LinkedList<Function> indexed = new LinkedList<>();
+	public LinkedList<EvaluableFunction> index(LinkedList<EvaluableFunction> stack) throws PintoSyntaxException {
+		LinkedList<EvaluableFunction> indexed = new LinkedList<>();
 		if(everything) {
 			indexed.addAll(stack);
 			stack.clear();
 		} else {
 			if(start != null) {
+				start = start < 0 ? start + stack.size() : start;
+				end = end < 0 ? end + stack.size() : end;
+				if (start > end) {
+					throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Start is after end.");
+				} 
+				checkIndex(start, stack.size());
+				checkIndex(end, stack.size());
 				IntStream.range(start,end + 1).forEach(i -> indicies.put(i,i));
 			} else if(labelIndicies != null) {
 				AtomicInteger i = new AtomicInteger();
 				Map<String,Integer> labels = stack.stream()
-						.collect(Collectors.toMap(Function::toString, f -> i.getAndIncrement()));
+						.collect(Collectors.toMap(EvaluableFunction::toString, f -> i.getAndIncrement()));
 				for(int j = 0; j < labelIndicies.size(); j++) {
 					if(!labels.containsKey(labelIndicies.get(j))) {
 						throw new PintoSyntaxException("Unable to index by label \"" + labelIndicies.get(j) + "\"");
@@ -107,12 +86,14 @@ public class Indexer {
 					indicies.put(labels.get(labelIndicies.get(j)), j);
 				}
 			}
-			TreeMap<Integer,Function> functions = new TreeMap<>();
+			TreeMap<Integer,EvaluableFunction> functions = new TreeMap<>();
 			for(Map.Entry<Integer, Integer> i : indicies.entrySet()) {
 				if(stack.size() == 0) {
 					throw new PintoSyntaxException();
 				}
-				functions.put(i.getValue(), stack.remove(i.getKey().intValue()));
+				int index = i.getKey().intValue() < 0 ? i.getKey().intValue() + stack.size() : i.getKey().intValue();
+				checkIndex(index, stack.size());
+				functions.put(i.getValue(), stack.remove(index));
 			}
 			functions.values().stream().forEach(indexed::addLast);
 		}
@@ -122,5 +103,11 @@ public class Indexer {
 	private static boolean isNumeric(String s) {  
 	    return s.matches("[-+]?\\d*\\.?\\d+");  
 	}  
+	
+	private void checkIndex(int index, int stackSize) throws PintoSyntaxException {
+		if (index < 0 || index >= stackSize) {
+			throw new PintoSyntaxException("Invalid index \"" + indexString + "\": "  + index + " is outside bounds of inputs.");
+		} 
+	}
 
 }

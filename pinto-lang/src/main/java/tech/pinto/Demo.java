@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -25,7 +24,6 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import jline.TerminalFactory;
-import tech.pinto.function.Function;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.TerminalFunction;
 import tech.pinto.tools.LogAppender;
@@ -105,16 +103,16 @@ public class Demo {
 	public static class DemoVocabulary extends StandardVocabulary {
 		
 		public DemoVocabulary() {
-			names.put("exec", new Name((n,c,i,s,a) -> new DummyFunction(n, null), n -> new FunctionHelp.Builder(n).build()));
-			names.put("export", new Name((n,c,i,s,a) -> new DummyFunction(n,null),  n -> new FunctionHelp.Builder(n).build()));
+			names.put("exec", new Name((n,p,s,f,i,a) -> new DummyFunction(n), n -> new FunctionHelp.Builder(n).build()));
+			names.put("export", new Name((n,p,s,f,i,a) -> new DummyFunction(n),  n -> new FunctionHelp.Builder(n).build()));
 		}
 		
 	}
 	
 	public static class DummyFunction extends TerminalFunction {
 
-		public DummyFunction(String name, LinkedList<Function> inputStack, String... arguments) {
-			super(name, inputStack, arguments);
+		public DummyFunction(String name) {
+			super(name, null, null, null);
 			throw new UnsupportedOperationException("Demo does not support " + name + " function.");
 		}
 		

@@ -6,82 +6,78 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.DoubleStream;
 
+import tech.pinto.Indexer;
 import tech.pinto.TimeSeries;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.LambdaFunction;
-import tech.pinto.function.Function;
-import tech.pinto.function.ReferenceFunction;
+import tech.pinto.function.EvaluableFunction;
+import tech.pinto.function.ComposableFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 
-
-public class Expanding extends ReferenceFunction {
+public class Expanding extends ComposableFunction {
 
 	private final Supplier<DoubleCollector> collectorSupplier;
 	private final Optional<LocalDate> start;
 	private final Optional<Periodicity<?>> windowFrequency;
-	
-	public Expanding(String name, LinkedList<Function> inputs, Supplier<DoubleCollector> collectorSupplier, String... args) {
-		super(name, inputs, args);
+
+	public Expanding(String name, ComposableFunction previousFunction, Indexer indexer,
+			Supplier<DoubleCollector> collectorSupplier, String... args) {
+		super(name, previousFunction, indexer, args);
 		this.collectorSupplier = collectorSupplier;
 		start = args.length == 0 ? Optional.empty() : Optional.of(LocalDate.parse(args[0]));
-		if(args.length < 2) {
-			windowFrequency =  Optional.empty();
+		if (args.length < 2) {
+			windowFrequency = Optional.empty();
 		} else {
-			Periodicity<?> p =	Periodicities.get(args[1].replaceAll("\\s+", ""));
-			if(p == null) {
+			Periodicity<?> p = Periodicities.get(args[1].replaceAll("\\s+", ""));
+			if (p == null) {
 				throw new IllegalArgumentException("invalid periodicity code for window: \"" + args[1] + "\"");
 			}
-			windowFrequency =  Optional.of(p);
+			windowFrequency = Optional.of(p);
 		}
 	}
-	
-	@SuppressWarnings("unchecked")
-	@Override public Function getReference() {
-		final Function function = inputStack.removeFirst();
-		return new LambdaFunction(f -> join(f.getStack().getFirst().toString(),toString()), 
-				inputs -> range -> {
-			Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
-			LocalDate startDate = start.orElse(range.start().endDate());
-			Period windowStart = wf.from(startDate);
-			Period windowEnd = wf.from(range.end().endDate());
-			windowEnd = windowEnd.isBefore(windowStart) ? windowStart : windowEnd;
-			PeriodicRange<Period> window = wf.range(windowStart, windowEnd, range.clearCache());
-		
-			DoubleStream.Builder b = DoubleStream.builder();
-			TimeSeries input = null;
-			DoubleCollector dc = collectorSupplier.get();
-			input = (TimeSeries) inputs.removeFirst().evaluate(window);
-			double[] output = input.stream().map(d -> {
-					dc.add(d);
-					return dc.finish();
-			}).toArray();
-			for(Period p : range.values()) {
-				int index = (int) window.indexOf(p.endDate());
-				if(index >= 0) {
-					b.accept(output[index]);
-				} else  {
-					b.accept(Double.NaN);
-				}	
-			}
-			return b.build();
-		}, function);
-	}
-	
+
 	public static FunctionHelp getHelp(String name, String description) {
-		return new FunctionHelp.Builder(name)
-				.outputs("n")
-				.description("Calculates " + description + " over an expanding window starting *start_date* over *periodicity*.")
-				.parameter("start_date","1",null)
-				.parameter("periodicity", "B", "{B,W-FRI,BM,BQ,BA}")
-				.build();
+		return new FunctionHelp.Builder(name).outputs("n")
+				.description("Calculates " + description
+						+ " over an expanding window starting *start_date* over *periodicity*.")
+				.parameter("start_date", "1", null).parameter("periodicity", "B", "{B,W-FRI,BM,BQ,BA}").build();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public int getOutputCount() {
-		return inputStack.size();
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+		LinkedList<EvaluableFunction> outputs = new LinkedList<>();
+		for (EvaluableFunction function : stack) {
+			outputs.add(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+				Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
+				LocalDate startDate = start.orElse(range.start().endDate());
+				Period windowStart = wf.from(startDate);
+				Period windowEnd = wf.from(range.end().endDate());
+				windowEnd = windowEnd.isBefore(windowStart) ? windowStart : windowEnd;
+				PeriodicRange<Period> window = wf.range(windowStart, windowEnd, range.clearCache());
+
+				DoubleStream.Builder b = DoubleStream.builder();
+				TimeSeries input = null;
+				DoubleCollector dc = collectorSupplier.get();
+				input = (TimeSeries) inputs[0].evaluate(window);
+				double[] output = input.stream().map(d -> {
+					dc.add(d);
+					return dc.finish();
+				}).toArray();
+				for (Period p : range.values()) {
+					int index = (int) window.indexOf(p.endDate());
+					if (index >= 0) {
+						b.accept(output[index]);
+					} else {
+						b.accept(Double.NaN);
+					}
+				}
+				return b.build();
+			}, function));
+		}
+		return outputs;
 	}
 
 }

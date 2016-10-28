@@ -1,29 +1,26 @@
 package tech.pinto.function.intermediate;
 
-
-
 import java.util.LinkedList;
 
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.Function;
-import tech.pinto.function.ReferenceFunction;
+import tech.pinto.function.EvaluableFunction;
+import tech.pinto.Indexer;
+import tech.pinto.function.ComposableFunction;
 
-public class Roll extends ReferenceFunction {
+public class Roll extends ComposableFunction {
 	
-	private final int times;
-	
-	public Roll(String name, LinkedList<Function> inputs, String[] args) {
-		super(name, inputs, args);
-		times = args.length < 2 ? 1 : Integer.parseInt(args[1]);
+	public Roll(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
+	}
+
+	@Override
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+		int times = args.length < 2 ? 1 : Integer.parseInt(args[1]);
 		for(int i = 0; i < times; i++) {
-			inputStack.addFirst(inputStack.removeLast());
+			stack.addFirst(stack.removeLast());
 		}
+		return stack;
 	}
-	
-	@Override public Function getReference() {
-		return inputStack.removeFirst();
-	}
-
 
 	public static FunctionHelp getHelp(String name) {
 		return new FunctionHelp.Builder(name)
@@ -32,11 +29,4 @@ public class Roll extends ReferenceFunction {
 				.parameter("m","2",null)
 				.build();
 	}
-
-	@Override
-	public int getOutputCount() {
-		return inputStack.size();
-	}
-	
-
 }

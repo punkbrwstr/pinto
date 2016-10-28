@@ -1,6 +1,5 @@
 package tech.pinto;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
@@ -14,7 +13,7 @@ import javax.inject.Inject;
 import com.google.common.base.Joiner;
 
 import jline.console.completer.Completer;
-import tech.pinto.function.Function;
+import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.PintoFunctionFactory;
 
@@ -33,7 +32,7 @@ public class Namespace implements Completer {
 		return names.containsKey(name);
 	}
 
-	public synchronized void define(String name, String description, Function function) {
+	public synchronized void define(String name, String description, ComposableFunction function) {
 		if(names.containsKey(name)) {
 			for(String dependencyCode : getDependsOn(name)) {
 				dependencyGraph.remove(join(name, "dependsOn", dependencyCode));
@@ -59,8 +58,9 @@ public class Namespace implements Completer {
 		names.remove(name);
 	}
 	
-    public synchronized Function getFunction(String functionName, LinkedList<Function> inputs, List<String> saveString, String... arguments) {
-        return names.get(functionName).getFactory().build(functionName, this, inputs, saveString, arguments);
+    public synchronized ComposableFunction getFunction(String functionName, Pinto pinto, ComposableFunction previous,
+    		Indexer indexer, String... arguments) {
+        return names.get(functionName).getFactory().build(functionName, pinto, this, previous, indexer, arguments);
     }
 	
 	private synchronized SortedSet<String> getDependedOnBy(String code) {

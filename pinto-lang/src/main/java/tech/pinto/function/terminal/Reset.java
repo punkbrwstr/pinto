@@ -1,16 +1,16 @@
 package tech.pinto.function.terminal;
 
-import java.util.LinkedList;
-
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.Function;
+import tech.pinto.Indexer;
+import tech.pinto.Namespace;
+import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
 
 public class Reset extends TerminalFunction {
 
 
-	public Reset(String name, LinkedList<Function> inputs, String[] args) {
-		super(name, inputs, args);
+	public Reset(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, namespace, previousFunction, indexer, args);
 	}
 	
 	public static FunctionHelp getHelp(String name) {

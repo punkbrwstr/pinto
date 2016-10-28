@@ -1,48 +1,35 @@
 package tech.pinto.function;
 
 import java.util.LinkedList;
-import java.util.List;
+
 import java.util.Optional;
 
+import tech.pinto.Indexer;
+import tech.pinto.Namespace;
+import tech.pinto.PintoSyntaxException;
 import tech.pinto.TimeSeries;
-import tech.pinto.time.Period;
-import tech.pinto.time.PeriodicRange;
 
-public class TerminalFunction extends Function {
+public class TerminalFunction extends ComposableFunction {
 	
-	protected Optional<List<TimeSeries>> timeSeriesOutput = Optional.empty();
-	protected Optional<String> message = Optional.empty();
+	protected final Namespace namespace;
 
-	public TerminalFunction(String name, LinkedList<Function> inputStack, String... arguments) {
-		super(name, inputStack, arguments);
-	}
-	
-	public Optional<List<TimeSeries>> getTimeSeries() {
-		return timeSeriesOutput;
+	public TerminalFunction(String name, Namespace namespace,
+			ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
+		this.namespace = namespace;
 	}
 
-	public Optional<String> getText() {
-		return message;
+	public Optional<LinkedList<TimeSeries>> getTimeSeries() throws PintoSyntaxException {
+		return Optional.empty();
+	}
+
+	public Optional<String> getText() throws PintoSyntaxException {
+		return Optional.empty();
 	}
 
 	@Override
-	public Function getReference() {
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
 		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public <P extends Period> TimeSeries evaluate(PeriodicRange<P> range) {
-		throw new UnsupportedOperationException();
-	}
-	
-	@Override
-	public Function clone() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public int getOutputCount() {
-		return 0;
 	}
 
 

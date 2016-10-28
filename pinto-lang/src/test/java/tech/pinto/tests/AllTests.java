@@ -2,7 +2,6 @@ package tech.pinto.tests;
 
 import java.util.Arrays;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.DoubleStream;
@@ -19,11 +18,12 @@ import org.junit.runners.Suite.SuiteClasses;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
+import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
-import tech.pinto.function.Function;
+import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.supplier.CachedSupplierFunction;
 import tech.pinto.time.Period;
@@ -65,7 +65,7 @@ public class AllTests {
 	public static class TestVocabulary extends StandardVocabulary {
 		
 		public TestVocabulary() {
-			names.put("counter", new tech.pinto.Name((n,c,i,s,a) -> new CallCounter(n,i,a), n -> new FunctionHelp.Builder(n).build()));
+			names.put("counter", new tech.pinto.Name((n,p,s,f,i,a) -> new CallCounter(n,f,i,a), n -> new FunctionHelp.Builder(n).build()));
 		}
 
 	}
@@ -74,8 +74,8 @@ public class AllTests {
 		
 		private static AtomicInteger count = new AtomicInteger();
 
-		public CallCounter(String name, LinkedList<Function> inputs, String...args) {
-			super(name, inputs, args);
+		public CallCounter(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
+			super(name, previousFunction, indexer, args);
 		}
 
 		@Override

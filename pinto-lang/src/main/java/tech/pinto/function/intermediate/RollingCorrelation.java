@@ -7,24 +7,27 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.DoubleStream.Builder;
+import java.util.stream.Stream;
 
 import com.google.common.base.Joiner;
 
+import tech.pinto.Indexer;
 import tech.pinto.TimeSeries;
-import tech.pinto.function.Function;
+import tech.pinto.function.ComposableFunction;
+import tech.pinto.function.EvaluableFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 
 
-public class RollingCorrelation extends Function {
+public class RollingCorrelation extends ComposableFunction {
 
 	private int size;
 	private final Optional<Periodicity<?>> windowFrequency;
 	
-	public RollingCorrelation(LinkedList<Function> inputs, String... args) {
-		super("r_correl", inputs, args);
+	public RollingCorrelation(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
 		if(args.length < 1) {
 			throw new IllegalArgumentException("window requires at least one parameter (window size)");
 		} else {
@@ -46,43 +49,36 @@ public class RollingCorrelation extends Function {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
-	public <P extends Period> TimeSeries evaluate(PeriodicRange<P> range) {
-		@SuppressWarnings("unchecked")
-		Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
-		Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
-		Period windowEnd = wf.from(range.end().endDate());
-		PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
-		
-		
-		List<double[]> inputs = inputStack.stream().map(c -> c.evaluate(expandedWindow))
-							.map(d -> (TimeSeries) d).map(TimeSeries::stream).map(DoubleStream::toArray)
-							.collect(Collectors.toList());
-		
-		Builder b = DoubleStream.builder();
-		double[] input = new double[inputs.size()];
-		for(Period p : range.values()) {
-			long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - size + 1;
-			CorrelationCollector cc = new CorrelationCollector(inputs.size());
-			for(int i = (int) windowStartIndex; i < windowStartIndex + size; i++) {
-				for(int j = 0; j < inputs.size(); j++) {
-					input[j] = inputs.get(j)[i];
-				}
-				cc.add(input);
-			}
-			b.accept(cc.getAverage());
-		}
-		return new TimeSeries(range,toString(),b.build());
-	}
-
-	@Override
-	public Function getReference() {
-		return this;
-	}
-
-	@Override
-	public int getOutputCount() {
-		return 1;
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+		return asList(new EvaluableFunction(inputs -> toString(),
+				inputArray -> range -> {
+					Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
+					Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
+					Period windowEnd = wf.from(range.end().endDate());
+					PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
+					
+					
+					List<double[]> inputs = Stream.of(inputArray).map(c -> c.evaluate(expandedWindow))
+										.map(d -> (TimeSeries) d).map(TimeSeries::stream).map(DoubleStream::toArray)
+										.collect(Collectors.toList());
+					
+					Builder b = DoubleStream.builder();
+					double[] input = new double[inputs.size()];
+					for(Period p : range.values()) {
+						long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - size + 1;
+						CorrelationCollector cc = new CorrelationCollector(inputs.size());
+						for(int i = (int) windowStartIndex; i < windowStartIndex + size; i++) {
+							for(int j = 0; j < inputs.size(); j++) {
+								input[j] = inputs.get(j)[i];
+							}
+							cc.add(input);
+						}
+						b.accept(cc.getAverage());
+					}
+					return b.build();
+				}, stack.toArray(new EvaluableFunction[]{})));
 	}
 	
 }

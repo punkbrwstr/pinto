@@ -4,34 +4,19 @@ import java.util.LinkedList;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import tech.pinto.Indexer;
 import tech.pinto.TimeSeries;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.Function;
-import tech.pinto.function.ReferenceFunction;
-import tech.pinto.function.LambdaFunction;
+import tech.pinto.function.ComposableFunction;
+import tech.pinto.function.EvaluableFunction;
 
-public class Fill extends ReferenceFunction {
-
-	public Fill(String name, LinkedList<Function> inputs, String... args) {
-		super(name, inputs, args);
-	}
+public class Fill extends ComposableFunction {
 
 	
-	@Override public Function getReference() {
-		final Function function = inputStack.removeFirst();
-		return new LambdaFunction(f -> join(f.getStack().getFirst().toString(),toString()),
-			f -> range -> {
-				TimeSeries input = f.removeFirst().evaluate(range);
-				final AtomicReference<Double> lastGoodValue = new AtomicReference<>(Double.NaN);
-				return input.stream().map(d -> {
-					if (!Double.isNaN(d)) {
-						lastGoodValue.set(d);
-					}
-					return lastGoodValue.get();
-				});
-		}, function);
+	public Fill(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
 	}
-	
+
 	public static FunctionHelp getHelp(String name) {
 		return new FunctionHelp.Builder(name)
 				.outputs("*n*")
@@ -39,10 +24,22 @@ public class Fill extends ReferenceFunction {
 				.build();
 	}
 
-
 	@Override
-	public int getOutputCount() {
-		return inputStack.size();
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+		LinkedList<EvaluableFunction> outputs = new LinkedList<>();
+		for (EvaluableFunction function : stack) {
+			outputs.add(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+				TimeSeries input = inputs[0].evaluate(range);
+				final AtomicReference<Double> lastGoodValue = new AtomicReference<>(Double.NaN);
+				return input.stream().map(d -> {
+					if (!Double.isNaN(d)) {
+						lastGoodValue.set(d);
+					}
+					return lastGoodValue.get();
+				});
+			}, function));
+		}
+		return outputs;
 	}
 
 }

@@ -2,14 +2,20 @@ package tech.pinto;
 
 import java.io.IOException;
 
+
 import java.io.PrintWriter;
-import java.util.List;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import com.jakewharton.fliptables.FlipTable;
 
 import jline.console.ConsoleReader;
+import tech.pinto.function.TerminalFunction;
 import tech.pinto.tools.LogAppender;
 import tech.pinto.tools.Outputs;
 
@@ -52,19 +58,14 @@ public class Console implements Runnable {
 					}
 				} else {
 					try {
-						List<Pinto.Response> output = pinto.execute(line.toString());
-						List<TimeSeries> data = output.stream().map(Pinto.Response::getTimeseriesOutput)
-								.filter(Optional::isPresent).map(Optional::get).flatMap(List::stream)
-								.collect(Collectors.toList());
-						if (data.size() > 0) {
-							Optional<Outputs.StringTable> t = data.stream()
-									.collect(Outputs.doubleDataToStringTable());
-							if (t.isPresent()) {
-								out.println(FlipTable.of(t.get().getHeader(), t.get().getCells()));
-							}
-						}
-						output.stream().map(Pinto.Response::getMessageOutput).filter(Optional::isPresent)
-								.map(Optional::get).forEach(out::println);
+				    	for(TerminalFunction tf : pinto.execute(line.toString())) {
+				    		Optional<LinkedList<TimeSeries>> list = tf.getTimeSeries();
+				    		if(list.isPresent()) {
+				    			streamInReverse(list.get()).collect(Outputs.doubleDataToStringTable())
+				    				.ifPresent(table -> out.println(FlipTable.of(table.getHeader(), table.getCells())));
+				    		}
+				    		tf.getText().ifPresent(out::println);
+				    	}
 					} catch (PintoSyntaxException pse) {
 						System.out.println("Incorrect syntax: " + pse.getMessage());
 						pse.printStackTrace();
@@ -79,6 +80,12 @@ public class Console implements Runnable {
 			System.out.println(e);
 
 		}
+	}
+	
+	private static <T> Stream<T> streamInReverse(LinkedList<T> input) {
+		  Iterator<T> descendingIterator = input.descendingIterator();
+		  return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+		    descendingIterator, Spliterator.ORDERED), false);
 	}
 
 }

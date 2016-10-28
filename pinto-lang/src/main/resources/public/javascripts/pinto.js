@@ -39,7 +39,7 @@ function updateData(cellNumber) {
    	$.ajax({
 			type: "GET",
 			url: "/pinto",
-			data: { statement: "reset " + $('#pinto_input_' + cellNumber).val(),
+			data: { statement: $('#pinto_input_' + cellNumber).val(),
 						numbers_as_string : true },
 			dataType: "json"
 		}).done(function (response) {

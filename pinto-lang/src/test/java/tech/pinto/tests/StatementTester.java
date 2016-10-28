@@ -8,7 +8,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import tech.pinto.Pinto;
-import tech.pinto.Pinto.Response;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.TimeSeries;
 import tech.pinto.time.PeriodicRange;
@@ -17,9 +16,7 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public class StatementTester {
 
@@ -136,9 +133,7 @@ public class StatementTester {
 	}
 
 	private double[][] run(String line) throws Exception {
-		List<Response> output = pinto.execute(line);
-		List<TimeSeries> dd = output.stream().map(Pinto.Response::getTimeseriesOutput).filter(Optional::isPresent)
-								.map(Optional::get).flatMap(List::stream).collect(Collectors.toList());
+		List<TimeSeries> dd = pinto.execute(line).get(0).getTimeSeries().get();
 		if(dd.size() > 0) {
 			PeriodicRange<?> range = dd.get(0).getRange();
 			double[][] table = new double[dd.size()][(int) range.size()];

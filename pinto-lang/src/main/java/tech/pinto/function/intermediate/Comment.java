@@ -2,23 +2,22 @@ package tech.pinto.function.intermediate;
 
 import java.util.LinkedList;
 
-
-import tech.pinto.function.Function;
+import tech.pinto.Indexer;
+import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.ReferenceFunction;
+import tech.pinto.function.EvaluableFunction;
 
-public class Comment extends ReferenceFunction {
+public class Comment extends ComposableFunction {
 
-	public Comment(String name, LinkedList<Function> inputs) {
-		super(name, inputs, new String[]{});
-		// does nothing
+	public Comment(String name, ComposableFunction previousFunction, Indexer indexer, String[] args) {
+		super(name, previousFunction, indexer, args);
 	}
 
 	@Override
-	public Function getReference() {
-		return inputStack.removeLast();
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+		return stack;
 	}
-	
+
 	public static FunctionHelp getHelp(String name) {
 		return new FunctionHelp.Builder(name)
 				.outputs("0")
@@ -27,8 +26,4 @@ public class Comment extends ReferenceFunction {
 				.build();
 	}
 
-	@Override
-	public int getOutputCount() {
-		return inputStack.size();
-	}
 }

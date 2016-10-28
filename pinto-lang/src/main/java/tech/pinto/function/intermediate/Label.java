@@ -1,29 +1,29 @@
 package tech.pinto.function.intermediate;
 
-import java.util.ArrayDeque;
 
-
-import java.util.Arrays;
 import java.util.LinkedList;
 
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.Function;
-import tech.pinto.function.ReferenceFunction;
+import tech.pinto.function.EvaluableFunction;
+import tech.pinto.Indexer;
+import tech.pinto.function.ComposableFunction;
 
-public class Label extends ReferenceFunction {
+public class Label extends ComposableFunction {
 	
-	private final ArrayDeque<String> labels = new ArrayDeque<>();
-
-	public Label(String name, LinkedList<Function> inputs, String... arguments) {
-		super(name, inputs, arguments);
-		labels.addAll(Arrays.asList(arguments));
+	
+	public Label(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
 	}
-	
-	@Override public Function getReference() {
-		String label = labels.removeFirst();
-		Function function = inputStack.removeFirst();
-		function.setLabeller(f -> label);
-		return function;
+
+	@Override
+	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+		for (int i = 0; i < stack.size(); i++) {
+			if(i < args.length) {
+				final int labelIndex = i;
+				stack.get(i).setLabeller(inputs -> args[labelIndex]);
+			}
+		}
+		return stack;
 	}
 
 	public static FunctionHelp getHelp(String name) {
@@ -35,10 +35,6 @@ public class Label extends ReferenceFunction {
 				.build();
 	}
 
-	@Override
-	public int getOutputCount() {
-		return inputStack.size();
-	}
 	
 
 }

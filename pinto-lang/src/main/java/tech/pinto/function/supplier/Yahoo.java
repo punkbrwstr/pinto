@@ -10,14 +10,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.DoubleStream;
 import com.google.common.collect.ImmutableMap;
 
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.Function;
+import tech.pinto.Indexer;
+import tech.pinto.function.ComposableFunction;
 import tech.pinto.time.BusinessDaily;
 import tech.pinto.time.BusinessMonthly;
 import tech.pinto.time.FridayWeekly;
@@ -29,21 +29,20 @@ public class Yahoo extends CachedSupplierFunction {
 
 	static private final Map<Periodicity<?>, String> FREQ = new ImmutableMap.Builder<Periodicity<?>, String>()
 			.put(new BusinessDaily(), "d").put(new FridayWeekly(), "w").put(new BusinessMonthly(), "m").build();
-	private final List<String> tickers;
 
-	public Yahoo(LinkedList<Function> inputs, String... args) {
-		super("yhoo", inputs, args);
-		tickers = Arrays.asList(args);
+	
+	public Yahoo(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
+		super(name, previousFunction, indexer, args);
 	}
 
 	@Override
 	protected int additionalOutputCount() {
-		return tickers.size();
+		return args.length;
 	}
 
 	@Override
 	protected List<String> allLabels() {
-		return tickers;
+		return Arrays.asList(args);
 	}
 
 	@Override
@@ -52,7 +51,7 @@ public class Yahoo extends CachedSupplierFunction {
 			throw new IllegalArgumentException("Unsupported periodicity for yahoo finance data.");
 		}
 		List<DoubleStream> output = new ArrayList<>();
-		for (String ticker : tickers) {
+		for (String ticker : args) {
 			LocalDate start = range.start().endDate();
 			LocalDate end = range.end().endDate();
 			String url = MessageFormat.format(
