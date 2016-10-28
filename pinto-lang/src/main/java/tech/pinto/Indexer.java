@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -13,24 +14,39 @@ import java.util.stream.Stream;
 
 import tech.pinto.function.EvaluableFunction;
 
-public class Indexer {
+public class Indexer implements Cloneable {
 	
 	private boolean everything = true;
+	private boolean none = false;
 	private Integer start = null;
 	private Integer end = null;
 	private TreeMap<Integer,Integer> indicies = new TreeMap<>(Collections.reverseOrder());
 	private List<String> labelIndicies = null;
 	private String indexString;
+	private Optional<Indexer> chainedIndexer = Optional.empty();
 	
 	public static Indexer ALL = new Indexer();
 	
-	private Indexer() {}
+	private Indexer() {
+		indexString = "ALL";
+	}
 
 	public Indexer(String indexString) throws PintoSyntaxException {
+		this(indexString, Optional.empty());
+	}
+
+	public Indexer(String indexString, Indexer toChain) throws PintoSyntaxException {
+		this(indexString, Optional.of(toChain));
+	}
+
+	public Indexer(String indexString, Optional<Indexer> toChain) throws PintoSyntaxException {
 		this.indexString = indexString;
+		this.chainedIndexer = toChain;
 		everything = false;
 		if(indexString.contains(":") && indexString.contains(",")) {
 			throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Cannot combine range indexing with multiple indexing.");
+		} else if (indexString.equals("x")) { // none index
+			none = true;
 		} else if (!indexString.contains(":")) { // it's a list of indicies
 			String[] s = indexString.split(",");
 			if(s.length == 0) {
@@ -60,11 +76,17 @@ public class Indexer {
 		} 
 	}
 	
+	public void addIndexerToChain(Indexer indexer) {
+		chainedIndexer = Optional.of(indexer);
+	}
+	
 	public LinkedList<EvaluableFunction> index(LinkedList<EvaluableFunction> stack) throws PintoSyntaxException {
 		LinkedList<EvaluableFunction> indexed = new LinkedList<>();
 		if(everything) {
 			indexed.addAll(stack);
 			stack.clear();
+		} else if(none) {
+			indexed = new LinkedList<>();
 		} else {
 			if(start != null) {
 				start = start < 0 ? start + stack.size() : start;
@@ -97,7 +119,12 @@ public class Indexer {
 			}
 			functions.values().stream().forEach(indexed::addLast);
 		}
-		return indexed;
+		LinkedList<EvaluableFunction> chained = indexed;
+		if(chainedIndexer.isPresent()) {
+			chained = chainedIndexer.get().index(indexed); 
+			indexed.descendingIterator().forEachRemaining(stack::addFirst);
+		}
+		return chained;
 	}
 
 	private static boolean isNumeric(String s) {  
@@ -108,6 +135,20 @@ public class Indexer {
 		if (index < 0 || index >= stackSize) {
 			throw new PintoSyntaxException("Invalid index \"" + indexString + "\": "  + index + " is outside bounds of inputs.");
 		} 
+	}
+	
+	public String toString() {
+		return "[" + indexString + "]";
+	}
+	
+	public Indexer clone() {
+		try {
+			Indexer clone = (Indexer) super.clone();
+			clone.chainedIndexer = chainedIndexer.isPresent() ? Optional.of(chainedIndexer.get().clone()) : Optional.empty();
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }

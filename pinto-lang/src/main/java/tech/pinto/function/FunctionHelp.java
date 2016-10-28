@@ -62,7 +62,9 @@ public class FunctionHelp {
 			sb.append(defs.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue())
 					.collect(Collectors.joining(", ", "\t(defaults: ", ")" + crlf)));
 		}
-		sb.append("\tOutput count for n inputs: ").append(outputs).append(crlf);
+		if(!outputs.equals("")) {
+			sb.append("\tOutput count for n inputs: ").append(outputs).append(crlf);
+		}
 		return sb.toString();
 	}
 	

@@ -10,12 +10,14 @@ import javax.inject.Inject;
 
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
+import tech.pinto.function.intermediate.Head;
 import tech.pinto.function.supplier.Literal;
 
 public class Pinto {
 
 	@Inject
 	Namespace namespace;
+	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(getClass());
 
 	@Inject
 	public Pinto() {
@@ -31,7 +33,7 @@ public class Pinto {
 					indexer = new Indexer(parseIndexString(sc));
 				} else {
 					if(currentFunction == null) {
-						currentFunction = new ComposableFunction(indexer);
+						currentFunction = new Head(indexer);
 					}
 					if (sc.hasNextDouble()) { // double literal
 						final double d = sc.nextDouble();
@@ -51,6 +53,7 @@ public class Pinto {
 						indexer = Indexer.ALL;
 					}
 					if (currentFunction instanceof TerminalFunction) {
+						log.trace("Composing: {}", currentFunction.toExpressionTrace());
 						output.add((TerminalFunction) currentFunction);
 					}
 				}

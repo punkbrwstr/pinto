@@ -17,15 +17,11 @@ public class ComposableFunction implements Cloneable {
 
 	protected final Optional<String> name;
     protected String[] args;
-    protected final Indexer indexer;
+    protected Indexer indexer;
     protected Optional<ComposableFunction> previousFunction;
     protected ComposableFunction nextFuction;
     protected boolean subFunction = false;
     
-
-    public ComposableFunction(Indexer indexer) {
-    	this(Optional.empty(),Optional.empty(),indexer);
-    }
 
     public ComposableFunction(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
     	this(Optional.of(name),Optional.of(previousFunction), indexer, args);
@@ -87,6 +83,13 @@ public class ComposableFunction implements Cloneable {
     	return expression;
     }
     
+    public StringBuilder toExpressionTrace() {
+    	StringBuilder expression = previousFunction.isPresent() ?
+    			previousFunction.get().toExpressionTrace() : new StringBuilder();
+    	expression.append(indexer.toString()).append(toString()).append("->");
+    	return expression;
+    }
+    
     public void setIsSubFunction() {
     	subFunction = true;
     	previousFunction.ifPresent(f -> f.setIsSubFunction());
@@ -104,6 +107,7 @@ public class ComposableFunction implements Cloneable {
 			clone = (ComposableFunction) super.clone();
 			clone.previousFunction = previousFunction.isPresent() ? 
 					Optional.of((ComposableFunction) previousFunction.get().clone()) : Optional.empty();
+			clone.indexer = indexer.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) { throw new RuntimeException(); }
 	}
@@ -123,5 +127,33 @@ public class ComposableFunction implements Cloneable {
     protected static LinkedList<EvaluableFunction> asList(EvaluableFunction... functions) {
     	return Arrays.stream(functions).collect(Collectors.toCollection(() -> new LinkedList<EvaluableFunction>()));
     }
+    
+    public boolean isHead() {
+    	return !previousFunction.isPresent();
+    }
+
+	public String[] getArgs() {
+		return args;
+	}
+
+	public void setArgs(String[] args) {
+		this.args = args;
+	}
+
+	public Indexer getIndexer() {
+		return indexer;
+	}
+
+	public void setIndexer(Indexer indexer) {
+		this.indexer = indexer;
+	}
+
+	public void setPreviousFunction(Optional<ComposableFunction> previousFunction) {
+		this.previousFunction = previousFunction;
+	}
+
+	public Optional<String> getName() {
+		return name;
+	}
 
 }

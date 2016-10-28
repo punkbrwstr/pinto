@@ -35,12 +35,12 @@ public class StatementTester {
 
 	@Test
 	public void testSave() throws Exception {
-		pinto.execute("1.1 def(thing)");
-		pinto.execute("thing 1.2 + def(thing2)");
-		assertEquals("Nested save ref", 3.4, run("thing2 thing +" + EVAL)[0][0], 0.001d);
-		pinto.execute("2 def(thing)");
+		pinto.execute("1.1 def(thing)").get(0).getText();
+		pinto.execute("thing 1.2 + def(thing2)").get(0).getText();
+		assertEquals("Nested save ref", 3.4, run("thing2 thing + eval")[0][0], 0.001d);
+		pinto.execute("2 def(thing)").get(0).getText();
 		assertEquals("Update nested ref", 5.2, run("thing2 thing +" + EVAL)[0][0], 0.001d);
-		pinto.execute("1 + def(increment)");
+		pinto.execute("1 + def(increment)").get(0).getText();
 		assertEquals("Saved function", 7.0, run("6 increment" + EVAL)[0][0], 0.001d);
 	}
 

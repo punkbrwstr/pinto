@@ -20,14 +20,12 @@ public class Define extends TerminalFunction {
 		if(args.length < 1) {
 			throw new IllegalArgumentException("Define requires a name argument.");
 		}
-		ComposableFunction f = new ComposableFunction(args[0], previousFunction.orElseThrow(() ->
-					new PintoSyntaxException("Cannot define an empty expression.")), indexer, args);
-		previousFunction.get().setIsSubFunction();
 		String desc = previousFunction.get().toExpression().toString();
+		previousFunction.get().setIsSubFunction();
 		if(args.length > 1) {
 			desc += " (" + args[1] + ")";
 		}
-		namespace.define(args[0], desc, f);
+		namespace.define(args[0], desc, previousFunction.get());
 		return Optional.of("Successfully saved.");
 	}
 	
