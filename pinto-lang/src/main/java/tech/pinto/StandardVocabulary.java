@@ -17,6 +17,7 @@ import tech.pinto.function.intermediate.Fill;
 import tech.pinto.function.intermediate.Join;
 import tech.pinto.function.intermediate.Label;
 import tech.pinto.function.intermediate.Only;
+import tech.pinto.function.intermediate.Resample;
 import tech.pinto.function.intermediate.Reverse;
 import tech.pinto.function.intermediate.Roll;
 import tech.pinto.function.intermediate.Rolling;
@@ -104,6 +105,7 @@ public class StandardVocabulary extends Vocabulary {
            /* other commands */
 	            .put("fill", new Name((n,p,s,f,i,a) -> new Fill(n,f,i,a),Fill::getHelp))
 	            .put("join", new Name((n,p,s,f,i,a) -> new Join(n,f,i,a),Join::getHelp))
+	            .put("resample", new Name((n,p,s,f,i,a) -> new Resample(n,f,i,a),Resample::getHelp))
 	            .put("#", new Name((n,p,s,f,i,a) -> new Comment(n,f,i,a),Comment::getHelp))
            /* binary operators */
                 .put("+", new Name((n,p,s,f,i,a) -> new BinaryOperator(n,f,i, (x,y) -> x + y, a),n -> BinaryOperator.getHelp(n, "addition")))

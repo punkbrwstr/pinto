@@ -79,10 +79,11 @@ public class Servlet extends HttpServlet {
 										: data.get(0).getRange().dates().stream().map(LocalDate::toString)
 												.collect(Collectors.toList()))
 						.put("columns", streamInReverse(data).map(TimeSeries::getLabel).collect(Collectors.toList()))
+						//.put("columns", data.stream().map(TimeSeries::getLabel).collect(Collectors.toList()))
 						.put("data", numbersAsString ? streamInReverse(data).map(TimeSeries::stream)
 												.map(ds -> ds.mapToObj(Double::toString).collect(Collectors.toList()))
 												.collect(Collectors.toList())
-										: data.stream().map(TimeSeries::stream).map(DoubleStream::toArray)
+										: streamInReverse(data).map(TimeSeries::stream).map(DoubleStream::toArray)
 												.collect(Collectors.toList()))
 						.build());
 			} else {

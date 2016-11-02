@@ -27,7 +27,7 @@ public class BinaryOperator extends ComposableFunction {
 	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
 		int fixedCount = args.length > 0 ? Integer.parseInt(args[0]) : 1;
 		if (stack.size() < fixedCount + 1) {
-			throw new IllegalArgumentException("Not enough inputs for " + name);
+			throw new IllegalArgumentException("Not enough inputs for " + name.get());
 		}
 		ArrayDeque<EvaluableFunction> secondOperands = new ArrayDeque<>(stack.subList(0,fixedCount));
 		List<EvaluableFunction> firstOperands = new ArrayList<>(stack.subList(fixedCount, stack.size()));
