@@ -2,8 +2,13 @@
 
 ### Indexing/slicing operators
 
-An indexing/slicing operator determines which stack elements are passed to the following function.  By default the entire stack is passed.  The operator can take lists or ranges of indicies.  Index numbering starts with ```0```, which represents the top or rightmost element of the stack.  Lists of indicies are separated by commas.   ```[1,3]``` represents the second and fourth stack elements.  Ranges may specify an inclusive starting index, an inclusive ending index or both.  ```[0:3]```  represents the first through fourth stack elements.  ```[1:]``` represents all stack elements after the first.  Negative indicies are converted to the stack size minus that number.  ```[-2:]```  represents the last two elements in the stack.
+An indexing/slicing operator determines which stack elements are passed to the following function.  By default the entire stack is passed.  
 
+#### Indexing by number
+The operator can take lists or ranges of numerical indicies.  Index numbering starts with ```0```, which represents the top or rightmost element of the stack.  Lists of indicies are separated by commas.   ```[1,3]``` represents the second and fourth stack elements.  Ranges may specify an inclusive starting index, an inclusive ending index or both.  ```[0:3]```  represents the first through fourth stack elements.  ```[1:]``` represents all stack elements after the first.  Negative indicies are converted to the stack size minus that number.  ```[-2:]```  represents the last two elements in the stack.
+
+#### Indexing by label
+The indexing operator can also take string arguments to select stack elements by their labels.  Separate label indicies by commas to select multiple elements.  ```[my_label2,my_label1]``` 
 
 ## Function reference
 
@@ -94,8 +99,9 @@ Function(Parameters) | Outputs for *n* inputs|Description
 
 Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
-**fill**|**n**|Fills missing data with last good obseration. 
+**fill**|*n*|Fills missing data with last good obseration. 
 **join(*date<sub>1</sub>, date<sub>z</sub>*)**|*1*|Fills missing data with last good obseration. 
+**resample(*periodicity*)**|*n*|Changes periodicity of inputs to *periodicity*, rounding down for less frequent periodicities. 
 
 ### Binary operators
 
