@@ -58,16 +58,26 @@ public class StatementTester {
 
 	@Test(expected=PintoSyntaxException.class)
 	public void testDelete() throws Exception {
-		pinto.execute("1 save(deleteme)");
+		pinto.execute("1 def(deleteme)");
 		pinto.execute("1 del(deleteme)");
-		pinto.execute("deleteme save(doesntmatter)");
+		pinto.execute("deleteme def(doesntmatter)");
 	}
 
 	@Test(expected=Exception.class)
 	public void testDeleteFail() throws Exception {
-		pinto.execute("1 save(deleteme)");
+		pinto.execute("1 def(deleteme)");
 		pinto.execute("deleteme 1 + del(needsdeleteme)");
 		pinto.execute("1 del(deleteme)");
+	}
+	
+	@Test
+	public void testNoInputsToDefined() throws Exception {
+		pinto.execute("2 r_mean(20) def(a,test,true)").get(0).getText();
+		pinto.execute("3 r_mean(30) def(b,test,true)").get(0).getText();
+		pinto.execute("a b def(c)").get(0).getText();
+		double[][] c = run("c eval");
+		assertEquals("defineNoInputs count",c.length,2);
+		assertEquals("definedNoInputs output",c[0][0] + c[1][0],5.0,0.01);
 	}
 	
 	

@@ -15,7 +15,7 @@ import com.google.common.base.Joiner;
 import jline.console.completer.Completer;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.PintoFunctionFactory;
+import tech.pinto.function.DefinedFunctionFactory;
 
 public class Namespace implements Completer {
 	private final String DELIMITER = "::";	
@@ -43,7 +43,7 @@ public class Namespace implements Completer {
 			dependencyGraph.add(join(name, "dependsOn", dependencyName));
 			dependencyGraph.add(join(dependencyName, "dependedOnBy", name));
 		}
-		names.put(name, new Name(new PintoFunctionFactory(function), description));
+		names.put(name, new Name(new DefinedFunctionFactory(function), description));
 	}
 
 	public synchronized void undefine(String name) throws IllegalArgumentException {

@@ -122,10 +122,10 @@ public class BloombergClient {
 
 	public <P extends Period> Function<PeriodicRange<?>, List<DoubleStream>> 
 					getFunction(List<String> securities, List<String> fields ) {
-		if (session == null) {
-			connect();
-		}
 		return (range) -> {
+			if (session == null) {
+				connect();
+			}
 			final long jobNumber = requestNumber.incrementAndGet();
 			final List<String> securityCodes = securities;
 			final List<String> fieldCodes = fields;

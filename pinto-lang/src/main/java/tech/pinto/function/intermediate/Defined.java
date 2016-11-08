@@ -28,7 +28,9 @@ public class Defined extends ComposableFunction {
 			Head head = (Head) clone.getHead();
 			head.setPrevious(previousFunction.get());
 			head.setDefinedTail(this);
-			head.setIndexer(indexer);
+            if(!indexer.isEverything()) {
+			    head.setIndexer(indexer);
+            }
 			if(args.length > 0) {
 				head.setArgs(ObjectArrays.concat(head.getArgs(), args, String.class));
 			}
@@ -41,5 +43,14 @@ public class Defined extends ComposableFunction {
 	public void addSkippedInputs(LinkedList<EvaluableFunction> skippedInputs) {
 		this.skippedInputs.addAll(skippedInputs);
 	}
+
+	@Override
+	protected Object clone() {
+		Defined clone = (Defined) super.clone();
+		clone.skippedInputs = new LinkedList<>();
+		return clone;
+	}
+	
+	
 
 }

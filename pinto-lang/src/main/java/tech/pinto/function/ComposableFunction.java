@@ -42,6 +42,9 @@ public class ComposableFunction implements Cloneable {
     public LinkedList<EvaluableFunction> compose() throws PintoSyntaxException {
     	LinkedList<EvaluableFunction> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
     	LinkedList<EvaluableFunction> outputs = composeIndexed(indexer.index(inputs));
+    	if(indexer.isReverse()) {
+    		outputs = reverse(outputs);
+    	}
     	outputs.addAll(inputs);
     	return outputs;
     }
@@ -78,6 +81,9 @@ public class ComposableFunction implements Cloneable {
     	StringBuilder expression = previousFunction.isPresent() ?
     			previousFunction.get().toExpression() : new StringBuilder();
     	if(name.isPresent() && ! subFunction) {
+    		if(indexer.isReverse() || !indexer.isEverything()) {
+    			expression.append(indexer.toString()).append(" ");
+    		}
     		expression.append(toString()).append(" ");
     	}
     	return expression;
@@ -111,6 +117,12 @@ public class ComposableFunction implements Cloneable {
 			return clone;
 		} catch (CloneNotSupportedException e) { throw new RuntimeException(); }
 	}
+    
+    protected static <T> LinkedList<T> reverse(LinkedList<T> list) {
+		LinkedList<T> reversed = new LinkedList<>();
+		list.stream().forEach(reversed::addFirst);
+		return reversed;
+    }
 	
     protected static String join(String... s) {
         return Stream.of(s).collect(Collectors.joining(" "));

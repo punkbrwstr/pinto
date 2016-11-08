@@ -25,6 +25,9 @@ public class Define extends TerminalFunction {
 		if(args.length > 1) {
 			desc += " (" + args[1] + ")";
 		}
+		if(args.length > 2 && Boolean.parseBoolean(args[2].trim())) {
+	        previousFunction.get().getHead().setIndexer(Indexer.NONE);
+		}
 		namespace.define(args[0], desc, previousFunction.get());
 		return Optional.of("Successfully saved.");
 	}

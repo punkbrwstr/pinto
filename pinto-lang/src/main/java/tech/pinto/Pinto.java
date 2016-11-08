@@ -42,7 +42,7 @@ public class Pinto {
 						String s = sc.next();
 						String commandName = s.contains("(") ? s.substring(0, s.indexOf("(")) : s;
 						if (!namespace.contains(commandName)) {
-							throw new PintoSyntaxException("Name \"" + s + "\" not found.");
+							throw new PintoSyntaxException("Name not found: \"" + s + "\" in expression \"" + expression + "\"");
 						}
 						try {
 							currentFunction = namespace.getFunction(commandName, this, currentFunction,

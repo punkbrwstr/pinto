@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -18,31 +17,29 @@ public class Indexer implements Cloneable {
 	
 	private boolean everything = true;
 	private boolean none = false;
+	private boolean reverse = false;
 	private Integer start = null;
 	private Integer end = null;
 	private TreeMap<Integer,Integer> indicies = new TreeMap<>(Collections.reverseOrder());
 	private List<String> labelIndicies = null;
 	private String indexString;
-	private Optional<Indexer> chainedIndexer = Optional.empty();
 	
-	public static Indexer ALL = new Indexer();
+	public static final Indexer ALL = new Indexer(true,false,"ALL");
+	public static final Indexer NONE = new Indexer(false,true,"NONE");
 	
-	private Indexer() {
-		indexString = "ALL";
+	private Indexer(boolean everything, boolean none, String indexString) {
+		this.everything = everything;
+		this.none = none;
+		this.indexString = indexString;
 	}
 
 	public Indexer(String indexString) throws PintoSyntaxException {
-		this(indexString, Optional.empty());
-	}
-
-	public Indexer(String indexString, Indexer toChain) throws PintoSyntaxException {
-		this(indexString, Optional.of(toChain));
-	}
-
-	public Indexer(String indexString, Optional<Indexer> toChain) throws PintoSyntaxException {
 		this.indexString = indexString;
-		this.chainedIndexer = toChain;
 		everything = false;
+		if(indexString.contains("~")) {
+			reverse = true;
+			indexString = indexString.replace("~", "");
+		}
 		if(indexString.contains(":") && indexString.contains(",")) {
 			throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Cannot combine range indexing with multiple indexing.");
 		} else if (indexString.equals("x")) { // none index
@@ -60,9 +57,8 @@ public class Indexer implements Cloneable {
 			} else {
 				labelIndicies = Arrays.asList(s);
 			}
-		} else if(indexString.equals(":")) {
-			start = 0;
-			end = -1;
+		} else if(indexString.equals(":") || indexString.equals("")) {
+			everything = true;
 		} else if(indexString.indexOf(":") == 0) {
 			start = 0;
 			end = Integer.parseInt(indexString.substring(1));
@@ -74,10 +70,6 @@ public class Indexer implements Cloneable {
 			start = Integer.parseInt(parts[0]);
 			end = Integer.parseInt(parts[1]);
 		} 
-	}
-	
-	public void addIndexerToChain(Indexer indexer) {
-		chainedIndexer = Optional.of(indexer);
 	}
 	
 	public LinkedList<EvaluableFunction> index(LinkedList<EvaluableFunction> stack) throws PintoSyntaxException {
@@ -119,12 +111,15 @@ public class Indexer implements Cloneable {
 			}
 			functions.values().stream().forEach(indexed::addLast);
 		}
-		LinkedList<EvaluableFunction> chained = indexed;
-		if(chainedIndexer.isPresent()) {
-			chained = chainedIndexer.get().index(indexed); 
-			indexed.descendingIterator().forEachRemaining(stack::addFirst);
-		}
-		return chained;
+		return indexed;
+	}
+	
+	public boolean isReverse() {
+		return reverse;
+	}
+
+	public boolean isEverything() {
+		return  everything;
 	}
 
 	private static boolean isNumeric(String s) {  
@@ -144,7 +139,6 @@ public class Indexer implements Cloneable {
 	public Indexer clone() {
 		try {
 			Indexer clone = (Indexer) super.clone();
-			clone.chainedIndexer = chainedIndexer.isPresent() ? Optional.of(chainedIndexer.get().clone()) : Optional.empty();
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e);

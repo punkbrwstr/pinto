@@ -50,11 +50,16 @@ public class Main {
 			build = "Unknown";
 		}
 		port = System.getProperties().containsKey("pinto.port") ? Integer.parseInt(System.getProperty("pinto.port")) : 5556;
-		List<String> path = Arrays.asList(tech.pinto.Main.class.getResource("Main.class")
-						.toString().split("/"));
-		path = new ArrayList<>(path.subList(0, path.size()-3));
-		path.add("public");
-		httpPath = path.stream().collect(Collectors.joining(File.separator));
+
+
+        System.out.println("public: " + getClass().getClassLoader().getResource("public").toExternalForm());
+        httpPath = getClass().getClassLoader().getResource("public").toExternalForm();
+
+		//List<String> path = Arrays.asList(tech.pinto.Main.class.getResource("Main.class")
+						//.toString().split("/"));
+		//path = new ArrayList<>(path.subList(0, path.size()-3));
+		//path.add("public");
+		//httpPath = path.stream().collect(Collectors.joining(File.separator));
 	}
 	
 	protected Pinto getPinto() {

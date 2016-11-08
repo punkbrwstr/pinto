@@ -5,11 +5,11 @@ import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.function.intermediate.Defined;
 
-public class PintoFunctionFactory implements ComposableFunctionFactory {
+public class DefinedFunctionFactory implements ComposableFunctionFactory {
 
 	private final ComposableFunction function;
 	
-	public PintoFunctionFactory(ComposableFunction function) {
+	public DefinedFunctionFactory(ComposableFunction function) {
 		this.function = function;
 	}
 
