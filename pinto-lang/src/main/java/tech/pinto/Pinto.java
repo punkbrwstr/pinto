@@ -55,6 +55,7 @@ public class Pinto {
 					if (currentFunction instanceof TerminalFunction) {
 						log.trace("Composing: {}", currentFunction.toExpressionTrace());
 						output.add((TerminalFunction) currentFunction);
+						currentFunction = null;
 					}
 				}
 
