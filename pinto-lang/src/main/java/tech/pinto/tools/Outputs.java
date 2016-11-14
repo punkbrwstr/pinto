@@ -1,5 +1,6 @@
 package tech.pinto.tools;
 
+import java.text.NumberFormat;
 import java.time.LocalDate;
 
 import java.util.ArrayList;
@@ -15,6 +16,10 @@ import tech.pinto.time.PeriodicRange;
 public class Outputs {
 
 	public static Collector<TimeSeries,ArrayList<TimeSeries>,Optional<StringTable>> doubleDataToStringTable() {
+		return doubleDataToStringTable(NumberFormat.getInstance());
+	}
+	
+	public static Collector<TimeSeries,ArrayList<TimeSeries>,Optional<StringTable>> doubleDataToStringTable(NumberFormat nf) {
 		return Collector.of(ArrayList::new, ArrayList::add,
 				(left, right) -> { left.addAll(right); return left; }, 
 				l -> {
@@ -30,7 +35,7 @@ public class Outputs {
 					}
 					for (AtomicInteger i = new AtomicInteger(0); i.get() < l.size(); i.incrementAndGet()) {
 						AtomicInteger j = new AtomicInteger(0);
-						l.get(i.get()).stream().forEach(d -> table[j.getAndIncrement()][i.get() + 1] = Double.toString(d));
+						l.get(i.get()).stream().forEach(d -> table[j.getAndIncrement()][i.get() + 1] = nf.format(d));
 					}	
 					return Optional.of(new StringTable(labels,table));
 				});

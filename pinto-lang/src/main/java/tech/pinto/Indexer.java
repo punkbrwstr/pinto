@@ -44,6 +44,8 @@ public class Indexer implements Cloneable {
 			throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Cannot combine range indexing with multiple indexing.");
 		} else if (indexString.equals("x")) { // none index
 			none = true;
+		} else if(indexString.equals(":") || indexString.equals("")) {
+			everything = true;
 		} else if (!indexString.contains(":")) { // it's a list of indicies
 			String[] s = indexString.split(",");
 			if(s.length == 0) {
@@ -57,8 +59,6 @@ public class Indexer implements Cloneable {
 			} else {
 				labelIndicies = Arrays.asList(s);
 			}
-		} else if(indexString.equals(":") || indexString.equals("")) {
-			everything = true;
 		} else if(indexString.indexOf(":") == 0) {
 			start = 0;
 			end = Integer.parseInt(indexString.substring(1));

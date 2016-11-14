@@ -84,7 +84,8 @@
 							<descriptorRefs>
 								<descriptorRef>jar-with-dependencies</descriptorRef>
 							</descriptorRefs>
-							<finalName>extras-${buildNumber}</finalName>
+                            <!--<finalName>extras-${buildNumber}</finalName>-->
+                            <finalName>extras</finalName>
 						</configuration>
 						<phase>package</phase>
 						<goals>

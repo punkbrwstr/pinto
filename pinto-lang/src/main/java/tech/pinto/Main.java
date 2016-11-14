@@ -1,15 +1,10 @@
 package tech.pinto;
 
-import java.io.File;
 
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 
@@ -67,7 +62,6 @@ public class Main {
 	}
 
 	public void run() throws Exception {
-		new Thread(new Console(getPinto(),port,build), "console_thread").start();
 
 		org.eclipse.jetty.util.log.Log.setLog(new Slf4jLog());
 		Server server = new Server(port);
@@ -83,6 +77,13 @@ public class Main {
         ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
         context.addServlet(holderPwd,"/*");
         server.setHandler(sessions);
+		new Thread(new Console(getPinto(),port,build, () -> {
+			try {
+				server.stop();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}), "console_thread").start();
         server.start();
         server.join();
 	}

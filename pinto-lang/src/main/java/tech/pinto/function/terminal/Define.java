@@ -23,10 +23,11 @@ public class Define extends TerminalFunction {
 		String desc = previousFunction.get().toExpression().toString();
 		previousFunction.get().setIsSubFunction();
 		if(args.length > 1) {
-			desc += " (" + args[1] + ")";
+			String indexString = args[1].trim().replaceAll("\\[|\\]", "").replaceAll("\\s", "");
+	        previousFunction.get().getHead().setIndexer(new Indexer(indexString));
 		}
-		if(args.length > 2 && Boolean.parseBoolean(args[2].trim())) {
-	        previousFunction.get().getHead().setIndexer(Indexer.NONE);
+		if(args.length > 2) {
+			desc += " (" + args[2] + ")";
 		}
 		namespace.define(args[0], desc, previousFunction.get());
 		return Optional.of("Successfully saved.");
@@ -37,7 +38,8 @@ public class Define extends TerminalFunction {
 				.outputs("none")
 				.description("Defines the preceding function as *name*.")
 				.parameter("name")
-				.parameter("description (Optional)")
+				.parameter("indexer","[:]", null)
+				.parameter("description)", "none", null)
 				.build();
 	}
 

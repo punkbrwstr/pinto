@@ -72,8 +72,8 @@ public class StatementTester {
 	
 	@Test
 	public void testNoInputsToDefined() throws Exception {
-		pinto.execute("2 r_mean(20) def(a,test,true)").get(0).getText();
-		pinto.execute("3 r_mean(30) def(b,test,true)").get(0).getText();
+		pinto.execute("2 r_mean(20) def(a, [x],test)").get(0).getText();
+		pinto.execute("3 r_mean(30) def(b, [x],test)").get(0).getText();
 		pinto.execute("a b def(c)").get(0).getText();
 		double[][] c = run("c eval");
 		assertEquals("defineNoInputs count",c.length,2);
