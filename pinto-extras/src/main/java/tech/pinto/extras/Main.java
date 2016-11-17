@@ -18,7 +18,6 @@ import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
 import tech.pinto.extras.function.supplier.Bloomberg;
 import tech.pinto.extras.function.supplier.Futures;
-import tech.pinto.function.FunctionHelp;
 
 public class Main extends tech.pinto.Main {
 	
@@ -53,8 +52,8 @@ public class Main extends tech.pinto.Main {
 		public BloombergClient bc = new BloombergClient();
 		
 		public ExtraVocabulary() {
-			names.put("bbg", new Name((n,p,s,f,i,a) -> new Bloomberg(n,f,i,bc,a), n -> new FunctionHelp.Builder(n).build()));
-			names.put("fut", new Name((n,p,s,f,i,a) -> new Futures(n,p,f,i,a), n -> new FunctionHelp.Builder(n).build()));
+			names.put("bbg", new Name((n,p,s,f,i,a) -> new Bloomberg(n,f,i,bc,a), n -> Bloomberg.getHelp(n)));
+			names.put("fut", new Name((n,p,s,f,i,a) -> new Futures(n,p,f,i,a), n -> Futures.getHelp(n)));
 
 		}
 	}

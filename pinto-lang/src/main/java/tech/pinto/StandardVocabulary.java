@@ -16,6 +16,7 @@ import tech.pinto.function.intermediate.Expanding;
 import tech.pinto.function.intermediate.Fill;
 import tech.pinto.function.intermediate.Join;
 import tech.pinto.function.intermediate.Label;
+import tech.pinto.function.intermediate.LabelFormat;
 import tech.pinto.function.intermediate.Only;
 import tech.pinto.function.intermediate.Resample;
 import tech.pinto.function.intermediate.Reverse;
@@ -49,6 +50,7 @@ public class StandardVocabulary extends Vocabulary {
                 .put("reset", new Name((n,p,s,f,i,a) -> new Reset(n,s,f,i,a),Reset::getHelp))
             /* stack manipulation functions */
                 .put("label", new Name((n,p,s,f,i,a) -> new Label(n,f,i,a),Label::getHelp))
+                .put("label_format", new Name((n,p,s,f,i,a) -> new LabelFormat(n,f,i,a),LabelFormat::getHelp))
                 .put("rev", new Name((n,p,s,f,i,a) -> new Reverse(n,f,i,a),Reverse::getHelp))
                 .put("copy", new Name((n,p,s,f,i,a) -> new Copy(n,f,i,a),Copy::getHelp))
                 .put("roll", new Name((n,p,s,f,i,a) -> new Roll(n,f,i,a),Roll::getHelp))
@@ -113,6 +115,7 @@ public class StandardVocabulary extends Vocabulary {
                 .put("*", new Name((n,p,s,f,i,a) -> new BinaryOperator(n,f,i, (x,y) -> x * y, a),n -> BinaryOperator.getHelp(n, "multiplication")))
                 .put("/", new Name((n,p,s,f,i,a) -> new BinaryOperator(n,f,i, (x,y) -> x / y, a),n -> BinaryOperator.getHelp(n, "division")))
                 .put("%", new Name((n,p,s,f,i,a) -> new BinaryOperator(n,f,i, (x,y) -> x % y, a),n -> BinaryOperator.getHelp(n, "modulo")))
+                .put("^", new Name((n,p,s,f,i,a) -> new BinaryOperator(n,f,i, (x,y) -> Math.pow(x, y), a),n -> BinaryOperator.getHelp(n, "power of")))
                 .put("==", new Name((n,p,s,f,i,a) -> new BinaryOperator(n,f,i, (x,y) -> x == y ? 1.0 : 0.0, a),n -> BinaryOperator.getHelp(n, "equals")))
                 .put("!=", new Name((n,p,s,f,i,a) -> new BinaryOperator(n,f,i, (x,y) -> x != y ? 1.0 : 0.0, a),n -> BinaryOperator.getHelp(n, "not equals")))
                 .put(">", new Name((n,p,s,f,i,a) -> new BinaryOperator(n,f,i, (x,y) -> x > y ? 1.0 : 0.0, a),n -> BinaryOperator.getHelp(n, "greater than")))

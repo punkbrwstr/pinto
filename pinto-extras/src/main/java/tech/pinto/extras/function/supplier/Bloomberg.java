@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import tech.pinto.Indexer;
 import tech.pinto.extras.BloombergClient;
 import tech.pinto.function.ComposableFunction;
+import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.supplier.CachedSupplierFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
@@ -48,6 +49,15 @@ public class Bloomberg extends CachedSupplierFunction {
 	@Override
 	protected List<String> allLabels() {
 		return securityCodeFieldCode;
+	}
+	
+	public static FunctionHelp getHelp(String name) {
+		return new FunctionHelp.Builder(name)
+				.outputs("n + t * f")
+				.description("Retrieves online price history for each ticker and field combination.")
+				.parameter("ticker<sub>1</sub>:ticker<sub>t</sub>")
+				.parameter("field<sub>1</sub>:field<sub>f</sub>","PX_LAST","")
+				.build();
 	}
 	
 }
