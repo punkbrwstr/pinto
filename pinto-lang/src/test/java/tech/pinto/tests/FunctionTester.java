@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class StatementTester {
+public class FunctionTester {
 
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
@@ -78,12 +78,6 @@ public class StatementTester {
 		double[][] c = run("c eval");
 		assertEquals("defineNoInputs count",c.length,2);
 		assertEquals("definedNoInputs output",c[0][0] + c[1][0],5.0,0.01);
-	}
-	
-	
-	@Test
-	public void testLabel() throws Exception {
-		//bbg(msft equity,px open:px high:px low:px last) label(a,b,c,d) dup index(d) eval(2016-01-05,2016-01-05)
 	}
 	
 	

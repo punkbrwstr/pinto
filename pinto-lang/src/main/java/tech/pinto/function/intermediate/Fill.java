@@ -19,7 +19,7 @@ public class Fill extends ComposableFunction {
 
 	public static FunctionHelp getHelp(String name) {
 		return new FunctionHelp.Builder(name)
-				.outputs("*n*")
+				.outputs("n")
 				.description("Fills missing data with last good obseration.")
 				.build();
 	}
@@ -28,7 +28,7 @@ public class Fill extends ComposableFunction {
 	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
 		LinkedList<EvaluableFunction> outputs = new LinkedList<>();
 		for (EvaluableFunction function : stack) {
-			outputs.add(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+			outputs.addFirst(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
 				TimeSeries input = inputs[0].evaluate(range);
 				final AtomicReference<Double> lastGoodValue = new AtomicReference<>(Double.NaN);
 				return input.stream().map(d -> {

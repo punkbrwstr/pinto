@@ -32,7 +32,7 @@ import tech.pinto.time.PeriodicRange;
 @RunWith(Suite.class)
 @SuiteClasses({
 	DateTester.class,
-	StatementTester.class
+	FunctionTester.class
 })
 public class AllTests {
 	

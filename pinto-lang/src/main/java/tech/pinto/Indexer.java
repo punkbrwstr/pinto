@@ -1,15 +1,17 @@
 package tech.pinto;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.TreeMultimap;
 
 import tech.pinto.function.EvaluableFunction;
 
@@ -20,7 +22,7 @@ public class Indexer implements Cloneable {
 	private boolean reverse = false;
 	private Integer start = null;
 	private Integer end = null;
-	private TreeMap<Integer,Integer> indicies = new TreeMap<>(Collections.reverseOrder());
+	private TreeMultimap<Integer,Integer> indicies = TreeMultimap.create(Collections.reverseOrder(), Collections.reverseOrder());
 	private List<String> labelIndicies = null;
 	private String indexString;
 	
@@ -90,24 +92,31 @@ public class Indexer implements Cloneable {
 				checkIndex(end, stack.size());
 				IntStream.range(start,end + 1).forEach(i -> indicies.put(i,i));
 			} else if(labelIndicies != null) {
-				AtomicInteger i = new AtomicInteger();
-				Map<String,Integer> labels = stack.stream()
-						.collect(Collectors.toMap(EvaluableFunction::toString, f -> i.getAndIncrement()));
-				for(int j = 0; j < labelIndicies.size(); j++) {
-					if(!labels.containsKey(labelIndicies.get(j))) {
-						throw new PintoSyntaxException("Unable to index by label \"" + labelIndicies.get(j) + "\"");
+				LinkedListMultimap<String,Integer> labels =  LinkedListMultimap.create();
+				for(int i = 0; i < stack.size(); i++) {
+					labels.put(stack.get(i).toString(), i);
+				}
+				int j = 0;
+				for(String labelToGet : labelIndicies) {
+					if(!labels.containsKey(labelToGet)) {
+						throw new PintoSyntaxException("Unable to index by label \"" + labelToGet + "\"");
 					}
-					indicies.put(labels.get(labelIndicies.get(j)), j);
+					for(int k : labels.get(labelToGet)) {
+						indicies.put(k, j++);
+					}
 				}
 			}
 			TreeMap<Integer,EvaluableFunction> functions = new TreeMap<>();
-			for(Map.Entry<Integer, Integer> i : indicies.entrySet()) {
+			for(Map.Entry<Integer, Collection<Integer>> e : indicies.asMap().entrySet()) {
 				if(stack.size() == 0) {
 					throw new PintoSyntaxException();
 				}
-				int index = i.getKey().intValue() < 0 ? i.getKey().intValue() + stack.size() : i.getKey().intValue();
+				int index = e.getKey().intValue() < 0 ? e.getKey().intValue() + stack.size() : e.getKey().intValue();
 				checkIndex(index, stack.size());
-				functions.put(i.getValue(), stack.remove(index));
+				EvaluableFunction f = stack.remove(index);
+				for(int i : e.getValue()) {
+					functions.put(i, f);
+				}
 			}
 			functions.values().stream().forEach(indexed::addLast);
 		}
