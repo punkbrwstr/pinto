@@ -114,8 +114,10 @@ public class Indexer implements Cloneable {
 				int index = e.getKey().intValue() < 0 ? e.getKey().intValue() + stack.size() : e.getKey().intValue();
 				checkIndex(index, stack.size());
 				EvaluableFunction f = stack.remove(index);
+				boolean needsCloning = false;
 				for(int i : e.getValue()) {
-					functions.put(i, f);
+					functions.put(i, needsCloning ? f.clone() : f);
+					needsCloning = true;
 				}
 			}
 			functions.values().stream().forEach(indexed::addLast);
