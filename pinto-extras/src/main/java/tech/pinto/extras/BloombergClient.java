@@ -60,11 +60,11 @@ public class BloombergClient {
 				while (msgIter.hasNext()) {
 					Message msg = msgIter.next();
 					if (msg.messageType().toString().equals("SessionConnectionUp")) {
-						log.trace("Bloomberg connection up.");
+						log.info("Bloomberg connection up.");
 						continue;
 					}
 					if (msg.messageType().toString().equals("SessionStarted")) {
-						log.trace("Bloomberg session started.");
+						log.info("Bloomberg session started.");
 						continue;
 					}
 					Job j = jobs.get(msg.correlationID().value());
@@ -147,12 +147,9 @@ public class BloombergClient {
 				synchronized (session) {
 					Service refDataService = session.getService("//blp/refdata");
 					com.bloomberglp.blpapi.Request request = refDataService.createRequest("HistoricalDataRequest");
-					//log.trace("Bbg history request: {}:{} {}:{}-{}", securityCode, fieldCode, d.periodicity().code(),
-							//d.start(), d.end());
+					log.info("history: {} {}",securityCodeFieldCode.stream().collect(Collectors.joining(",")),range.toString());
 					securityCodes.stream().forEach(request.getElement("securities")::appendValue);
 					fieldCodes.stream().forEach(request.getElement("fields")::appendValue);
-					//request.getElement("securities").appendValue(securityCode);
-					//request.getElement("fields").appendValue(fieldCode);
 					request.set("periodicitySelection", range.periodicity().bloombergCode());
 					request.set("startDate", range.start().endDate().format(DateTimeFormatter.BASIC_ISO_DATE));
 					LocalDate endDate = Arrays.asList("BM", "BQ-DEC", "BA-DEC").contains(range.periodicity().code())

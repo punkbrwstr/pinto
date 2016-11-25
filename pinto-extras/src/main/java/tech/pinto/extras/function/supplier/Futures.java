@@ -31,6 +31,7 @@ public class Futures extends CachedSupplierFunction {
 
     final private String contractCode, contractYellowKey, criteriaFieldCode,
     							priceModifierFormula, priceFieldCode, pricePreviousCode;
+    final private boolean calcReturn;
     final private int previousOffset;
     final private Pinto pinto;
     
@@ -43,6 +44,9 @@ public class Futures extends CachedSupplierFunction {
 				.parameter("price modifier pinto function (acgbConvert)")
 				.parameter("front contract criteria bloomberg field", "OPEN_INT", null)
 				.parameter("price bloomberg field", "PX_LAST", null)
+				.parameter("previous bloomberg field", "PX_LAST", null)
+				.parameter("previous offset", "-1", null)
+				.parameter("calc return", "true", null)
 				.build();
 	}
 
@@ -53,13 +57,14 @@ public class Futures extends CachedSupplierFunction {
             throw new IllegalArgumentException("Wrong arguments for futures return");
         }
         contractCode = args[0].toUpperCase(); // don't trim because of "G "
-        contractYellowKey = args.length > 1 ? args[1].trim() : "Comdty";
+        contractYellowKey = args.length > 1 && !args[1].equals("") ? args[1].trim() : "Comdty";
         priceModifierFormula = args.length > 2 ? args[2] : "";
-        criteriaFieldCode = args.length > 3 ?
-                args[3].toUpperCase().replaceAll("\\s+","_") : "OPEN_INT";
-        priceFieldCode = args.length > 4 ? args[4] : "PX_LAST";
-        pricePreviousCode = /*args.length > 4 ? args[4] :*/ "";
-        previousOffset = /*args.length > 5 ? Integer.parseInt(args[5]) :*/ -1;
+        criteriaFieldCode = args.length > 3 && ! args[3].equals("") ?
+                args[3].trim().toUpperCase().replaceAll("\\s+","_") : "OPEN_INT";
+        priceFieldCode = args.length > 4 && !args[4].equals("") ? args[4].trim().toUpperCase().replaceAll("\\s+","_") : "PX_LAST";
+        pricePreviousCode = args.length > 5 && !args[5].equals("") ? args[5].trim().toUpperCase().replaceAll("\\s+","_") : priceFieldCode;
+        previousOffset = args.length > 6 && !args[6].equals("") ? Integer.parseInt(args[6]) : -1;
+        calcReturn = args.length > 7 ? Boolean.parseBoolean(args[7]) : true;
 	}
 
 	@Override
@@ -95,7 +100,7 @@ public class Futures extends CachedSupplierFunction {
         // download values for criteria field and prices (starting one day before for prices)
         PeriodicRange<P> expandedRange = range.expand(-1);
         //final String formulaTemplate = "join(0,{3},bbg({0} Comdty,{1},fillprevious),{2},0) {4}";
-        final String formulaTemplate = "0 bbg({0} {5},{1}) [0] fill 0 join({3},{2}) {4}";
+        final String formulaTemplate = "0 bbg({0} {5},{1}) [0] flb(W-FRI) 0 join({3},{2}) {4}";
         double[][] criteria = new double[contracts.size()][];
         double[][] prices = new double[contracts.size()][];
         double[][] pricesPrev = new double[contracts.size()][];
@@ -118,7 +123,7 @@ public class Futures extends CachedSupplierFunction {
                             e.getValue().end().next().endDate().toString(),
                             e.getValue().start().previous().endDate().toString(),
                             priceModifierFormula, contractYellowKey));
-                if(pricePreviousCode.equals("")) {
+                if(pricePreviousCode.equals(priceFieldCode)) {
                     pricesPrev[contractRow] = prices[contractRow];
                 } else {
                     pricesPrev[contractRow] = runExpression(expandedRange,
@@ -169,7 +174,11 @@ public class Futures extends CachedSupplierFunction {
             } else {
                 currentRow = criteria[row1][i] >= criteria[row2][i] ? row1 : row2;
             }
-            d.accept(prices[currentRow][i] / pricesPrev[currentRow][i + previousOffset] - 1.0d);
+            if(calcReturn) {
+            	d.accept(prices[currentRow][i] / pricesPrev[currentRow][i + previousOffset] - 1.0d);
+            } else {
+            	d.accept(prices[currentRow][i]);
+            }
         }
         return Arrays.asList(d.build());
 	}

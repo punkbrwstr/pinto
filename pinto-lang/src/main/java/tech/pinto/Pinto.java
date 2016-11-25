@@ -95,8 +95,8 @@ public class Pinto {
 					next = sc.next();
 				}
 			} while (!foundClosingParen);
-			args = Stream.of(argBuilder.toString().replaceAll("\\(|\\)", "").split(",")).map(String::trim)
-					.filter(arg -> !arg.equals("")).toArray(String[]::new);
+			args = Stream.of(argBuilder.toString().replaceAll("\\(|\\)", "").split(","))/*.map(String::trim)*/
+					/*.filter(arg -> !arg.equals(""))*/.toArray(String[]::new);
 		} else {
 			args = new String[] {};
 		}

@@ -105,7 +105,8 @@ public class StandardVocabulary extends Vocabulary {
 	            .put("x_zscore", new Name((n,p,s,f,i,a) -> new Cross(n,f,i,DoubleCollectors.zscore, a),name -> Cross.getHelp(name, "sample z-score")))
 	            .put("x_zscorep", new Name((n,p,s,f,i,a) -> new Cross(n,f,i,DoubleCollectors.zscorep, a),name -> Cross.getHelp(name, "z-score")))
            /* other commands */
-	            .put("fill", new Name((n,p,s,f,i,a) -> new Fill(n,f,i,a),Fill::getHelp))
+	            .put("fill", new Name((n,p,s,f,i,a) -> new Fill(n,f,i,false,a),Fill::getHelp))
+	            .put("flb", new Name((n,p,s,f,i,a) -> new Fill(n,f,i,true,a),Fill::getLookbackHelp))
 	            .put("join", new Name((n,p,s,f,i,a) -> new Join(n,f,i,a),Join::getHelp))
 	            .put("resample", new Name((n,p,s,f,i,a) -> new Resample(n,f,i,a),Resample::getHelp))
 	            .put("#", new Name((n,p,s,f,i,a) -> new Comment(n,f,i,a),Comment::getHelp))
