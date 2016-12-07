@@ -6,14 +6,15 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.TreeMultimap;
 
 import tech.pinto.function.EvaluableFunction;
+import tech.pinto.tools.SearchableMultiMap;
 
 public class Indexer implements Cloneable {
 	
@@ -92,16 +93,17 @@ public class Indexer implements Cloneable {
 				checkIndex(end, stack.size());
 				IntStream.range(start,end + 1).forEach(i -> indicies.put(i,i));
 			} else if(labelIndicies != null) {
-				LinkedListMultimap<String,Integer> labels =  LinkedListMultimap.create();
+				SearchableMultiMap<Integer> labels =  new SearchableMultiMap<>();
 				for(int i = 0; i < stack.size(); i++) {
-					labels.put(stack.get(i).toString(), i);
+					labels.add(stack.get(i).toString(), i);
 				}
 				int j = 0;
 				for(String labelToGet : labelIndicies) {
-					if(!labels.containsKey(labelToGet)) {
+					Optional<List<Integer>> results = labels.search(labelToGet);
+					if(!results.isPresent()) {
 						throw new PintoSyntaxException("Unable to index by label \"" + labelToGet + "\"");
 					}
-					for(int k : labels.get(labelToGet)) {
+					for(int k : results.get()) {
 						indicies.put(k, j++);
 					}
 				}

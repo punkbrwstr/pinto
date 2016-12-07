@@ -1,6 +1,7 @@
 package tech.pinto;
 
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -89,25 +90,27 @@ public class Namespace implements Completer {
     }
 	
 	protected synchronized SortedSet<String> dependenciesStartingWith(String query) {
-		String after = dependencyGraph.ceiling(query);
-		SortedSet<String> matching = null;
-			if(after == null) {
-				matching = dependencyGraph.headSet(query);
+		SortedSet<String> matching = new TreeSet<>();
+		for(String key : matching.tailSet(query)) {
+			if(key.startsWith(query)) {
+				matching.add(key);
 			} else {
-				matching = dependencyGraph.subSet(query, after);
+				break;
 			}
+		}
 		return matching;
 	}
 
 	protected synchronized Set<String> namesStartingWith(String query) {
-		String after = names.ceilingKey(query);
-		SortedMap<String,?> matching = null;
-			if(after == null) {
-				matching = names.headMap(query);
+		SortedSet<String> matching = new TreeSet<>();
+		for(Entry<String, Name> e : names.tailMap(query).entrySet()) {
+			if(e.getKey().startsWith(query)) {
+				matching.add(e.getKey());
 			} else {
-				matching = names.subMap(query,after);
+				break;
 			}
-		return matching.keySet();
+		}
+		return matching;
 	}
 
 	@Override

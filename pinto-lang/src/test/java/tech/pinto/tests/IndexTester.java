@@ -33,29 +33,35 @@ public class IndexTester {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
+	public void testWildcards() throws Exception {
+		List<TimeSeries> ts = pinto.execute("1 2 3 label(hotdog,burger,hotdiggitydog) [hot*dog] eval").get(0).getTimeSeries().get();
+		assertEquals("wildcard label", 2, ts.size());
+	}
+
+	@Test
 	public void testReverse() throws Exception {
 		List<TimeSeries> ts = pinto.execute("1 2 3 rev [~] label(a,b,c) eval").get(0).getTimeSeries().get();
 		assertEquals("reverse index (simple) label", ts.get(2).getLabel(),"a");
 		assertEquals("reverse index (simple) value", ts.get(2).stream().toArray()[0],1.0,0.1);
 		ts = pinto.execute("1 2 3 rev [~0:1] label(a,b) eval").get(0).getTimeSeries().get();
-		assertEquals("reverse index (with number index)", ts.get(2).getLabel(),"a");
+		assertEquals("reverse index (with number index)", "a", ts.get(1).getLabel());
 	}
 
 	@Test
 	public void testNumbers() throws Exception {
 		List<TimeSeries> ts = pinto.execute("1 2 3 [0] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (simple) value", ts.get(0).stream().toArray()[0],3.0,0.1);
+		assertEquals("number index (simple) value", 3.0, ts.get(0).stream().toArray()[0],0.1);
 		ts = pinto.execute("1 2 3 [-1] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (neg) value", ts.get(0).stream().toArray()[0],1.0,0.1);
+		assertEquals("number index (neg) value",1.0, ts.get(0).stream().toArray()[0],0.1);
 		ts = pinto.execute("1 2 3 [1:2] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (range) value", ts.get(0).stream().toArray()[0],2.0,0.1);
+		assertEquals("number index (range) value",2.0, ts.get(0).stream().toArray()[0],0.1);
 		ts = pinto.execute("1 2 3 [-3:-1] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (range w/ neg) value", ts.get(1).stream().toArray()[0],2.0,0.1);
+		assertEquals("number index (range w/ neg) value",2.0, ts.get(1).stream().toArray()[0],0.1);
 		ts = pinto.execute("1 2 3 [2,1,0] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (list) value", ts.get(1).stream().toArray()[0],1.0,0.1);
+		assertEquals("number index (list) value", 2.0, ts.get(1).stream().toArray()[0],0.1);
 		ts = pinto.execute("1 2 3 rev [~] label(a,b,c) [1,1] neg eval").get(0).getTimeSeries().get();
 		double sum = ts.stream().map(TimeSeries::stream).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
-		assertEquals("number index (list) value", sum,0.0,0.1);
+		assertEquals("number index (list) value", 0.0, sum, 0.1);
 
 
 	}
@@ -63,7 +69,7 @@ public class IndexTester {
 	@Test
 	public void testLabels() throws Exception {
 		List<TimeSeries> ts = pinto.execute("1 2 3 rev [~] label(a,b,c) [c] eval").get(0).getTimeSeries().get();
-		assertEquals("label index (simple) value", ts.get(1).stream().toArray()[0],3.0,0.1);
+		assertEquals("label index (simple) value", 3.0, ts.get(0).stream().toArray()[0], 0.1);
 		ts = pinto.execute("1 2 3 rev [~] label(a,b,c) [b,b] neg eval").get(0).getTimeSeries().get();
 		double sum = ts.stream().map(TimeSeries::stream).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
 		assertEquals("label index (get one twice) value", sum,0.0,0.1);
@@ -73,6 +79,7 @@ public class IndexTester {
 		
 	}
 
+	@SuppressWarnings("unused")
 	private double[][] run(String line) throws Exception {
 		List<TimeSeries> dd = pinto.execute(line).get(0).getTimeSeries().get();
 		if(dd.size() > 0) {
