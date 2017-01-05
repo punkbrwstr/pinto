@@ -38,12 +38,12 @@ public class SearchableMultiMapTester {
 		testMap.add("chicagohotdog", "G");
 		
 		Map<String,String> tests = new ImmutableMap.Builder<String, String>()
-				.put("*","E,B,C,G,F,A,D")
+				.put("*","G,A,D,F,E,B,C")
 				.put("dog","A")
 				.put("hotdog","B,C")
 				.put("hotdog*","B,C")
-				.put("doghouse*","F,D")
-				.put("*hotdog","B,C,G")
+				.put("doghouse*","D,F")
+				.put("*hotdog","G,B,C")
 				.put("hot*dog","E,B,C")
 				.put("hamburger","none")
 				.put("bagel*dog","none")

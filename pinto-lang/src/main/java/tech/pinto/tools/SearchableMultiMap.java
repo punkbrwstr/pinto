@@ -33,7 +33,7 @@ public class SearchableMultiMap<V> extends HashMap<String,List<V>> {
 	
 	public Optional<List<V>> search(String query) {
 		Optional<List<V>> results = Optional.empty();
-		Set<String> keys = new HashSet<>();
+		Set<String> keys = new TreeSet<>();
 		if((!query.contains("*") && this.containsKey(query))) {
 			keys.add(query);
 		} else if(query.equals("*")) {

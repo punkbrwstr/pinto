@@ -51,8 +51,6 @@ abstract public class CachedSupplierFunction extends ComposableFunction {
 
     public <P extends Period> List<DoubleStream> evaluateCached(String k, int streamCount, PeriodicRange<P> range,
                 java.util.function.Function<PeriodicRange<P>,List<DoubleStream>> f) {
-		java.util.function.Function<PeriodicRange<P>,List<TimeSeries>> filler = 
-				r -> f.apply(r).stream().map(ds -> new TimeSeries(null,null,ds)).collect(Collectors.toList());
         // unique identifier for function call comprised of function name, and parameters
     	Periodicity<P> freq = range.periodicity();
         String wholeKey = k + ":" + range.periodicity().code();
@@ -63,6 +61,17 @@ abstract public class CachedSupplierFunction extends ComposableFunction {
             }
             cache = doubleDataCache.get(wholeKey);
         }
+		java.util.function.Function<PeriodicRange<P>,List<TimeSeries>> filler = 
+				r -> {
+					try {
+						return f.apply(r).stream().map(ds -> new TimeSeries(null,null,ds)).collect(Collectors.toList());
+					} catch(RuntimeException re) {
+						synchronized(doubleDataCache) {
+							doubleDataCache.remove(wholeKey);
+						}
+						throw re;
+					}
+				};
         synchronized(cache) {
         	Range<Long> requestedRange = Range.closed(range.start().longValue(), range.end().longValue());
     		Set<Range<Long>> toRemove = new HashSet<>();
