@@ -15,7 +15,7 @@ public class Roll extends ComposableFunction {
 
 	@Override
 	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		int times = args.length < 2 ? 1 : Integer.parseInt(args[1]);
+		int times = args.length == 0 ? 1 : Integer.parseInt(args[0]);
 		for(int i = 0; i < times; i++) {
 			stack.addFirst(stack.removeLast());
 		}
@@ -26,7 +26,7 @@ public class Roll extends ComposableFunction {
 		return new FunctionHelp.Builder(name)
 				.outputs("*n*")
 				.description("Permutes input stack elements *m* times")
-				.parameter("m","2",null)
+				.parameter("m","1",null)
 				.build();
 	}
 }
