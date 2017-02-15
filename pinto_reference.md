@@ -32,7 +32,7 @@ Function(Parameters) | Outputs for *n* inputs|Description
 :---:|:---|:---
 **label(*label<sub>1</sub>*,*label<sub>z</sub>*)**|**z**|Sets arguments as labels for inputs 
 **copy(*m*)**|*n * m*|Copies stack inputs *m* times (defaults: *m=2*)
-**roll(*m*)**|**n**|Permutes input stack elements *m* times (defaults: *m=2*)
+**roll(*m*)**|**n**|Permutes input stack elements *m* times (defaults: *m=1*)
 **clear**|*None*|Removes inputs from stack 
 
 ### Data creation functions
