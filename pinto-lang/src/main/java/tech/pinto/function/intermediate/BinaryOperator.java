@@ -38,7 +38,7 @@ public class BinaryOperator extends ComposableFunction {
 			if(i >= secondOperands.size()) {
 				secondOperand = secondOperand.clone();
 			}
-			stack.addFirst(new EvaluableFunction(inputs -> join(inputs[1].toString(), inputs[0].toString(), toString()),
+			stack.add(new EvaluableFunction(inputs -> join(inputs[1].toString(), inputs[0].toString(), toString()),
 				inputs -> range -> {
 					TimeSeries a = inputs[0].evaluate(range);
 					TimeSeries b = inputs[1].evaluate(range);

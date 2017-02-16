@@ -34,16 +34,16 @@ public class IndexTester {
 
 	@Test
 	public void testWildcards() throws Exception {
-		List<TimeSeries> ts = pinto.execute("1 2 3 label(hotdog,burger,hotdiggitydog) [hot*dog] eval").get(0).getTimeSeries().get();
+		List<TimeSeries> ts = pinto.execute("1 2 3 label(hotdiggitydog,burger,hotdog) [hot*dog] eval").get(0).getTimeSeries().get();
 		assertEquals("wildcard label", 2, ts.size());
 	}
 
 	@Test
 	public void testReverse() throws Exception {
-		List<TimeSeries> ts = pinto.execute("1 2 3 rev [~] label(a,b,c) eval").get(0).getTimeSeries().get();
+		List<TimeSeries> ts = pinto.execute("1 2 3 rev [~] label(c,b,a) eval").get(0).getTimeSeries().get();
 		assertEquals("reverse index (simple) label", ts.get(2).getLabel(),"a");
 		assertEquals("reverse index (simple) value", ts.get(2).stream().toArray()[0],1.0,0.1);
-		ts = pinto.execute("1 2 3 rev [~0:1] label(a,b) eval").get(0).getTimeSeries().get();
+		ts = pinto.execute("1 2 3 rev [~0:2] label(b,a) eval").get(0).getTimeSeries().get();
 		assertEquals("reverse index (with number index)", "a", ts.get(1).getLabel());
 	}
 
@@ -68,12 +68,12 @@ public class IndexTester {
 
 	@Test
 	public void testLabels() throws Exception {
-		List<TimeSeries> ts = pinto.execute("1 2 3 rev [~] label(a,b,c) [c] eval").get(0).getTimeSeries().get();
+		List<TimeSeries> ts = pinto.execute("1 2 3 rev [~] label(c,b,a) [c] eval").get(0).getTimeSeries().get();
 		assertEquals("label index (simple) value", 3.0, ts.get(0).stream().toArray()[0], 0.1);
-		ts = pinto.execute("1 2 3 rev [~] label(a,b,c) [b,b] neg eval").get(0).getTimeSeries().get();
+		ts = pinto.execute("1 2 3 rev [~] label(c,b,a) [b,b] neg eval").get(0).getTimeSeries().get();
 		double sum = ts.stream().map(TimeSeries::stream).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
 		assertEquals("label index (get one twice) value", sum,0.0,0.1);
-		ts = pinto.execute("1 2 3 rev [~] label(a,b,b) [b] neg eval").get(0).getTimeSeries().get();
+		ts = pinto.execute("1 2 3 rev [~] label(b,b,a) [b] neg eval").get(0).getTimeSeries().get();
 		sum = ts.stream().map(TimeSeries::stream).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
 		assertEquals("label index (repeated label) value", sum,-4.0,0.1);
 		

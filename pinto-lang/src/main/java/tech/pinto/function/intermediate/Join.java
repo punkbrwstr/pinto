@@ -1,7 +1,7 @@
 package tech.pinto.function.intermediate;
 
 import java.time.LocalDate;
-
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +29,7 @@ public class Join extends ComposableFunction {
 
 	private <P extends Period> DoubleStream evaluationFunction(PeriodicRange<P> range, EvaluableFunction[] inputArray) {
 		LinkedList<EvaluableFunction> inputs = asList(inputArray);
+		Collections.reverse(inputs);
 		List<LocalDate> cutoverDates = Stream.of(args).map(LocalDate::parse).collect(Collectors.toList());
 		DoubleStream ds = DoubleStream.empty().sequential();
 		List<P> cutoverPeriods = cutoverDates.stream().map(range.periodicity()::from).collect(Collectors.toList());

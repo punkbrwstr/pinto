@@ -45,7 +45,7 @@ public class Fill extends ComposableFunction {
 	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
 		LinkedList<EvaluableFunction> outputs = new LinkedList<>();
 		for (EvaluableFunction function : stack) {
-			outputs.addFirst(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+			outputs.add(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
 				TimeSeries input = null;
 				int skip = 0;
 				if(!lookBack) {

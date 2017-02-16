@@ -66,7 +66,7 @@ public class Indexer implements Cloneable {
 			start = 0;
 			end = Integer.parseInt(indexString.substring(1));
 		} else if(indexString.indexOf(":") == indexString.length() - 1) {
-			end = -1;
+			end = Integer.MAX_VALUE;
 			start = Integer.parseInt(indexString.substring(0, indexString.length() - 1));
 		} else {
 			String[] parts = indexString.split(":");
@@ -85,13 +85,15 @@ public class Indexer implements Cloneable {
 		} else {
 			if(start != null) {
 				start = start < 0 ? start + stack.size() : start;
-				end = end < 0 ? end + stack.size() : end;
+				end = end < 0 ? end + stack.size() :
+					end == Integer.MAX_VALUE ? stack.size() : end;
 				if (start > end) {
 					throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Start is after end.");
 				} 
 				checkIndex(start, stack.size());
 				checkIndex(end, stack.size());
-				IntStream.range(start,end + 1).forEach(i -> indicies.put(i,i));
+				//IntStream.range(start,end + 1).forEach(i -> indicies.put(i,i));
+				IntStream.range(start,end).forEach(i -> indicies.put(i,i));
 			} else if(labelIndicies != null) {
 				SearchableMultiMap<Integer> labels =  new SearchableMultiMap<>();
 				for(int i = 0; i < stack.size(); i++) {
@@ -140,7 +142,7 @@ public class Indexer implements Cloneable {
 	}  
 	
 	private void checkIndex(int index, int stackSize) throws PintoSyntaxException {
-		if (index < 0 || index >= stackSize) {
+		if (index < 0 || index > stackSize) {
 			throw new PintoSyntaxException("Invalid index \"" + indexString + "\": "  + index + " is outside bounds of inputs.");
 		} 
 	}

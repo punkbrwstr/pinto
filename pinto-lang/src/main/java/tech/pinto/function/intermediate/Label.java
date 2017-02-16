@@ -17,11 +17,11 @@ public class Label extends ComposableFunction {
 
 	@Override
 	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		for (int i = 0; i < stack.size(); i++) {
-			if(i < args.length) {
-				final int labelIndex = i;
-				stack.get(i).setLabeller(inputs -> args[labelIndex]);
-			}
+		int stackIndex = 0;
+		int i = -1 +  Math.min(args.length, stack.size());
+		while(i >= 0) {
+			final int labelIndex = i--;
+			stack.get(stackIndex++).setLabeller(inputs -> args[labelIndex]);
 		}
 		return stack;
 	}
