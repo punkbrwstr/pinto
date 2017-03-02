@@ -8,11 +8,11 @@ With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equati
 
 Calculate the returns of your favorite stocks and of a portfolio of those stocks:
 
-![alt text](http://pinto.tech/files/example0.png "Stock portfolio example")
+![alt text](http://pinto.tech/files/example0.1.png "Stock portfolio example")
 
-Or find when 20 and 200-day moving averages cross for two stocks:
+Or find when 50 and 100-day moving averages cross for a stock:
 
-![alt text](http://pinto.tech/files/example1.png "Stock MA cross")
+![alt text](http://pinto.tech/files/example1.1.png "Stock MA cross")
 
 
 
