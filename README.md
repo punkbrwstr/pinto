@@ -1,6 +1,6 @@
 # Pinto
 
-Pinto is a domain-specifc programming language for manipulating time series data. Technically, it is a stack-based functional  language that uses Reverse Polish notation (operators come after operands, like an HP12c calculator). Expressions written in Pinto define the manipulations necessary to create a tables of data and can be evaluated over any range of dates and for any frequency.
+Pinto is a domain-specific programming language for manipulating time series data. Technically, it is a stack-based functional  language that uses Reverse Polish notation (operators come after operands, like an HP12c calculator). Expressions written in Pinto define the manipulations necessary to create a tables of data and can be evaluated over any range of dates and for any frequency.
 
 With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equation, or an systematic trading system into one line of code!
 
