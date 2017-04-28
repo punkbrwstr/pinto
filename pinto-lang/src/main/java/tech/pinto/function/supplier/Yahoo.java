@@ -55,17 +55,18 @@ public class Yahoo extends CachedSupplierFunction {
 			LocalDate start = range.start().endDate();
 			LocalDate end = range.end().endDate();
 			String url = MessageFormat.format(
-					"http://chart.finance.yahoo.com/table.csv?"
+					"https://chart.finance.yahoo.com/table.csv?"
 							+ "s={0}&a={1}&b={2}&c={3,number,####}&d={4}&e={5}&f={6,number,####}&g={7}&ignore=.csv",
 					ticker, start.getMonthValue() - 1, start.getDayOfMonth(), start.getYear(), end.getMonthValue() - 1,
 					end.getDayOfMonth(), end.getYear(), FREQ.get(range.periodicity()));
-			System.out.println("yahoo: " + url);
+			System.out.println("yahoo req: " + url);
 			Map<P, Double> quotes = new HashMap<>();
 			Periodicity<P> p = range.periodicity();
 			try {
 				try (BufferedReader reader = new BufferedReader(
 						new InputStreamReader(new URL(url).openStream(), "UTF-8"))) {
 					reader.readLine(); // burn one
+                    int i = 0;
 					for (String line; (line = reader.readLine()) != null;) {
 						String[] cols = line.split(",");
 						quotes.put(p.from(LocalDate.parse(cols[0])), Double.valueOf(cols[4]));
