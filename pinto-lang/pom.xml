@@ -55,16 +55,36 @@
         </plugin>
         <plugin>
               <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>tech.pinto.Main</mainClass>
-                    <systemProperties>
-                        <systemProperty>
-                            <key>pinto.port</key>
-                            <value>5556</value>
-                       </systemProperty>
-                   </systemProperties>
-                </configuration>
+              <artifactId>exec-maven-plugin</artifactId>
+              <version>1.2.1</version>
+              <executions>
+                <execution>
+                    <id>REPL</id>
+                    <goals><goal>java</goal></goals>
+                    <configuration>
+                        <mainClass>tech.pinto.Main</mainClass>
+                        <systemProperties>
+                            <systemProperty>
+                                <key>pinto.port</key>
+                                <value>5556</value>
+                            </systemProperty>
+                        </systemProperties>
+                    </configuration>
+                </execution>
+                <execution>
+                    <id>demo</id>
+                    <goals><goal>java</goal></goals>
+                    <configuration>
+                        <mainClass>tech.pinto.Demo</mainClass>
+                        <systemProperties>
+                            <systemProperty>
+                                <key>pinto.port</key>
+                                <value>5559</value>
+                            </systemProperty>
+                        </systemProperties>
+                    </configuration>
+                </execution>
+            </executions>
             </plugin>
             <plugin>
  				<groupId>org.apache.maven.plugins</groupId>
