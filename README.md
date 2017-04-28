@@ -62,7 +62,7 @@ If you have the requirements, it's easy to get up and running with the pinto con
 git clone https://github.com/punkbrwstr/pinto.git
 cd pinto
 mvn -pl pinto-lang compile
-mvn exec:java -pl pinto-lang
+mvn exec:java@REPL -pl pinto-lang
 ```
 
 
