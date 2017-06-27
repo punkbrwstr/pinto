@@ -20,7 +20,7 @@ public class Indexer implements Cloneable {
 	
 	private boolean everything = true;
 	private boolean none = false;
-	private boolean reverse = false;
+	private boolean repeat = false;
 	private Integer start = null;
 	private Integer end = null;
 	private TreeMultimap<Integer,Integer> indicies = TreeMultimap.create(Collections.reverseOrder(), Collections.reverseOrder());
@@ -39,9 +39,9 @@ public class Indexer implements Cloneable {
 	public Indexer(String indexString) throws PintoSyntaxException {
 		this.indexString = indexString;
 		everything = false;
-		if(indexString.contains("~")) {
-			reverse = true;
-			indexString = indexString.replace("~", "");
+		if(indexString.contains("+")) {
+			repeat = true;
+			indexString = indexString.replace("+", "");
 		}
 		if(indexString.contains(":") && indexString.contains(",")) {
 			throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Cannot combine range indexing with multiple indexing.");
@@ -90,8 +90,8 @@ public class Indexer implements Cloneable {
 				if (start > end) {
 					throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Start is after end.");
 				} 
-				checkIndex(start, stack.size());
-				checkIndex(end, stack.size());
+				checkIndex(start, stack.size(),false);
+				checkIndex(end, stack.size(),true);
 				//IntStream.range(start,end + 1).forEach(i -> indicies.put(i,i));
 				IntStream.range(start,end).forEach(i -> indicies.put(i,i));
 			} else if(labelIndicies != null) {
@@ -116,7 +116,7 @@ public class Indexer implements Cloneable {
 					throw new PintoSyntaxException();
 				}
 				int index = e.getKey().intValue() < 0 ? e.getKey().intValue() + stack.size() : e.getKey().intValue();
-				checkIndex(index, stack.size());
+				checkIndex(index, stack.size(),false);
 				EvaluableFunction f = stack.remove(index);
 				boolean needsCloning = false;
 				for(int i : e.getValue()) {
@@ -129,8 +129,8 @@ public class Indexer implements Cloneable {
 		return indexed;
 	}
 	
-	public boolean isReverse() {
-		return reverse;
+	public boolean isRepeated() {
+		return repeat;
 	}
 
 	public boolean isEverything() {
@@ -141,8 +141,8 @@ public class Indexer implements Cloneable {
 	    return s.matches("[-+]?\\d*\\.?\\d+");  
 	}  
 	
-	private void checkIndex(int index, int stackSize) throws PintoSyntaxException {
-		if (index < 0 || index > stackSize) {
+	private void checkIndex(int index, int stackSize, boolean exclusive) throws PintoSyntaxException {
+		if (index < 0 || (exclusive && index > stackSize) || (!exclusive && index >= stackSize)) {
 			throw new PintoSyntaxException("Invalid index \"" + indexString + "\": "  + index + " is outside bounds of inputs.");
 		} 
 	}

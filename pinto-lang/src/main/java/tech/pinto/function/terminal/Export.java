@@ -33,6 +33,9 @@ public class Export extends TerminalFunction {
 	
 	@Override
 	public Optional<String> getText() throws PintoSyntaxException {
+		if(args.length < 4) {
+			throw new PintoSyntaxException(name + " requires 4 arguments.");
+		}
 		Periodicity<?> p =  Periodicities.get(args.length > 2 ? args[2] : "B");
 		LocalDate start = args.length > 0 ? LocalDate.parse(args[0]) : 
 							p.from(LocalDate.now()).previous().endDate();

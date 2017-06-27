@@ -24,8 +24,9 @@ import tech.pinto.function.intermediate.Roll;
 import tech.pinto.function.intermediate.Rolling;
 import tech.pinto.function.intermediate.RollingCorrelation;
 import tech.pinto.function.intermediate.UnaryOperator;
+import tech.pinto.function.supplier.ImportCSV;
 import tech.pinto.function.supplier.Moon;
-import tech.pinto.function.supplier.Yahoo;
+import tech.pinto.function.supplier.Range;
 import tech.pinto.function.terminal.Delete;
 import tech.pinto.function.terminal.Evaluate;
 import tech.pinto.function.terminal.Execute;
@@ -57,7 +58,9 @@ public class StandardVocabulary extends Vocabulary {
                 .put("clear", new Name((n,p,s,f,i,a) -> new Clear(n,f,i,a),Clear::getHelp))
                 .put("only", new Name((n,p,s,f,i,a) -> new Only(n,f,i,a),Only::getHelp))
             /* zeroth-order functions */
-                .put("yhoo", new Name((n,p,s,f,i,a) -> new Yahoo(n,f,i,a),Yahoo::getHelp))
+                //.put("yhoo", new Name((n,p,s,f,i,a) -> new Yahoo(n,f,i,a),Yahoo::getHelp))
+                .put("range", new Name((n,p,s,f,i,a) -> new Range(n,f,i,a), Range::getHelp))
+                .put("read", new Name((n,p,s,f,i,a) -> new ImportCSV(n,f,i,a), ImportCSV::getHelp))
                 .put("moon", new Name((n,p,s,f,i,a) -> new Moon(n,f,i),
                 			n -> new FunctionHelp.Builder(n).description("Phase of the moon.").outputs("n + 1").build()))
             /* rolling window commands */

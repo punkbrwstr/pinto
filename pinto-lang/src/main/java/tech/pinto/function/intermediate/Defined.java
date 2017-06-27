@@ -1,6 +1,7 @@
 package tech.pinto.function.intermediate;
 
 import java.util.LinkedList;
+import java.util.Optional;
 
 import com.google.common.collect.ObjectArrays;
 
@@ -24,6 +25,7 @@ public class Defined extends ComposableFunction {
 	@Override
 	public LinkedList<EvaluableFunction> compose() throws PintoSyntaxException {
 		ComposableFunction clone = namespace.getFunction(name.get(), null, null, null);
+		Optional<ComposableFunction> second = clone.getSecondToHead();
 		if(!previousFunction.get().isHead()) {
 			Head head = (Head) clone.getHead();
 			head.setPrevious(previousFunction.get());
@@ -31,9 +33,9 @@ public class Defined extends ComposableFunction {
             if(!indexer.isEverything()) {
 			    head.setIndexer(indexer);
             }
-			if(args.length > 0) {
-				head.setArgs(ObjectArrays.concat(head.getArgs(), args, String.class));
-			}
+		}
+		if(args.length > 0 && second.isPresent()) {
+			second.get().setArgs(ObjectArrays.concat(args, second.get().getArgs(), String.class));
 		}
 		LinkedList<EvaluableFunction> outputs = clone.compose();
 		outputs.addAll(skippedInputs);

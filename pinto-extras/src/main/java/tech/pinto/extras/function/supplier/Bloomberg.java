@@ -17,32 +17,40 @@ import tech.pinto.time.PeriodicRange;
 
 public class Bloomberg extends CachedSupplierFunction {
 	
-	private final java.util.function.Function<PeriodicRange<?>, List<DoubleStream>> function;
-	private final List<String> securityCodeFieldCode;
+	private List<String> securityCodes;
+	private List<String> fieldCodes;
+	private List<String> securityCodeFieldCode;
+	private final BloombergClient bc;
 	
 	public Bloomberg(String name, ComposableFunction previousFunction, Indexer indexer, BloombergClient bc, String... args) {
 		super(name, previousFunction, indexer, args);
-		if(args.length == 0) {
-			throw new IllegalArgumentException("bbg requires at least one argument");
-		}
-		List<String> securityCodes = Stream.of(args[0].split(":")).map(s -> s.trim())
-										.collect(Collectors.toList());
-		List<String> fieldCodes = args.length == 1 ? Arrays.asList("PX_LAST") :
-				Stream.of(args[1].split(":")).map(s -> s.trim()).map(String::toUpperCase)
-					.map(s -> s.replaceAll(" ", "_")).collect(Collectors.toList());
-		function = bc.getFunction(securityCodes, fieldCodes);
-		securityCodeFieldCode = securityCodes.stream()
-						.flatMap(s -> fieldCodes.stream().map(c -> s + ":" + c)).collect(Collectors.toList());
+		this.bc = bc;
 	}
 
 
 	@Override
 	public <P extends Period> List<DoubleStream> evaluateAll(PeriodicRange<P> range) {
-		return function.apply(range);
+		parseArgs();
+		return bc.getFunction(securityCodes, fieldCodes).apply(range);
+	}
+	
+	private void parseArgs() {
+		if(args.length == 0) {
+			throw new IllegalArgumentException("bbg requires at least one argument");
+		}
+		securityCodes = Stream.of(args[0].split(":")).map(s -> s.trim()).collect(Collectors.toList());
+		fieldCodes = args.length == 1 ? Arrays.asList("PX_LAST") :
+				Stream.of(args[1].split(":")).map(s -> s.trim()).map(String::toUpperCase)
+					.map(s -> s.replaceAll(" ", "_")).collect(Collectors.toList());
+		securityCodeFieldCode = securityCodes.stream()
+						.flatMap(s -> fieldCodes.stream().map(c -> s + ":" + c)).collect(Collectors.toList());
 	}
 
 	@Override
 	protected int additionalOutputCount() {
+		if(securityCodes == null) {
+			parseArgs();
+		}
 		return securityCodeFieldCode.size();
 	}
 

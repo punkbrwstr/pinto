@@ -41,10 +41,20 @@ public class ComposableFunction implements Cloneable {
 
     public LinkedList<EvaluableFunction> compose() throws PintoSyntaxException {
     	LinkedList<EvaluableFunction> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
-    	LinkedList<EvaluableFunction> outputs = composeIndexed(indexer.index(inputs));
-    	if(indexer.isReverse()) {
-    		outputs = reverse(outputs);
-    	}
+    	LinkedList<EvaluableFunction> outputs = new LinkedList<>();
+    	int i = 0;
+    	do {
+    		try {
+    			outputs.addAll(composeIndexed(indexer.index(inputs)));
+    		} catch(PintoSyntaxException pse) {
+    			if(i > 0) {
+    				break;
+    			} else {
+    				throw pse;
+    			}
+    		}
+    		i++;
+    	} while(indexer.isRepeated() && inputs.size() > 0);
     	outputs.addAll(inputs);
     	return outputs;
     }
@@ -81,7 +91,7 @@ public class ComposableFunction implements Cloneable {
     	StringBuilder expression = previousFunction.isPresent() ?
     			previousFunction.get().toExpression() : new StringBuilder();
     	if(name.isPresent() && ! subFunction) {
-    		if(indexer.isReverse() || !indexer.isEverything()) {
+    		if(!indexer.isEverything()) {
     			expression.append(indexer.toString()).append(" ");
     		}
     		expression.append(toString()).append(" ");
@@ -104,6 +114,13 @@ public class ComposableFunction implements Cloneable {
 
     public ComposableFunction getHead() {
     	return previousFunction.isPresent() ? previousFunction.get().getHead() : this;
+    }
+
+    public Optional<ComposableFunction> getSecondToHead() {
+    	if(!previousFunction.isPresent()) {
+    		return Optional.empty();
+    	}
+    	return previousFunction.get().previousFunction.isPresent() ? previousFunction.get().getSecondToHead() : Optional.of(this);
     }
 
     @Override

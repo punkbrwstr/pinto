@@ -1,8 +1,6 @@
 package tech.pinto.function.intermediate;
 
 import java.util.LinkedList;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.EvaluableFunction;
@@ -18,20 +16,28 @@ public class Only extends ComposableFunction {
 		super(name, previousFunction, indexer, args);
 	}
 
-	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		String indexString = Stream.of(args).collect(Collectors.joining(","));
-		try {
-			return new Indexer(indexString).index(stack);
-		} catch (PintoSyntaxException e) {
-			throw new RuntimeException("Syntax error in arguments of " + name + ".",e);
-		}
-	}
+    public LinkedList<EvaluableFunction> compose() throws PintoSyntaxException {
+    	LinkedList<EvaluableFunction> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
+    	LinkedList<EvaluableFunction> outputs = new LinkedList<>();
+    	int i = 0;
+    	do {
+    		try {
+    			outputs.addAll(indexer.index(inputs));
+    		} catch(PintoSyntaxException pse) {
+    			if(i > 0) {
+    				break;
+    			} else {
+    				throw pse;
+    			}
+    		}
+    		i++;
+    	} while(indexer.isRepeated() && inputs.size() > 0);
+    	return outputs;
+    }
 	
 	public static FunctionHelp getHelp(String name) {
 		return new FunctionHelp.Builder(name)
 				.description("Clears stack except for functions specified by indexing expression.")
-				.parameter("Index expression")
 				.outputs("Determined by index expression")
 				.build();
 	}

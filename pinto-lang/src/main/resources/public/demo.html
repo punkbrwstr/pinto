@@ -34,11 +34,12 @@
         	<p>Here are some sample Pinto expressions to try:</p>
         	<p class="examples">(Hit enter to evaluate the Pinto expressions and show data as a table or graph.)</p>
         	<ul>
-        		<li>Weekly ratio between Transportation and Utility stocks: <code>yhoo(XTN,XLU) / label(ratio) eval(2015-10-01,2016-09-30,W-FRI)</code></li>
-        		<li>Daily Dow with 20 and 200-day moving averages: <code>yhoo(^DJI) copy(3) [0] r_mean(20) [1] r_mean(200) eval(2016-01-01,2016-09-30,B)</code></li>
-        		<li>Save a list of stocks: <code>yhoo(aapl,ibm,csco,msft) def(my_stocks)</code></li>
-        		<li>Define a function: <code>fill r_chgpct x_mean 1 + log e_sum exp -1 + def(portfolio_return)</code></li>
-        		<li>Apply the function to your stocks: <code>my_stocks portfolio_return eval(2015-09-30)</code></li>
+        		<li>Define a function to read in a file with stock prices: <code>read(https://pinto.tech/files/stocks.csv) def(get_stocks)</code></li>
+        		<li>Isolate two series from the file using label indexing and compute a weekly ratio: <code>get_stocks [TRAN,UTIL] only / eval(2015-10-01,2016-09-30,W-FRI)</code></li>
+        		<li>Compute 20 and 200-day moving averages: <code>get_stocks [DOW] only copy(3) [0] r_mean(20) [1] r_mean(200) eval(2016-01-01,2016-09-30,B)</code></li>
+        		<li>Define a table of stock returns: <code>get_stocks [CMG,LOCO,TACO] only r_chgpct def(my_stocks)</code></li>
+        		<li>Define a function to computer compound returns: <code> 1 + log e_sum exp -1 + def(compound_return)</code></li>
+        		<li>Apply the function to your stocks: <code>my_stocks x_mean compound_return eval(2015-09-30,2016-12-30)</code></li>
         	</ul>
         </div>
         
