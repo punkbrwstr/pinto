@@ -19,14 +19,14 @@ import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.TimeSeries;
+import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
 
 public class Execute extends TerminalFunction {
 
-	private LinkedList<TimeSeries> timeSeriesOutput = null;
+	private LinkedList<ColumnValues> timeSeriesOutput = null;
 	private final List<String> stringOutput = new ArrayList<>();
 	private final Pinto pinto;
 	
@@ -61,7 +61,7 @@ public class Execute extends TerminalFunction {
 	}
 
 	@Override
-	public Optional<LinkedList<TimeSeries>> getTimeSeries() throws PintoSyntaxException {
+	public Optional<LinkedList<ColumnValues>> getTimeSeries() throws PintoSyntaxException {
 		if(timeSeriesOutput == null) {
 			executeFile();
 		}

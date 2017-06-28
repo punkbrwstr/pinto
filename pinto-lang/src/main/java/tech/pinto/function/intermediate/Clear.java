@@ -3,7 +3,7 @@ package tech.pinto.function.intermediate;
 import java.util.LinkedList;
 
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.EvaluableFunction;
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.ComposableFunction;
 
@@ -16,7 +16,7 @@ final public class Clear extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		stack.clear();
 		return stack;
 	}

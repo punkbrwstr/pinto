@@ -83,7 +83,7 @@ public class Console implements Runnable {
 				} else {
 					try {
 				    	for(TerminalFunction tf : pinto.execute(line.toString())) {
-				    		Optional<LinkedList<TimeSeries>> list = tf.getTimeSeries();
+				    		Optional<LinkedList<ColumnValues>> list = tf.getTimeSeries();
 				    		if(list.isPresent()) {
 				    			streamInReverse(list.get()).collect(Outputs.doubleDataToStringTable(nf))
 				    				.ifPresent(table -> out.println(FlipTable.of(table.getHeader(), table.getCells())));

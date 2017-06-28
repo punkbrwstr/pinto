@@ -2,9 +2,9 @@ package tech.pinto.function.supplier;
 
 import java.util.LinkedList;
 
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.ComposableFunction;
-import tech.pinto.function.EvaluableFunction;
 
 public class Moon extends ComposableFunction {
 
@@ -13,8 +13,8 @@ public class Moon extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		stack.addFirst(new EvaluableFunction(inputs -> toString(),
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+		stack.addFirst(new Column(inputs -> toString(),
 				inputs -> range -> range.dates().stream().mapToDouble(d -> new tech.pinto.tools.MoonPhase(d).getPhase())));
 		return stack;
 	}

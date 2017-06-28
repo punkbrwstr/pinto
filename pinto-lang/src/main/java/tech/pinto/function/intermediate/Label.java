@@ -1,10 +1,14 @@
 package tech.pinto.function.intermediate;
 
 
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.EvaluableFunction;
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.ComposableFunction;
 
@@ -16,13 +20,17 @@ public class Label extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		int stackIndex = 0;
-		int i = -1 +  Math.min(args.length, stack.size());
-		while(i >= 0) {
-			final int labelIndex = i--;
-			stack.get(stackIndex++).setLabeller(inputs -> args[labelIndex]);
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+		List<String> labels = Arrays.asList(args);
+		Collections.reverse(labels);
+		ArrayDeque<Column> temp = new ArrayDeque<>();
+		for(int i = 0; i < labels.size() && stack.size() > 0; i++) {
+			final int index = i;
+			Column old = stack.removeFirst();
+			temp.addFirst(new Column(inputs -> labels.get(index),
+					old.getSeriesFunction(),old.getInputs()));
 		}
+       	temp.stream().forEach(stack::addFirst);
 		return stack;
 	}
 

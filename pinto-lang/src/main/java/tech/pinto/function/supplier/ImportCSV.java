@@ -16,9 +16,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.ComposableFunction;
-import tech.pinto.function.EvaluableFunction;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.time.Period;
 
@@ -29,7 +29,7 @@ public class ImportCSV extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		if (args.length < 1) {
 			throw new IllegalArgumentException(name + " requires at least one argument.");
 		}
@@ -54,7 +54,7 @@ public class ImportCSV extends ComposableFunction {
 						.collect(Collectors.toMap((r) -> LocalDate.parse(r[0]), Function.identity()));
 				for(int i = 0; i < firstRow.length - 1; i++) {
 					final int col = i;
-					stack.add(new EvaluableFunction(inputs -> labels[col], 
+					stack.add(new Column(inputs -> labels[col], 
 							inputs -> range -> {
 							DoubleStream.Builder b = DoubleStream.builder();
 							for (Period per : range.values()) {

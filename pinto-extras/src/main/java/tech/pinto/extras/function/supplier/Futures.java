@@ -199,7 +199,7 @@ public class Futures extends CachedSupplierFunction {
     		String e = exp + " eval(" + range.start().endDate().toString() + ","
     					+ range.end().endDate().toString() + "," + range.periodicity().code() + ")";
     		return pinto.execute(e).get(0).getTimeSeries().get().get(0)
-    				.stream().toArray();
+    				.getSeries().toArray();
     	} catch(PintoSyntaxException pse) {
     		throw new RuntimeException();
     	}

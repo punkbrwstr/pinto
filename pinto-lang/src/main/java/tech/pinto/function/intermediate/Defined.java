@@ -5,16 +5,16 @@ import java.util.Optional;
 
 import com.google.common.collect.ObjectArrays;
 
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.function.ComposableFunction;
-import tech.pinto.function.EvaluableFunction;
 
 public class Defined extends ComposableFunction {
 	
 	private final Namespace namespace;
-	private LinkedList<EvaluableFunction> skippedInputs = new LinkedList<>();
+	private LinkedList<Column> skippedInputs = new LinkedList<>();
 
 	public Defined(String name, Namespace namespace, ComposableFunction previousFunction, 
 			Indexer indexer, String... args) {
@@ -23,7 +23,7 @@ public class Defined extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> compose() throws PintoSyntaxException {
+	public LinkedList<Column> compose() throws PintoSyntaxException {
 		ComposableFunction clone = namespace.getFunction(name.get(), null, null, null);
 		Optional<ComposableFunction> second = clone.getSecondToHead();
 		if(!previousFunction.get().isHead()) {
@@ -37,12 +37,12 @@ public class Defined extends ComposableFunction {
 		if(args.length > 0 && second.isPresent()) {
 			second.get().setArgs(ObjectArrays.concat(args, second.get().getArgs(), String.class));
 		}
-		LinkedList<EvaluableFunction> outputs = clone.compose();
+		LinkedList<Column> outputs = clone.compose();
 		outputs.addAll(skippedInputs);
 		return outputs;
 	}
 	
-	public void addSkippedInputs(LinkedList<EvaluableFunction> skippedInputs) {
+	public void addSkippedInputs(LinkedList<Column> skippedInputs) {
 		this.skippedInputs.addAll(skippedInputs);
 	}
 

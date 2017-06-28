@@ -9,7 +9,7 @@ import tech.pinto.function.FunctionHelp;
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.TimeSeries;
+import tech.pinto.ColumnValues;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
 import tech.pinto.time.Periodicities;
@@ -23,14 +23,14 @@ public class Evaluate extends TerminalFunction {
 	}
 
 	@Override
-	public Optional<LinkedList<TimeSeries>> getTimeSeries() throws PintoSyntaxException {
+	public Optional<LinkedList<ColumnValues>> getTimeSeries() throws PintoSyntaxException {
 		Periodicity<?> p =  Periodicities.get(args.length > 2 ? args[2] : "B");
 		LocalDate start = args.length > 0 ? LocalDate.parse(args[0]) : 
 							p.from(LocalDate.now()).previous().endDate();
 		LocalDate end = args.length > 1 ? LocalDate.parse(args[1]) : 
 							p.from(LocalDate.now()).previous().endDate();
 		return Optional.of(indexer.index(this.previousFunction.get().compose()).stream()
-				.map(f -> f.evaluate(p.range(start, end, false)))
+				.map(f -> f.getValues(p.range(start, end, false)))
 					.collect(Collectors.toCollection(() -> new LinkedList<>())));
 	}
 	

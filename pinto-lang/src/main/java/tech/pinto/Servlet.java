@@ -58,10 +58,10 @@ public class Servlet extends HttpServlet {
 				session.setAttribute("pinto", pintoSupplier.get());
 			}
 			Pinto pinto = (Pinto) session.getAttribute("pinto");
-			LinkedList<TimeSeries> data = new LinkedList<>();
+			LinkedList<ColumnValues> data = new LinkedList<>();
 			List<String> messages = new ArrayList<>();
 	    	for(TerminalFunction tf : pinto.execute(statement)) {
-	    		Optional<LinkedList<TimeSeries>> list = tf.getTimeSeries();
+	    		Optional<LinkedList<ColumnValues>> list = tf.getTimeSeries();
 	    		list.ifPresent(data::addAll); 
 	    		tf.getText().ifPresent(messages::add);
 	    	}
@@ -78,12 +78,12 @@ public class Servlet extends HttpServlet {
 								omitDates ? ""
 										: data.get(0).getRange().dates().stream().map(LocalDate::toString)
 												.collect(Collectors.toList()))
-						.put("columns", streamInReverse(data).map(TimeSeries::getLabel).collect(Collectors.toList()))
+						.put("columns", streamInReverse(data).map(ColumnValues::getText).collect(Collectors.toList()))
 						//.put("columns", data.stream().map(TimeSeries::getLabel).collect(Collectors.toList()))
-						.put("data", numbersAsString ? streamInReverse(data).map(TimeSeries::stream)
+						.put("data", numbersAsString ? streamInReverse(data).map(ColumnValues::getSeries)
 												.map(ds -> ds.mapToObj(Double::toString).collect(Collectors.toList()))
 												.collect(Collectors.toList())
-										: streamInReverse(data).map(TimeSeries::stream).map(DoubleStream::toArray)
+										: streamInReverse(data).map(ColumnValues::getSeries).map(DoubleStream::toArray)
 												.collect(Collectors.toList()))
 						.build());
 			} else {

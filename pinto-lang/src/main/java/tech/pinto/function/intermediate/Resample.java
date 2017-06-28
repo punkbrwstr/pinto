@@ -6,12 +6,12 @@ import java.util.stream.DoubleStream;
 
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 import tech.pinto.function.ComposableFunction;
-import tech.pinto.function.EvaluableFunction;
 
 public class Resample extends ComposableFunction {
 
@@ -30,23 +30,23 @@ public class Resample extends ComposableFunction {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		if(args.length == 0) {
 			throw new IllegalArgumentException(name + " requires a periodicity as an argument.");
 		} else if(!Periodicities.allCodes().contains(args[0])) {
 			throw new IllegalArgumentException("Invalid periodicity \"" + args[0] + "\" for " + name + ".");
 		}
 		final Periodicity newPeriodicity  = Periodicities.get(args[0]);
-		LinkedList<EvaluableFunction> outputs = new LinkedList<>();
-		for (EvaluableFunction function : stack) {
-			outputs.add(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+		LinkedList<Column> outputs = new LinkedList<>();
+		for (Column function : stack) {
+			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
 				Period newStart = newPeriodicity.roundDown(range.start().endDate());
 				if(newStart.endDate().isAfter(range.start().endDate())) {
 					newStart = newStart.previous();
 				}
 				Period newEnd = newPeriodicity.from(range.end().endDate());
 				PeriodicRange newDr = newPeriodicity.range(newStart, newEnd, range.clearCache());
-				double[] d = inputs[0].evaluate(newDr).stream().toArray();
+				double[] d = inputs[0].getValues(newDr).getSeries().toArray();
 				DoubleStream.Builder b = DoubleStream.builder();
 				range.values().stream().map(Period::endDate).forEach( ed ->
 						b.accept(d[(int) newDr.indexOf(newPeriodicity.roundDown(ed))]));

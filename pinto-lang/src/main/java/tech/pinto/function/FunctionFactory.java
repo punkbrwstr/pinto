@@ -5,7 +5,7 @@ import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 
 @FunctionalInterface
-public interface ComposableFunctionFactory {
+public interface FunctionFactory {
 	
 	public ComposableFunction build(String name, Pinto pinto, Namespace namespace, ComposableFunction previousFunction,
 								Indexer indexer, String...arguments);

@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.TimeSeries;
+import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
@@ -41,10 +41,10 @@ public class Export extends TerminalFunction {
 							p.from(LocalDate.now()).previous().endDate();
 		LocalDate end = args.length > 1 ? LocalDate.parse(args[1]) : 
 							p.from(LocalDate.now()).previous().endDate();
-		List<TimeSeries> output = this.previousFunction.get().compose().stream()
-				.map(f -> f.evaluate(p.range(start, end, false))).collect(Collectors.toList());
-		Optional<Outputs.StringTable> t = output.stream().map(d -> (Object) d).filter(d -> d instanceof TimeSeries)
-					.map(d -> (TimeSeries) d).collect(Outputs.doubleDataToStringTable());
+		List<ColumnValues> output = this.previousFunction.get().compose().stream()
+				.map(f -> f.getValues(p.range(start, end, false))).collect(Collectors.toList());
+		Optional<Outputs.StringTable> t = output.stream().map(d -> (Object) d).filter(d -> d instanceof ColumnValues)
+					.map(d -> (ColumnValues) d).collect(Outputs.doubleDataToStringTable());
 		if (t.isPresent()) {
 			try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(args[3])))) {
 				out.println(Stream.of(t.get().getHeader()).collect(Collectors.joining(",")));

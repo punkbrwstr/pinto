@@ -10,16 +10,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-import tech.pinto.TimeSeries;
+import tech.pinto.ColumnValues;
 import tech.pinto.time.PeriodicRange;
 
 public class Outputs {
 
-	public static Collector<TimeSeries,ArrayList<TimeSeries>,Optional<StringTable>> doubleDataToStringTable() {
+	public static Collector<ColumnValues,ArrayList<ColumnValues>,Optional<StringTable>> doubleDataToStringTable() {
 		return doubleDataToStringTable(NumberFormat.getInstance());
 	}
 	
-	public static Collector<TimeSeries,ArrayList<TimeSeries>,Optional<StringTable>> doubleDataToStringTable(NumberFormat nf) {
+	public static Collector<ColumnValues,ArrayList<ColumnValues>,Optional<StringTable>> doubleDataToStringTable(NumberFormat nf) {
 		return Collector.of(ArrayList::new, ArrayList::add,
 				(left, right) -> { left.addAll(right); return left; }, 
 				l -> {
@@ -28,14 +28,14 @@ public class Outputs {
 					}
 					PeriodicRange<?> range = l.get(0).getRange();
 					List<LocalDate> dates = range.dates();
-					String[] labels = Stream.concat(Stream.of("Date"), l.stream().map(TimeSeries::getLabel)).toArray(i -> new String[i]);
+					String[] labels = Stream.concat(Stream.of("Date"), l.stream().map(ColumnValues::getText)).toArray(i -> new String[i]);
 					String[][] table = new String[(int) range.size()][l.size() + 1];
 					for(int i = 0; i < range.size(); i++) {
 						table[i][0] = dates.get(i).toString();
 					}
 					for (AtomicInteger i = new AtomicInteger(0); i.get() < l.size(); i.incrementAndGet()) {
 						AtomicInteger j = new AtomicInteger(0);
-						l.get(i.get()).stream().forEach(d -> table[j.getAndIncrement()][i.get() + 1] = nf.format(d));
+						l.get(i.get()).getSeries().forEach(d -> table[j.getAndIncrement()][i.get() + 1] = nf.format(d));
 					}	
 					return Optional.of(new StringTable(labels,table));
 				});

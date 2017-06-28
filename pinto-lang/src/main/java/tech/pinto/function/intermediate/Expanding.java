@@ -7,9 +7,9 @@ import java.util.function.Supplier;
 import java.util.stream.DoubleStream;
 
 import tech.pinto.Indexer;
-import tech.pinto.TimeSeries;
+import tech.pinto.Column;
+import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.EvaluableFunction;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
@@ -47,10 +47,10 @@ public class Expanding extends ComposableFunction {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		LinkedList<EvaluableFunction> outputs = new LinkedList<>();
-		for (EvaluableFunction function : stack) {
-			outputs.add(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+		LinkedList<Column> outputs = new LinkedList<>();
+		for (Column function : stack) {
+			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
 				Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
 				LocalDate startDate = start.orElse(range.start().endDate());
 				Period windowStart = wf.from(startDate);
@@ -59,10 +59,10 @@ public class Expanding extends ComposableFunction {
 				PeriodicRange<Period> window = wf.range(windowStart, windowEnd, range.clearCache());
 
 				DoubleStream.Builder b = DoubleStream.builder();
-				TimeSeries input = null;
+				ColumnValues input = null;
 				DoubleCollector dc = collectorSupplier.get();
-				input = (TimeSeries) inputs[0].evaluate(window);
-				double[] output = input.stream().map(d -> {
+				input = (ColumnValues) inputs[0].getValues(window);
+				double[] output = input.getSeries().map(d -> {
 					dc.add(d);
 					return dc.finish();
 				}).toArray();

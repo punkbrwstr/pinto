@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.TreeMultimap;
 
-import tech.pinto.function.EvaluableFunction;
 import tech.pinto.tools.SearchableMultiMap;
 
 public class Indexer implements Cloneable {
@@ -75,8 +74,8 @@ public class Indexer implements Cloneable {
 		} 
 	}
 	
-	public LinkedList<EvaluableFunction> index(LinkedList<EvaluableFunction> stack) throws PintoSyntaxException {
-		LinkedList<EvaluableFunction> indexed = new LinkedList<>();
+	public LinkedList<Column> index(LinkedList<Column> stack) throws PintoSyntaxException {
+		LinkedList<Column> indexed = new LinkedList<>();
 		if(everything) {
 			indexed.addAll(stack);
 			stack.clear();
@@ -110,14 +109,14 @@ public class Indexer implements Cloneable {
 					}
 				}
 			}
-			TreeMap<Integer,EvaluableFunction> functions = new TreeMap<>();
+			TreeMap<Integer,Column> functions = new TreeMap<>();
 			for(Map.Entry<Integer, Collection<Integer>> e : indicies.asMap().entrySet()) {
 				if(stack.size() == 0) {
 					throw new PintoSyntaxException();
 				}
 				int index = e.getKey().intValue() < 0 ? e.getKey().intValue() + stack.size() : e.getKey().intValue();
 				checkIndex(index, stack.size(),false);
-				EvaluableFunction f = stack.remove(index);
+				Column f = stack.remove(index);
 				boolean needsCloning = false;
 				for(int i : e.getValue()) {
 					functions.put(i, needsCloning ? f.clone() : f);

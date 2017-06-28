@@ -5,7 +5,7 @@ import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.function.intermediate.Defined;
 
-public class DefinedFunctionFactory implements ComposableFunctionFactory {
+public class DefinedFunctionFactory implements FunctionFactory {
 
 	private final ComposableFunction function;
 	

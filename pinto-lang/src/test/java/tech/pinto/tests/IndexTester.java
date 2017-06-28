@@ -8,7 +8,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import tech.pinto.Pinto;
-import tech.pinto.TimeSeries;
+import tech.pinto.ColumnValues;
 import tech.pinto.time.PeriodicRange;
 
 import static org.junit.Assert.*;
@@ -34,7 +34,7 @@ public class IndexTester {
 
 	@Test
 	public void testWildcards() throws Exception {
-		List<TimeSeries> ts = pinto.execute("1 2 3 label(hotdiggitydog,burger,hotdog) [hot*dog] eval").get(0).getTimeSeries().get();
+		List<ColumnValues> ts = pinto.execute("1 2 3 label(hotdiggitydog,burger,hotdog) [hot*dog] eval").get(0).getTimeSeries().get();
 		assertEquals("wildcard label", 2, ts.size());
 	}
 
@@ -49,16 +49,16 @@ public class IndexTester {
 
 	@Test
 	public void testNumbers() throws Exception {
-		List<TimeSeries> ts = pinto.execute("1 2 3 [0] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (simple) value", 3.0, ts.get(0).stream().toArray()[0],0.1);
+		List<ColumnValues> ts = pinto.execute("1 2 3 [0] eval").get(0).getTimeSeries().get();
+		assertEquals("number index (simple) value", 3.0, ts.get(0).getSeries().toArray()[0],0.1);
 		ts = pinto.execute("1 2 3 [-1] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (neg) value",1.0, ts.get(0).stream().toArray()[0],0.1);
+		assertEquals("number index (neg) value",1.0, ts.get(0).getSeries().toArray()[0],0.1);
 		ts = pinto.execute("1 2 3 [1:2] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (range) value",2.0, ts.get(0).stream().toArray()[0],0.1);
+		assertEquals("number index (range) value",2.0, ts.get(0).getSeries().toArray()[0],0.1);
 		ts = pinto.execute("1 2 3 [-3:-1] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (range w/ neg) value",2.0, ts.get(1).stream().toArray()[0],0.1);
+		assertEquals("number index (range w/ neg) value",2.0, ts.get(1).getSeries().toArray()[0],0.1);
 		ts = pinto.execute("1 2 3 [2,1,0] eval").get(0).getTimeSeries().get();
-		assertEquals("number index (list) value", 2.0, ts.get(1).stream().toArray()[0],0.1);
+		assertEquals("number index (list) value", 2.0, ts.get(1).getSeries().toArray()[0],0.1);
 		/*ts = pinto.execute("1 2 3 rev [~] label(a,b,c) [1,1] neg eval").get(0).getTimeSeries().get();
 		double sum = ts.stream().map(TimeSeries::stream).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
 		assertEquals("number index (list) value", 0.0, sum, 0.1);*/
@@ -68,26 +68,26 @@ public class IndexTester {
 
 	@Test
 	public void testLabels() throws Exception {
-		List<TimeSeries> ts = pinto.execute("1 2 3 label(a,b,c) [c] eval").get(0).getTimeSeries().get();
-		assertEquals("label index (simple) value", 3.0, ts.get(0).stream().toArray()[0], 0.1);
+		List<ColumnValues> ts = pinto.execute("1 2 3 label(a,b,c) [c] eval").get(0).getTimeSeries().get();
+		assertEquals("label index (simple) value", 3.0, ts.get(0).getSeries().toArray()[0], 0.1);
 		ts = pinto.execute("1 2 3 label(a,b,c) [b,b] neg eval").get(0).getTimeSeries().get();
-		double sum = ts.stream().map(TimeSeries::stream).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
+		double sum = ts.stream().map(ColumnValues::getSeries).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
 		assertEquals("label index (get one twice) value", sum,0.0,0.1);
 		ts = pinto.execute("1 2 3 label(b,b,a) [b] neg eval").get(0).getTimeSeries().get();
-		sum = ts.stream().map(TimeSeries::stream).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
+		sum = ts.stream().map(ColumnValues::getSeries).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
 		assertEquals("label index (repeated label) value", sum,0.0,0.1);
 		
 	}
 
 	@SuppressWarnings("unused")
 	private double[][] run(String line) throws Exception {
-		List<TimeSeries> dd = pinto.execute(line).get(0).getTimeSeries().get();
+		List<ColumnValues> dd = pinto.execute(line).get(0).getTimeSeries().get();
 		if(dd.size() > 0) {
 			PeriodicRange<?> range = dd.get(0).getRange();
 			double[][] table = new double[dd.size()][(int) range.size()];
 			for(AtomicInteger i = new AtomicInteger(0); i.get() < dd.size();i.incrementAndGet()) {
 				AtomicInteger j = new AtomicInteger(0);
-				dd.get(i.get()).stream().forEach(
+				dd.get(i.get()).getSeries().forEach(
 						d -> table[i.get()][j.getAndIncrement()] = d);
 			}
 			return table;

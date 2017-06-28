@@ -3,7 +3,7 @@ package tech.pinto.function.intermediate;
 import java.util.LinkedList;
 
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.EvaluableFunction;
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.ComposableFunction;
 
@@ -14,7 +14,7 @@ public class Roll extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		int times = args.length == 0 ? 1 : Integer.parseInt(args[0]);
 		for(int i = 0; i < times; i++) {
 			stack.addFirst(stack.removeLast());

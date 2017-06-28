@@ -3,7 +3,7 @@ package tech.pinto.function.intermediate;
 import java.util.LinkedList;
 
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.EvaluableFunction;
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.function.ComposableFunction;
@@ -16,9 +16,9 @@ public class Only extends ComposableFunction {
 		super(name, previousFunction, indexer, args);
 	}
 
-    public LinkedList<EvaluableFunction> compose() throws PintoSyntaxException {
-    	LinkedList<EvaluableFunction> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
-    	LinkedList<EvaluableFunction> outputs = new LinkedList<>();
+    public LinkedList<Column> compose() throws PintoSyntaxException {
+    	LinkedList<Column> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
+    	LinkedList<Column> outputs = new LinkedList<>();
     	int i = 0;
     	do {
     		try {

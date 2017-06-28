@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.PintoSyntaxException;
 
@@ -35,13 +36,13 @@ public class ComposableFunction implements Cloneable {
         this.previousFunction.ifPresent(f -> f.setNext(this));
     }
     
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		return stack;
 	}
 
-    public LinkedList<EvaluableFunction> compose() throws PintoSyntaxException {
-    	LinkedList<EvaluableFunction> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
-    	LinkedList<EvaluableFunction> outputs = new LinkedList<>();
+    public LinkedList<Column> compose() throws PintoSyntaxException {
+    	LinkedList<Column> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
+    	LinkedList<Column> outputs = new LinkedList<>();
     	int i = 0;
     	do {
     		try {
@@ -153,8 +154,8 @@ public class ComposableFunction implements Cloneable {
     	return s.stream().collect(Collectors.joining(" "));
     }
 
-    protected static LinkedList<EvaluableFunction> asList(EvaluableFunction... functions) {
-    	return Arrays.stream(functions).collect(Collectors.toCollection(() -> new LinkedList<EvaluableFunction>()));
+    protected static LinkedList<Column> asList(Column... functions) {
+    	return Arrays.stream(functions).collect(Collectors.toCollection(() -> new LinkedList<Column>()));
     }
     
     public boolean isHead() {

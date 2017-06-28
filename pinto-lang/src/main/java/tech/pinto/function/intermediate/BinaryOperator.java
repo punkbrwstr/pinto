@@ -9,9 +9,9 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.stream.DoubleStream;
 
 import tech.pinto.Indexer;
-import tech.pinto.TimeSeries;
+import tech.pinto.Column;
+import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.EvaluableFunction;
 import tech.pinto.function.ComposableFunction;
 
 public class BinaryOperator extends ComposableFunction {
@@ -24,26 +24,26 @@ public class BinaryOperator extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		int fixedCount = args.length > 0 ? Integer.parseInt(args[0]) : 1;
 		if (stack.size() < fixedCount + 1) {
 			throw new IllegalArgumentException("Not enough inputs for " + name.get());
 		}
-		ArrayDeque<EvaluableFunction> secondOperands = new ArrayDeque<>(stack.subList(0,fixedCount));
-		List<EvaluableFunction> firstOperands = new ArrayList<>(stack.subList(fixedCount, stack.size()));
+		ArrayDeque<Column> secondOperands = new ArrayDeque<>(stack.subList(0,fixedCount));
+		List<Column> firstOperands = new ArrayList<>(stack.subList(fixedCount, stack.size()));
 		stack.clear();
 		for(int i = 0; i < firstOperands.size(); i++) {
-			EvaluableFunction secondOperand = secondOperands.removeFirst();
+			Column secondOperand = secondOperands.removeFirst();
 			secondOperands.addLast(secondOperand);
 			if(i >= secondOperands.size()) {
 				secondOperand = secondOperand.clone();
 			}
-			stack.add(new EvaluableFunction(inputs -> join(inputs[1].toString(), inputs[0].toString(), toString()),
+			stack.add(new Column(inputs -> join(inputs[1].toString(), inputs[0].toString(), toString()),
 				inputs -> range -> {
-					TimeSeries a = inputs[0].evaluate(range);
-					TimeSeries b = inputs[1].evaluate(range);
-					OfDouble bIterator = b.stream().iterator();
-					DoubleStream outputStream = a.stream()
+					ColumnValues a = inputs[0].getValues(range);
+					ColumnValues b = inputs[1].getValues(range);
+					OfDouble bIterator = b.getSeries().iterator();
+					DoubleStream outputStream = a.getSeries()
 							.map(aValue -> operator.applyAsDouble(bIterator.nextDouble(), aValue));
 					return outputStream;
 				}, secondOperand, firstOperands.get(i)));

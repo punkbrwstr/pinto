@@ -12,9 +12,9 @@ import java.util.stream.Stream;
 import com.google.common.base.Joiner;
 
 import tech.pinto.Indexer;
-import tech.pinto.TimeSeries;
+import tech.pinto.Column;
+import tech.pinto.ColumnValues;
 import tech.pinto.function.ComposableFunction;
-import tech.pinto.function.EvaluableFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
@@ -51,8 +51,8 @@ public class RollingCorrelation extends ComposableFunction {
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		return asList(new EvaluableFunction(inputs -> toString(),
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+		return asList(new Column(inputs -> toString(),
 				inputArray -> range -> {
 					Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
 					Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
@@ -60,8 +60,8 @@ public class RollingCorrelation extends ComposableFunction {
 					PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
 					
 					
-					List<double[]> inputs = Stream.of(inputArray).map(c -> c.evaluate(expandedWindow))
-										.map(d -> (TimeSeries) d).map(TimeSeries::stream).map(DoubleStream::toArray)
+					List<double[]> inputs = Stream.of(inputArray).map(c -> c.getValues(expandedWindow))
+										.map(d -> (ColumnValues) d).map(ColumnValues::getSeries).map(DoubleStream::toArray)
 										.collect(Collectors.toList());
 					
 					Builder b = DoubleStream.builder();
@@ -78,7 +78,7 @@ public class RollingCorrelation extends ComposableFunction {
 						b.accept(cc.getAverage());
 					}
 					return b.build();
-				}, stack.toArray(new EvaluableFunction[]{})));
+				}, stack.toArray(new Column[]{})));
 	}
 	
 }

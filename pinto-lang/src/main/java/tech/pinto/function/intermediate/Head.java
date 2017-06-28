@@ -3,10 +3,10 @@ package tech.pinto.function.intermediate;
 import java.util.LinkedList;
 import java.util.Optional;
 
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.function.ComposableFunction;
-import tech.pinto.function.EvaluableFunction;
 
 public class Head extends ComposableFunction {
 	
@@ -17,9 +17,9 @@ public class Head extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> compose() throws PintoSyntaxException {
-    	LinkedList<EvaluableFunction> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
-    	LinkedList<EvaluableFunction> outputs = indexer.index(inputs);
+	public LinkedList<Column> compose() throws PintoSyntaxException {
+    	LinkedList<Column> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
+    	LinkedList<Column> outputs = indexer.index(inputs);
     	definedTail.ifPresent(dt -> dt.addSkippedInputs(inputs));
     	return outputs;
 	}

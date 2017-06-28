@@ -4,9 +4,9 @@ import java.util.LinkedList;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.ComposableFunction;
-import tech.pinto.function.EvaluableFunction;
 import tech.pinto.function.FunctionHelp;
 
 public class Range extends ComposableFunction {
@@ -16,10 +16,10 @@ public class Range extends ComposableFunction {
 	}
 	
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		int count = args.length > 0 ? Integer.parseInt(args[0]) : 5;
 		IntStream.range(0,count).mapToDouble(i -> (double)i).mapToObj(
-				value -> new EvaluableFunction(inputs -> Double.toString(value),
+				value -> new Column(inputs -> Double.toString(value),
 						inputs -> range -> DoubleStream.iterate(value, r -> value).limit(range.size()))).forEach(stack::add);;
 		return stack;
 	}

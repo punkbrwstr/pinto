@@ -5,10 +5,10 @@ import java.util.LinkedList;
 
 import java.util.function.DoubleUnaryOperator;
 
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.EvaluableFunction;
 
 public class UnaryOperator extends ComposableFunction {
 
@@ -20,11 +20,11 @@ public class UnaryOperator extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		LinkedList<EvaluableFunction> outputs = new LinkedList<>();
-		for (EvaluableFunction function : stack) {
-			outputs.add(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()),
-				inputs -> range -> inputs[0].evaluate(range).stream().map(operator), function));
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+		LinkedList<Column> outputs = new LinkedList<>();
+		for (Column function : stack) {
+			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()),
+				inputs -> range -> inputs[0].getValues(range).getSeries().map(operator), function));
 		}
 		return outputs;
 	}

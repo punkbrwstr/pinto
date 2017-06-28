@@ -10,9 +10,9 @@ import java.util.stream.DoubleStream;
 import java.util.stream.DoubleStream.Builder;
 
 import tech.pinto.Indexer;
-import tech.pinto.TimeSeries;
+import tech.pinto.Column;
+import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.EvaluableFunction;
 import tech.pinto.function.ComposableFunction;
 
 
@@ -27,19 +27,19 @@ public class Cross extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		return asList(new EvaluableFunction(inputs -> toString(),
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+		return asList(new Column(inputs -> toString(),
 				inputs -> range -> {
 					Builder b = DoubleStream.builder();
-					List<OfDouble> l = stack.stream().map(c -> c.evaluate(range)).map(c -> (TimeSeries) c)
-								.map(TimeSeries::stream).map(ds -> ds.iterator()).collect(Collectors.toList());
+					List<OfDouble> l = stack.stream().map(c -> c.getValues(range)).map(c -> (ColumnValues) c)
+								.map(ColumnValues::getSeries).map(ds -> ds.iterator()).collect(Collectors.toList());
 					for(int i = 0; i < range.size(); i++) {
 						DoubleCollector dc = collectorSupplier.get();
 						l.forEach(di -> dc.add(di.nextDouble()));
 						b.accept(dc.finish());
 					}
 					return b.build();
-				}, stack.toArray(new EvaluableFunction[]{})));
+				}, stack.toArray(new Column[]{})));
 	}
 
 	public static FunctionHelp getHelp(String name, String description) {

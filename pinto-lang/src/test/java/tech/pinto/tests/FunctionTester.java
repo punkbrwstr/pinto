@@ -9,7 +9,7 @@ import org.junit.rules.ExpectedException;
 
 import tech.pinto.Pinto;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.TimeSeries;
+import tech.pinto.ColumnValues;
 import tech.pinto.time.PeriodicRange;
 
 import static org.junit.Assert.*;
@@ -137,13 +137,13 @@ public class FunctionTester {
 	}
 
 	private double[][] run(String line) throws Exception {
-		List<TimeSeries> dd = pinto.execute(line).get(0).getTimeSeries().get();
+		List<ColumnValues> dd = pinto.execute(line).get(0).getTimeSeries().get();
 		if(dd.size() > 0) {
 			PeriodicRange<?> range = dd.get(0).getRange();
 			double[][] table = new double[dd.size()][(int) range.size()];
 			for(AtomicInteger i = new AtomicInteger(0); i.get() < dd.size();i.incrementAndGet()) {
 				AtomicInteger j = new AtomicInteger(0);
-				dd.get(i.get()).stream().forEach(
+				dd.get(i.get()).getSeries().forEach(
 						d -> table[i.get()][j.getAndIncrement()] = d);
 			}
 			return table;

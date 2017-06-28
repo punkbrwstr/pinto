@@ -7,7 +7,8 @@ import java.util.Optional;
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.TimeSeries;
+import tech.pinto.Column;
+import tech.pinto.ColumnValues;
 
 public class TerminalFunction extends ComposableFunction {
 	
@@ -19,7 +20,7 @@ public class TerminalFunction extends ComposableFunction {
 		this.namespace = namespace;
 	}
 
-	public Optional<LinkedList<TimeSeries>> getTimeSeries() throws PintoSyntaxException {
+	public Optional<LinkedList<ColumnValues>> getTimeSeries() throws PintoSyntaxException {
 		return Optional.empty();
 	}
 
@@ -28,7 +29,7 @@ public class TerminalFunction extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		throw new UnsupportedOperationException();
 	}
 

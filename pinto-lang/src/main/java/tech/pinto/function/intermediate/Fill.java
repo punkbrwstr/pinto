@@ -5,14 +5,14 @@ import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import tech.pinto.Indexer;
-import tech.pinto.TimeSeries;
+import tech.pinto.Column;
+import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.function.ComposableFunction;
-import tech.pinto.function.EvaluableFunction;
 
 public class Fill extends ComposableFunction {
 
@@ -42,24 +42,24 @@ public class Fill extends ComposableFunction {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public LinkedList<EvaluableFunction> composeIndexed(LinkedList<EvaluableFunction> stack) {
-		LinkedList<EvaluableFunction> outputs = new LinkedList<>();
-		for (EvaluableFunction function : stack) {
-			outputs.add(new EvaluableFunction(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
-				TimeSeries input = null;
+	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+		LinkedList<Column> outputs = new LinkedList<>();
+		for (Column function : stack) {
+			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+				ColumnValues input = null;
 				int skip = 0;
 				if(!lookBack) {
-					input = inputs[0].evaluate(range);
+					input = inputs[0].getValues(range);
 				} else {
 					Periodicity<Period> p = Periodicities.get(periodicityCode);
 					Period start = p.previous(p.from(range.start().endDate()));
 					PeriodicRange<Period> r = (PeriodicRange<Period>) range.periodicity().range(
 							start.endDate(), range.end().endDate(), range.clearCache());
 					skip = (int) r.indexOf(range.start());
-					input = inputs[0].evaluate(r);
+					input = inputs[0].getValues(r);
 				}
 				final AtomicReference<Double> lastGoodValue = new AtomicReference<>(Double.NaN);
-				return input.stream().map(d -> {
+				return input.getSeries().map(d -> {
 					if (!Double.isNaN(d)) {
 						lastGoodValue.set(d);
 					}
