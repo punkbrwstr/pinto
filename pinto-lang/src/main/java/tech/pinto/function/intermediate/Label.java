@@ -6,8 +6,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.DoubleStream;
 
 import tech.pinto.function.FunctionHelp;
+import tech.pinto.time.PeriodicRange;
 import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.ComposableFunction;
@@ -27,8 +30,10 @@ public class Label extends ComposableFunction {
 		for(int i = 0; i < labels.size() && stack.size() > 0; i++) {
 			final int index = i;
 			Column old = stack.removeFirst();
+			Function<Column[], Function<PeriodicRange<?>,DoubleStream>> seriesFunction = 
+					c-> r-> old.getSeriesFunction().apply(c).apply(r);
 			temp.addFirst(new Column(inputs -> labels.get(index),
-					old.getSeriesFunction(),old.getInputs()));
+					seriesFunction,old.getInputs()));
 		}
        	temp.stream().forEach(stack::addFirst);
 		return stack;

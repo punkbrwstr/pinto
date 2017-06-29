@@ -4,8 +4,11 @@ package tech.pinto.function.intermediate;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.LinkedList;
+import java.util.function.Function;
+import java.util.stream.DoubleStream;
 
 import tech.pinto.function.FunctionHelp;
+import tech.pinto.time.PeriodicRange;
 import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.function.ComposableFunction;
@@ -24,8 +27,10 @@ public class LabelFormat extends ComposableFunction {
 			ArrayDeque<Column> temp = new ArrayDeque<>();
 			while(!stack.isEmpty()) {
 				Column old = stack.removeFirst();
+			Function<Column[], Function<PeriodicRange<?>,DoubleStream>> seriesFunction = 
+					c-> r-> old.getSeriesFunction().apply(c).apply(r);
 				temp.addFirst(new Column(inputs -> mf.format(new Object[] {old.toString()}),
-					old.getSeriesFunction(),old.getInputs()));
+					seriesFunction,old.getInputs()));
 			}
 			temp.stream().forEach(stack::addFirst);
 		}

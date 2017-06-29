@@ -23,9 +23,9 @@ import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
+import tech.pinto.function.CachedFunction;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.supplier.CachedSupplierFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
@@ -72,7 +72,7 @@ public class AllTests {
 
 	}
 	
-	public static class CallCounter extends CachedSupplierFunction {
+	public static class CallCounter extends CachedFunction {
 		
 		private static AtomicInteger count = new AtomicInteger();
 
@@ -81,21 +81,20 @@ public class AllTests {
 		}
 
 		@Override
-		public <P extends Period> List<DoubleStream> evaluateAll(PeriodicRange<P> range) {
+		protected <P extends Period> List<DoubleStream> getUncachedSeries(PeriodicRange<P> range) {
 			double d = count.getAndIncrement();
-			return Arrays.asList(DoubleStream.iterate(d, r -> d ).limit(range.size()));
+			return Arrays.asList( DoubleStream.iterate(d, r -> d ).limit(range.size()));
 		}
 
 		@Override
-		protected int additionalOutputCount() {
+		protected int columns() {
 			return 1;
 		}
 
 		@Override
-		protected List<String> allLabels() {
+		protected List<String> getUncachedText() {
 			return Arrays.asList("counter");
 		}
-
 
 	}
 

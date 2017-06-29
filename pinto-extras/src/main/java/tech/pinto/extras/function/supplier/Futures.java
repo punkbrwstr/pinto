@@ -5,6 +5,7 @@ import java.text.MessageFormat;
 
 
 
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
@@ -18,13 +19,13 @@ import java.util.stream.DoubleStream.Builder;
 import tech.pinto.Indexer;
 import tech.pinto.Pinto;
 import tech.pinto.PintoSyntaxException;
+import tech.pinto.function.CachedFunction;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.supplier.CachedSupplierFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class Futures extends CachedSupplierFunction {
+public class Futures extends CachedFunction {
 	
 	
     final static String[] monthCodes = new String[]{"H","M","U","Z"};
@@ -68,7 +69,12 @@ public class Futures extends CachedSupplierFunction {
 	}
 
 	@Override
-	public <P extends Period> List<DoubleStream> evaluateAll(PeriodicRange<P> range) {
+	protected List<String> getUncachedText() {
+		return Arrays.asList(toString());
+	}
+
+	@Override
+	protected <P extends Period> List<DoubleStream> getUncachedSeries(PeriodicRange<P> range) {
         int numberOfContracts = 0;
         // key is code ("Z-2010") and value is column index for data
         HashMap<String,Integer> contracts = new HashMap<>();
@@ -184,7 +190,7 @@ public class Futures extends CachedSupplierFunction {
 	}
 
 	@Override
-	protected int additionalOutputCount() {
+	protected int columns() {
 		return 1;
 	}
 	
@@ -204,12 +210,4 @@ public class Futures extends CachedSupplierFunction {
     		throw new RuntimeException();
     	}
     }
-
-	@Override
-	protected List<String> allLabels() {
-		return Arrays.asList(toString());
-	}
-
-	
-
 }
