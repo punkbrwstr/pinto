@@ -24,7 +24,8 @@ public class Label extends ComposableFunction {
 
 	@Override
 	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
-		List<String> labels = Arrays.asList(args);
+		List<String> l = Arrays.asList(args);
+		List<String> labels = l.subList(0, Math.min(l.size(), stack.size()));
 		Collections.reverse(labels);
 		ArrayDeque<Column> temp = new ArrayDeque<>();
 		for(int i = 0; i < labels.size() && stack.size() > 0; i++) {
