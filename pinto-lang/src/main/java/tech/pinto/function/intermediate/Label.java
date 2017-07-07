@@ -3,7 +3,6 @@ package tech.pinto.function.intermediate;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
@@ -26,13 +25,12 @@ public class Label extends ComposableFunction {
 	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		List<String> l = Arrays.asList(args);
 		List<String> labels = l.subList(0, Math.min(l.size(), stack.size()));
-		Collections.reverse(labels);
 		ArrayDeque<Column> temp = new ArrayDeque<>();
-		for(int i = 0; i < labels.size() && stack.size() > 0; i++) {
-			final int index = i;
+		for(int i = 0; i < labels.size(); i++) {
+			final int index = labels.size() - i - 1;
 			Column old = stack.removeFirst();
 			Function<Column[], Function<PeriodicRange<?>,DoubleStream>> seriesFunction = 
-					c-> r-> old.getSeriesFunction().apply(c).apply(r);
+					c-> r-> old.getSeriesFunction().apply(c).apply(r).get();
 			temp.addFirst(new Column(inputs -> labels.get(index),
 					seriesFunction,old.getInputs()));
 		}

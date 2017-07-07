@@ -8,8 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.util.LinkedList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,6 +19,7 @@ import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
+import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 import tech.pinto.tools.Outputs;
@@ -29,10 +29,9 @@ public class Export extends TerminalFunction {
 	public Export(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer, String... args) {
 		super(name, namespace, previousFunction, indexer, args);
 	}
-	
-	
+
 	@Override
-	public Optional<String> getText() throws PintoSyntaxException {
+	public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException {
 		if(args.length < 4) {
 			throw new PintoSyntaxException(name + " requires 4 arguments.");
 		}
@@ -41,20 +40,17 @@ public class Export extends TerminalFunction {
 							p.from(LocalDate.now()).previous().endDate();
 		LocalDate end = args.length > 1 ? LocalDate.parse(args[1]) : 
 							p.from(LocalDate.now()).previous().endDate();
-		List<ColumnValues> output = this.previousFunction.get().compose().stream()
-				.map(f -> f.getValues(p.range(start, end, false))).collect(Collectors.toList());
-		Optional<Outputs.StringTable> t = output.stream().map(d -> (Object) d).filter(d -> d instanceof ColumnValues)
-					.map(d -> (ColumnValues) d).collect(Outputs.doubleDataToStringTable());
-		if (t.isPresent()) {
-			try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(args[3])))) {
-				out.println(Stream.of(t.get().getHeader()).collect(Collectors.joining(",")));
-				Stream.of(t.get().getCells())
+		PeriodicRange<?> range = p.range(start, end, false);
+		Outputs.StringTable t = this.previousFunction.get().compose().stream()
+				.map(f -> f.getValues(range)).collect(Outputs.columnValuesCollector(range));
+		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(args[3])))) {
+			out.println(Stream.of(t.getHeader()).collect(Collectors.joining(",")));
+			Stream.of(t.getCells())
 						.forEach(line -> out.println(Stream.of(line).collect(Collectors.joining(","))));
-			} catch (IOException e) {
+		} catch (IOException e) {
 				throw new IllegalArgumentException("Unable to open file \"" + args[3] + "\" for export");
-			}
 		}
-		return Optional.of("Successfully exported");
+		return createTextColumn("Successfully exported.");
 	}
 	
 	public static FunctionHelp getHelp(String name) {
@@ -67,5 +63,6 @@ public class Export extends TerminalFunction {
 				.parameter("filename")
 				.build();
 	}
+
 
 }

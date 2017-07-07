@@ -1,16 +1,16 @@
 package tech.pinto.function;
 
 import java.util.LinkedList;
-
 import java.util.Optional;
 
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
+import tech.pinto.time.PeriodicRange;
 import tech.pinto.Column;
 import tech.pinto.ColumnValues;
 
-public class TerminalFunction extends ComposableFunction {
+abstract public class TerminalFunction extends ComposableFunction {
 	
 	protected final Namespace namespace;
 
@@ -20,11 +20,9 @@ public class TerminalFunction extends ComposableFunction {
 		this.namespace = namespace;
 	}
 
-	public Optional<LinkedList<ColumnValues>> getTimeSeries() throws PintoSyntaxException {
-		return Optional.empty();
-	}
-
-	public Optional<String> getText() throws PintoSyntaxException {
+	abstract public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException;
+	
+	public Optional<PeriodicRange<?>> getRange() throws PintoSyntaxException {
 		return Optional.empty();
 	}
 
@@ -33,5 +31,10 @@ public class TerminalFunction extends ComposableFunction {
 		throw new UnsupportedOperationException();
 	}
 
+	protected LinkedList<ColumnValues> createTextColumn(String s) {
+		LinkedList<ColumnValues> ll = new LinkedList<>();
+		ll.add(new ColumnValues(Optional.of(s),Optional.empty()));
+		return ll;
+	}
 
 }

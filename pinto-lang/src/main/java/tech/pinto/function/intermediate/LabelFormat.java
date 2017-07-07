@@ -28,7 +28,7 @@ public class LabelFormat extends ComposableFunction {
 			while(!stack.isEmpty()) {
 				Column old = stack.removeFirst();
 			Function<Column[], Function<PeriodicRange<?>,DoubleStream>> seriesFunction = 
-					c-> r-> old.getSeriesFunction().apply(c).apply(r);
+					c-> r-> old.getSeriesFunction().apply(c).apply(r).get();
 				temp.addFirst(new Column(inputs -> mf.format(new Object[] {old.toString()}),
 					seriesFunction,old.getInputs()));
 			}

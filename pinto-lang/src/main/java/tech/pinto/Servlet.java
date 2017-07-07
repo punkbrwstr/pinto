@@ -1,16 +1,14 @@
 package tech.pinto;
 
 import java.io.IOException;
+
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -26,11 +24,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import tech.pinto.function.TerminalFunction;
+import tech.pinto.time.PeriodicRange;
+
+import static java.util.stream.Collectors.toList;
 
 public class Servlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	
-	
+
 	private final Gson gson;
 	private final Supplier<Pinto> pintoSupplier;
 
@@ -40,9 +40,9 @@ public class Servlet extends HttpServlet {
 		this.gson = b.create();
 		this.pintoSupplier = pintoSupplier;
 	}
-	
-	
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 		response.setContentType("application/json");
 		String statement = request.getParameter("statement");
 		try {
@@ -54,57 +54,63 @@ public class Servlet extends HttpServlet {
 			boolean numbersAsString = request.getParameterMap().containsKey("numbers_as_string");
 			boolean omitDates = request.getParameterMap().containsKey("omit_dates");
 			HttpSession session = request.getSession();
-			if(session.getAttribute("pinto") == null) {
+			if (session.getAttribute("pinto") == null) {
 				session.setAttribute("pinto", pintoSupplier.get());
 			}
 			Pinto pinto = (Pinto) session.getAttribute("pinto");
-			LinkedList<ColumnValues> data = new LinkedList<>();
-			List<String> messages = new ArrayList<>();
-	    	for(TerminalFunction tf : pinto.execute(statement)) {
-	    		Optional<LinkedList<ColumnValues>> list = tf.getTimeSeries();
-	    		list.ifPresent(data::addAll); 
-	    		tf.getText().ifPresent(messages::add);
-	    	}
-			if (data.size() == 0 && messages.size() == 0) {
-				writeResponse(response, new ImmutableMap.Builder<String, Object>().put("responseType", "none").build());
-			} else if (data.size() > 0) {
-				writeResponse(response, new ImmutableMap.Builder<String, Object>().put("responseType", "data")
-						.put("date_range",
-								new ImmutableMap.Builder<String, String>()
-										.put("start", data.get(0).getRange().start().endDate().toString())
-										.put("end", data.get(0).getRange().end().endDate().toString())
-										.put("freq", data.get(0).getRange().periodicity().code()).build())
-						.put("index",
-								omitDates ? ""
-										: data.get(0).getRange().dates().stream().map(LocalDate::toString)
-												.collect(Collectors.toList()))
-						.put("columns", streamInReverse(data).map(ColumnValues::getText).collect(Collectors.toList()))
-						//.put("columns", data.stream().map(TimeSeries::getLabel).collect(Collectors.toList()))
-						.put("data", numbersAsString ? streamInReverse(data).map(ColumnValues::getSeries)
-												.map(ds -> ds.mapToObj(Double::toString).collect(Collectors.toList()))
-												.collect(Collectors.toList())
-										: streamInReverse(data).map(ColumnValues::getSeries).map(DoubleStream::toArray)
-												.collect(Collectors.toList()))
-						.build());
-			} else {
-				writeResponse(response, new ImmutableMap.Builder<String, Object>().put("responseType", "messages")
-						.put("messages", messages).build());
+			for (TerminalFunction tf : pinto.execute(statement)) {
+				ImmutableMap.Builder<String,Object> builder = new ImmutableMap.Builder<String, Object>().put("responseType", "data");
+				if(tf.getRange().isPresent()) {
+					PeriodicRange<?> range = tf.getRange().get();
+					builder.put("date_range", new ImmutableMap.Builder<String, String>()
+						.put("start", range.start().endDate().toString())
+						.put("end", range.end().endDate().toString())
+						.put("freq", range.periodicity().code()).build());
+					if(! omitDates) {
+						builder.put("index", range.dates().stream().map(LocalDate::toString).collect(toList()));
+					}
+				}
+				int columnCount = tf.getColumnValues().size();
+				double[][] series = new double[columnCount][];
+				String[] text = new String[columnCount];
+				double[] nullSeries = null; 
+				for(int i = columnCount - 1; i > -1 ; i--) {
+					ColumnValues cv = tf.getColumnValues().get(i); 
+					text[columnCount - i - 1] = cv.getText().orElse("Column " + i);
+					if(cv.getSeries().isPresent()) {
+						series[columnCount - i - 1] = cv.getSeries().get().toArray();
+					} else {
+						if(nullSeries == null) {
+							nullSeries = new double[(int) tf.getRange().get().size()];
+							Arrays.fill(nullSeries, Double.NaN);
+							series[columnCount - i - 1] = nullSeries;
+						}
+					}
+				}
+				if(!numbersAsString) {
+					builder.put("series",series);
+				} else {
+					builder.put("series",Stream.of(series).map(DoubleStream::of)
+							.map(ds -> ds.mapToObj(Double::toString).collect(toList())).collect(toList()));
+				}
+				builder.put("text",text);
+				writeResponse(response, builder.build());
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();
-			writeResponse(response, new ImmutableMap.Builder<String, Object>().put("responseType", "error").put("exception", t)
-					.build());
+			writeResponse(response, new ImmutableMap.Builder<String, Object>().put("responseType", "error")
+					.put("exception", t).build());
 		}
 	}
-	
+
 	protected void writeResponse(HttpServletResponse response, Object o) throws IOException {
 		response.getOutputStream().print(gson.toJson(o));
 	}
-	
-	private static <T> Stream<T> streamInReverse(LinkedList<T> input) {
-		  Iterator<T> descendingIterator = input.descendingIterator();
-		  return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-		    descendingIterator, Spliterator.ORDERED), false);
-	}
+
+//	private static <T> Stream<T> streamInReverse(LinkedList<T> input) {
+//		Iterator<T> descendingIterator = input.descendingIterator();
+//		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(descendingIterator, Spliterator.ORDERED),
+//				false);
+//	}
 
 }

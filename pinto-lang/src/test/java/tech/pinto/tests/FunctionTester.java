@@ -9,6 +9,7 @@ import org.junit.rules.ExpectedException;
 
 import tech.pinto.Pinto;
 import tech.pinto.PintoSyntaxException;
+import tech.pinto.function.TerminalFunction;
 import tech.pinto.ColumnValues;
 import tech.pinto.time.PeriodicRange;
 
@@ -35,12 +36,12 @@ public class FunctionTester {
 
 	@Test
 	public void testSave() throws Exception {
-		pinto.execute("1.1 def(thing)").get(0).getText();
-		pinto.execute("thing 1.2 + def(thing2)").get(0).getText();
+		executeVoid("1.1 def(thing)");
+		executeVoid("thing 1.2 + def(thing2)");
 		assertEquals("Nested save ref", 3.4, run("thing2 thing + eval")[0][0], 0.001d);
-		pinto.execute("2 def(thing)").get(0).getText();
+		executeVoid("2 def(thing)");
 		assertEquals("Update nested ref", 5.2, run("thing2 thing +" + EVAL)[0][0], 0.001d);
-		pinto.execute("1 + def(increment)").get(0).getText();
+		executeVoid("1 + def(increment)");
 		assertEquals("Saved function", 7.0, run("6 increment" + EVAL)[0][0], 0.001d);
 	}
 
@@ -72,9 +73,9 @@ public class FunctionTester {
 	
 	@Test
 	public void testNoInputsToDefined() throws Exception {
-		pinto.execute("2 r_mean(20) def(a, [x],test)").get(0).getText();
-		pinto.execute("3 r_mean(30) def(b, [x],test)").get(0).getText();
-		pinto.execute("a b def(c)").get(0).getText();
+		executeVoid("2 r_mean(20) def(a, [x],test)");
+		executeVoid("3 r_mean(30) def(b, [x],test)");
+		executeVoid("a b def(c)");
 		double[][] c = run("c eval");
 		assertEquals("defineNoInputs count",c.length,2);
 		assertEquals("definedNoInputs output",c[0][0] + c[1][0],5.0,0.01);
@@ -135,15 +136,20 @@ public class FunctionTester {
 		
 		log.info("END testRanges");
 	}
+	
+	private void executeVoid(String s) throws Exception {
+		pinto.execute(s).get(0).getColumnValues().get(0).getText();
+	}
 
 	private double[][] run(String line) throws Exception {
-		List<ColumnValues> dd = pinto.execute(line).get(0).getTimeSeries().get();
+		TerminalFunction tf = pinto.execute(line).get(0);
+		List<ColumnValues> dd = tf.getColumnValues();
 		if(dd.size() > 0) {
-			PeriodicRange<?> range = dd.get(0).getRange();
+			PeriodicRange<?> range = tf.getRange().get();
 			double[][] table = new double[dd.size()][(int) range.size()];
 			for(AtomicInteger i = new AtomicInteger(0); i.get() < dd.size();i.incrementAndGet()) {
 				AtomicInteger j = new AtomicInteger(0);
-				dd.get(i.get()).getSeries().forEach(
+				dd.get(i.get()).getSeries().get().forEach(
 						d -> table[i.get()][j.getAndIncrement()] = d);
 			}
 			return table;

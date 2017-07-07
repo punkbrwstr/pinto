@@ -42,8 +42,8 @@ public class BinaryOperator extends ComposableFunction {
 				inputs -> range -> {
 					ColumnValues a = inputs[0].getValues(range);
 					ColumnValues b = inputs[1].getValues(range);
-					OfDouble bIterator = b.getSeries().iterator();
-					DoubleStream outputStream = a.getSeries()
+					OfDouble bIterator = b.getSeries().get().iterator();
+					DoubleStream outputStream = a.getSeries().get()
 							.map(aValue -> operator.applyAsDouble(bIterator.nextDouble(), aValue));
 					return outputStream;
 				}, secondOperand, firstOperands.get(i)));

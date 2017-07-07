@@ -61,7 +61,7 @@ public class RollingCorrelation extends ComposableFunction {
 					
 					
 					List<double[]> inputs = Stream.of(inputArray).map(c -> c.getValues(expandedWindow))
-										.map(d -> (ColumnValues) d).map(ColumnValues::getSeries).map(DoubleStream::toArray)
+										.map(d -> (ColumnValues) d).map(ColumnValues::getSeries).map(Optional::get).map(DoubleStream::toArray)
 										.collect(Collectors.toList());
 					
 					Builder b = DoubleStream.builder();

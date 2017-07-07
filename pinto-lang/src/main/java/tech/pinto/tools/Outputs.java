@@ -1,44 +1,79 @@
 package tech.pinto.tools;
 
 import java.text.NumberFormat;
+
 import java.time.LocalDate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
-import java.util.stream.Stream;
+import java.util.stream.DoubleStream;
 
 import tech.pinto.ColumnValues;
 import tech.pinto.time.PeriodicRange;
 
 public class Outputs {
 
-	public static Collector<ColumnValues,ArrayList<ColumnValues>,Optional<StringTable>> doubleDataToStringTable() {
-		return doubleDataToStringTable(NumberFormat.getInstance());
+	@SuppressWarnings("rawtypes")
+	public static Collector<ColumnValues,ArrayList<ColumnValues>,StringTable> columnValuesCollector(
+			PeriodicRange range) {
+		return columnValuesCollector(NumberFormat.getInstance(),Optional.of(range));
+	}
+
+	public static Collector<ColumnValues,ArrayList<ColumnValues>,StringTable> columnValuesCollector(
+			Optional<PeriodicRange<?>> range) {
+		return columnValuesCollector(NumberFormat.getInstance(),range);
 	}
 	
-	public static Collector<ColumnValues,ArrayList<ColumnValues>,Optional<StringTable>> doubleDataToStringTable(NumberFormat nf) {
-		return Collector.of(ArrayList::new, ArrayList::add,
-				(left, right) -> { left.addAll(right); return left; }, 
-				l -> {
-					if(l.size() == 0) {
-						return Optional.empty();
+	public static Collector<ColumnValues,ArrayList<ColumnValues>,StringTable> columnValuesCollector(
+			NumberFormat nf, Optional<PeriodicRange<?>> optional) {
+		Supplier<ArrayList<ColumnValues>> supplier = ArrayList::new;
+		BiConsumer<ArrayList<ColumnValues>,ColumnValues> accumulator = ArrayList::add;
+		BinaryOperator<ArrayList<ColumnValues>> combiner = (left, right) -> {
+			left.addAll(right);
+			return left;
+		};
+		Function<ArrayList<ColumnValues>,StringTable> finisher = columns -> {
+			List<LocalDate> dates = optional.get().dates();
+			String[] header = new String[columns.size() + 1];
+			for(int col = 0; col < columns.size(); col++) {
+				header[col + 1] = columns.get(col).getText().orElse("");
+			}
+			if(optional.isPresent()) {
+				header[0] = "Date";
+				String[][] table = new String[(int) optional.get().size()][columns.size() + 1];
+				for(int row = 0; row < optional.get().size(); row++) {
+					table[row][0] = dates.get(row).toString();
+				}
+				for(int col = 0; col < columns.size(); col++) {
+					Optional<DoubleStream> colData = columns.get(col).getSeries();
+					if(colData.isPresent()) { 
+						final int thisCol = col;
+						AtomicInteger row = new AtomicInteger(0);
+						colData.get().forEach(d -> table[row.getAndIncrement()][thisCol + 1] = nf.format(d));
+					} else {
+						for(int row = 0; row < optional.get().size(); row++) {
+							table[row][col + 1] = "";
+	 					}
 					}
-					PeriodicRange<?> range = l.get(0).getRange();
-					List<LocalDate> dates = range.dates();
-					String[] labels = Stream.concat(Stream.of("Date"), l.stream().map(ColumnValues::getText)).toArray(i -> new String[i]);
-					String[][] table = new String[(int) range.size()][l.size() + 1];
-					for(int i = 0; i < range.size(); i++) {
-						table[i][0] = dates.get(i).toString();
-					}
-					for (AtomicInteger i = new AtomicInteger(0); i.get() < l.size(); i.incrementAndGet()) {
-						AtomicInteger j = new AtomicInteger(0);
-						l.get(i.get()).getSeries().forEach(d -> table[j.getAndIncrement()][i.get() + 1] = nf.format(d));
-					}	
-					return Optional.of(new StringTable(labels,table));
-				});
+					
+				}
+				return new StringTable(header,table);
+			} else {
+				header[0] = "";
+				String[][] table = new String[1][columns.size()+1];
+				Arrays.fill(table[0], "");
+				return new StringTable(header,table);
+			}
+		};
+		return Collector.of(supplier, accumulator, combiner, finisher);
 	}
 	
 	public static class StringTable {

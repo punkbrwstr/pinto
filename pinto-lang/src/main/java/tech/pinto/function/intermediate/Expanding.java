@@ -62,7 +62,7 @@ public class Expanding extends ComposableFunction {
 				ColumnValues input = null;
 				DoubleCollector dc = collectorSupplier.get();
 				input = (ColumnValues) inputs[0].getValues(window);
-				double[] output = input.getSeries().map(d -> {
+				double[] output = input.getSeries().get().map(d -> {
 					dc.add(d);
 					return dc.finish();
 				}).toArray();

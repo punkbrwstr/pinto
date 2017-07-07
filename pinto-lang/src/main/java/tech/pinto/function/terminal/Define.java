@@ -1,8 +1,9 @@
 package tech.pinto.function.terminal;
 
 
-import java.util.Optional;
+import java.util.LinkedList;
 
+import tech.pinto.ColumnValues;
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
@@ -16,7 +17,8 @@ public class Define extends TerminalFunction {
 		super(name, namespace, previousFunction, indexer, args);
 	}
 	
-	public Optional<String> getText() throws PintoSyntaxException {
+	@Override
+	public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException {
 		if(args.length < 1) {
 			throw new IllegalArgumentException("Define requires a name argument.");
 		}
@@ -30,7 +32,7 @@ public class Define extends TerminalFunction {
 			desc += " (" + args[2] + ")";
 		}
 		namespace.define(args[0], desc, previousFunction.get());
-		return Optional.of("Successfully saved.");
+		return createTextColumn("Successfully saved.");
 	}
 	
 	public static FunctionHelp getHelp(String name) {
@@ -42,5 +44,4 @@ public class Define extends TerminalFunction {
 				.parameter("description)", "none", null)
 				.build();
 	}
-
 }

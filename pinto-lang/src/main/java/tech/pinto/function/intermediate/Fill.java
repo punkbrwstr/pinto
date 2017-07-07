@@ -59,7 +59,7 @@ public class Fill extends ComposableFunction {
 					input = inputs[0].getValues(r);
 				}
 				final AtomicReference<Double> lastGoodValue = new AtomicReference<>(Double.NaN);
-				return input.getSeries().map(d -> {
+				return input.getSeries().get().map(d -> {
 					if (!Double.isNaN(d)) {
 						lastGoodValue.set(d);
 					}

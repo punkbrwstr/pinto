@@ -1,6 +1,7 @@
 package tech.pinto;
 
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.DoubleStream;
 
@@ -10,19 +11,32 @@ import tech.pinto.time.PeriodicRange;
 final public class Column implements Cloneable {
 
 	final private Column[] inputs;
-	final private Function<Column[],String> textFunction;
-	final private Function<Column[],Function<PeriodicRange<?>,DoubleStream>> seriesFunction;
-
-	public Column(Function<Column[],String> textFunction,
-			Function<Column[], Function<PeriodicRange<?>,DoubleStream>> seriesFunction,
-				Column... inputs) {
+	final private Function<Column[],Optional<String>> textFunction;
+	final private Function<Column[],Function<PeriodicRange<?>,Optional<DoubleStream>>> seriesFunction;
+	
+	private Column(Column[] inputs, Function<Column[], Optional<String>> textFunction,
+			Function<Column[], Function<PeriodicRange<?>, Optional<DoubleStream>>> seriesFunction) {
 		this.inputs = inputs;
 		this.textFunction = textFunction;
 		this.seriesFunction = seriesFunction;
 	}
 
+	public Column(Function<Column[],String> textFunction,
+			Function<Column[], Function<PeriodicRange<?>,DoubleStream>> seriesFunction,
+				Column... inputs) {
+		this.inputs = inputs;
+		this.textFunction = c -> Optional.of(textFunction.apply(c));
+		this.seriesFunction = c -> r -> Optional.of(seriesFunction.apply(c).apply(r));
+	}
+
+	public Column(Function<Column[],String> textFunction, Column... inputs) {
+		this.inputs = inputs;
+		this.textFunction = c -> Optional.of(textFunction.apply(c));
+		this.seriesFunction = c -> r -> Optional.empty();
+	}
+
 	public <P extends Period> ColumnValues getValues(PeriodicRange<P> range) {
-		return new ColumnValues(range, textFunction.apply(inputs),
+		return new ColumnValues(textFunction.apply(inputs),
 				seriesFunction.apply(inputs).apply(range));
 	}
 	
@@ -30,17 +44,17 @@ final public class Column implements Cloneable {
 		return inputs;
 	}
 
-	public Function<Column[], String> getTextFunction() {
+	public Function<Column[], Optional<String>> getTextFunction() {
 		return textFunction;
 	}
 
-	public Function<Column[], Function<PeriodicRange<?>, DoubleStream>> getSeriesFunction() {
+	public Function<Column[], Function<PeriodicRange<?>, Optional<DoubleStream>>> getSeriesFunction() {
 		return seriesFunction;
 	}
 
 	@Override
 	public String toString() {
-		return textFunction.apply(inputs);
+		return textFunction.apply(inputs).orElse("");
 	}
 	
 	@Override
@@ -49,7 +63,7 @@ final public class Column implements Cloneable {
 		for(int i = 0; i < inputs.length; i++) {
 			cloneInputs[i] = (Column) inputs[i].clone();
 		}
-		return new Column(textFunction,seriesFunction,cloneInputs);
+		return new Column(cloneInputs,textFunction,seriesFunction);
 	}
 	
 	

@@ -32,7 +32,6 @@ import tech.pinto.function.terminal.Evaluate;
 import tech.pinto.function.terminal.Execute;
 import tech.pinto.function.terminal.Export;
 import tech.pinto.function.terminal.Help;
-import tech.pinto.function.terminal.Reset;
 import tech.pinto.function.terminal.Define;
 
 public class StandardVocabulary extends Vocabulary {
@@ -48,7 +47,6 @@ public class StandardVocabulary extends Vocabulary {
                 .put("del", new Name((n,p,s,f,i,a) -> new Delete(n,s,f,i,a),Delete::getHelp))
                 .put("help", new Name((n,p,s,f,i,a) -> new Help(n,s,f,i,a),Help::getHelp))
                 .put("exec", new Name((n,p,s,f,i,a) -> new Execute(n,p,s,f,i,a),Execute::getHelp))
-                .put("reset", new Name((n,p,s,f,i,a) -> new Reset(n,s,f,i,a),Reset::getHelp))
             /* stack manipulation functions */
                 .put("label", new Name((n,p,s,f,i,a) -> new Label(n,f,i,a),Label::getHelp))
                 .put("label_format", new Name((n,p,s,f,i,a) -> new LabelFormat(n,f,i,a),LabelFormat::getHelp))
@@ -58,7 +56,6 @@ public class StandardVocabulary extends Vocabulary {
                 .put("clear", new Name((n,p,s,f,i,a) -> new Clear(n,f,i,a),Clear::getHelp))
                 .put("only", new Name((n,p,s,f,i,a) -> new Only(n,f,i,a),Only::getHelp))
             /* zeroth-order functions */
-                //.put("yhoo", new Name((n,p,s,f,i,a) -> new Yahoo(n,f,i,a),Yahoo::getHelp))
                 .put("range", new Name((n,p,s,f,i,a) -> new Range(n,f,i,a), Range::getHelp))
                 .put("read", new Name((n,p,s,f,i,a) -> new ImportCSV(n,f,i,a), ImportCSV::getHelp))
                 .put("moon", new Name((n,p,s,f,i,a) -> new Moon(n,f,i),

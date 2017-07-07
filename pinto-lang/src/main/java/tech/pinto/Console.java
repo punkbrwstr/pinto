@@ -8,7 +8,6 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
@@ -83,12 +82,9 @@ public class Console implements Runnable {
 				} else {
 					try {
 				    	for(TerminalFunction tf : pinto.execute(line.toString())) {
-				    		Optional<LinkedList<ColumnValues>> list = tf.getTimeSeries();
-				    		if(list.isPresent()) {
-				    			streamInReverse(list.get()).collect(Outputs.doubleDataToStringTable(nf))
-				    				.ifPresent(table -> out.println(FlipTable.of(table.getHeader(), table.getCells())));
-				    		}
-				    		tf.getText().ifPresent(out::println);
+				    		Outputs.StringTable table = streamInReverse(tf.getColumnValues())
+				    				.collect(Outputs.columnValuesCollector(nf,tf.getRange()));
+				    		out.println(FlipTable.of(table.getHeader(), table.getCells()));
 				    	}
 					} catch (PintoSyntaxException pse) {
 						System.out.println("Incorrect syntax: " + pse.getMessage());

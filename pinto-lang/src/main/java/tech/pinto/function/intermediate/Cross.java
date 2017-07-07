@@ -3,6 +3,7 @@ package tech.pinto.function.intermediate;
 import java.util.LinkedList;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.PrimitiveIterator.OfDouble;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -32,7 +33,7 @@ public class Cross extends ComposableFunction {
 				inputs -> range -> {
 					Builder b = DoubleStream.builder();
 					List<OfDouble> l = stack.stream().map(c -> c.getValues(range)).map(c -> (ColumnValues) c)
-								.map(ColumnValues::getSeries).map(ds -> ds.iterator()).collect(Collectors.toList());
+								.map(ColumnValues::getSeries).map(Optional::get).map(ds -> ds.iterator()).collect(Collectors.toList());
 					for(int i = 0; i < range.size(); i++) {
 						DoubleCollector dc = collectorSupplier.get();
 						l.forEach(di -> dc.add(di.nextDouble()));
