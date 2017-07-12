@@ -33,7 +33,7 @@ public class Outputs {
 	}
 	
 	public static Collector<ColumnValues,ArrayList<ColumnValues>,StringTable> columnValuesCollector(
-			NumberFormat nf, Optional<PeriodicRange<?>> optional) {
+			NumberFormat nf, Optional<PeriodicRange<?>> range) {
 		Supplier<ArrayList<ColumnValues>> supplier = ArrayList::new;
 		BiConsumer<ArrayList<ColumnValues>,ColumnValues> accumulator = ArrayList::add;
 		BinaryOperator<ArrayList<ColumnValues>> combiner = (left, right) -> {
@@ -41,15 +41,15 @@ public class Outputs {
 			return left;
 		};
 		Function<ArrayList<ColumnValues>,StringTable> finisher = columns -> {
-			List<LocalDate> dates = optional.get().dates();
 			String[] header = new String[columns.size() + 1];
 			for(int col = 0; col < columns.size(); col++) {
-				header[col + 1] = columns.get(col).getText().orElse("");
+				header[col + 1] = columns.get(col).getHeader().orElse("");
 			}
-			if(optional.isPresent()) {
+			if(range.isPresent()) {
+				List<LocalDate> dates = range.get().dates();
 				header[0] = "Date";
-				String[][] table = new String[(int) optional.get().size()][columns.size() + 1];
-				for(int row = 0; row < optional.get().size(); row++) {
+				String[][] table = new String[(int) range.get().size()][columns.size() + 1];
+				for(int row = 0; row < range.get().size(); row++) {
 					table[row][0] = dates.get(row).toString();
 				}
 				for(int col = 0; col < columns.size(); col++) {
@@ -59,7 +59,7 @@ public class Outputs {
 						AtomicInteger row = new AtomicInteger(0);
 						colData.get().forEach(d -> table[row.getAndIncrement()][thisCol + 1] = nf.format(d));
 					} else {
-						for(int row = 0; row < optional.get().size(); row++) {
+						for(int row = 0; row < range.get().size(); row++) {
 							table[row][col + 1] = "";
 	 					}
 					}
@@ -69,7 +69,7 @@ public class Outputs {
 			} else {
 				header[0] = "";
 				String[][] table = new String[1][columns.size()+1];
-				Arrays.fill(table[0], "");
+				Arrays.fill(table[0], " ");
 				return new StringTable(header,table);
 			}
 		};

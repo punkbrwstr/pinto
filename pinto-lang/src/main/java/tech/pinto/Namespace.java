@@ -59,8 +59,8 @@ public class Namespace implements Completer {
 	}
 	
     public synchronized ComposableFunction getFunction(String functionName, Pinto pinto, ComposableFunction previous,
-    		Indexer indexer, String... arguments) {
-        return names.get(functionName).getFactory().build(functionName, pinto, this, previous, indexer, arguments);
+    		Indexer indexer) {
+        return names.get(functionName).getFactory().build(functionName, pinto, this, previous, indexer);
     }
 	
 	private synchronized SortedSet<String> getDependedOnBy(String code) {

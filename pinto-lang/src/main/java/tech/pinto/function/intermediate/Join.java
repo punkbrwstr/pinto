@@ -17,12 +17,12 @@ import tech.pinto.time.PeriodicRange;
 
 public class Join extends ComposableFunction {
 
-	public Join(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, previousFunction, indexer, args);
+	public Join(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
 	}
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
 		return asList(new Column(inputs -> toString(), inputs -> range -> evaluationFunction(range, inputs),
 				stack.toArray(new Column[] {})));
 	}
@@ -30,7 +30,7 @@ public class Join extends ComposableFunction {
 	private <P extends Period> DoubleStream evaluationFunction(PeriodicRange<P> range, Column[] inputArray) {
 		LinkedList<Column> inputs = asList(inputArray);
 		Collections.reverse(inputs);
-		List<LocalDate> cutoverDates = Stream.of(args).map(LocalDate::parse).collect(Collectors.toList());
+		List<LocalDate> cutoverDates = Stream.of(getArgs()).map(LocalDate::parse).collect(Collectors.toList());
 		DoubleStream ds = DoubleStream.empty().sequential();
 		List<P> cutoverPeriods = cutoverDates.stream().map(range.periodicity()::from).collect(Collectors.toList());
 		Period current = range.start();

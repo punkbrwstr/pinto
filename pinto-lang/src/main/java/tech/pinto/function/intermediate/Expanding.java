@@ -19,23 +19,11 @@ import tech.pinto.time.Periodicity;
 public class Expanding extends ComposableFunction {
 
 	private final Supplier<DoubleCollector> collectorSupplier;
-	private final Optional<LocalDate> start;
-	private final Optional<Periodicity<?>> windowFrequency;
 
 	public Expanding(String name, ComposableFunction previousFunction, Indexer indexer,
-			Supplier<DoubleCollector> collectorSupplier, String... args) {
-		super(name, previousFunction, indexer, args);
+			Supplier<DoubleCollector> collectorSupplier) {
+		super(name, previousFunction, indexer);
 		this.collectorSupplier = collectorSupplier;
-		start = args.length == 0 ? Optional.empty() : Optional.of(LocalDate.parse(args[0]));
-		if (args.length < 2) {
-			windowFrequency = Optional.empty();
-		} else {
-			Periodicity<?> p = Periodicities.get(args[1].replaceAll("\\s+", ""));
-			if (p == null) {
-				throw new IllegalArgumentException("invalid periodicity code for window: \"" + args[1] + "\"");
-			}
-			windowFrequency = Optional.of(p);
-		}
 	}
 
 	public static FunctionHelp getHelp(String name, String description) {
@@ -47,7 +35,18 @@ public class Expanding extends ComposableFunction {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		Optional<Periodicity<?>> windowFrequency;
+		Optional<LocalDate> start = getArgs().length == 0 ? Optional.empty() : Optional.of(LocalDate.parse(getArgs()[0]));
+		if (getArgs().length < 2) {
+			windowFrequency = Optional.empty();
+		} else {
+			Periodicity<?> p = Periodicities.get(getArgs()[1].replaceAll("\\s+", ""));
+			if (p == null) {
+				throw new IllegalArgumentException("invalid periodicity code for window: \"" + getArgs()[1] + "\"");
+			}
+			windowFrequency = Optional.of(p);
+		}
 		LinkedList<Column> outputs = new LinkedList<>();
 		for (Column function : stack) {
 			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {

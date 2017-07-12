@@ -11,16 +11,16 @@ import tech.pinto.function.FunctionHelp;
 
 public class Range extends ComposableFunction {
 
-	public Range(String name, ComposableFunction previousFunction, Indexer indexer, String[] args) {
-		super(name, previousFunction, indexer, args);
+	public Range(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
 	}
 	
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
-		int count = args.length > 0 ? Integer.parseInt(args[0]) : 5;
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		int count = getArgs().length > 0 ? Integer.parseInt(getArgs()[0]) : 5;
 		IntStream.range(0,count).mapToDouble(i -> (double)i).mapToObj(
 				value -> new Column(inputs -> Double.toString(value),
-						inputs -> range -> DoubleStream.iterate(value, r -> value).limit(range.size()))).forEach(stack::add);;
+						inputs -> range -> DoubleStream.iterate(value, r -> value).limit(range.size()))).forEach(stack::addFirst);;
 		return stack;
 	}
 	

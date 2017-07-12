@@ -24,23 +24,23 @@ import tech.pinto.time.Period;
 
 public class ImportCSV extends ComposableFunction {
 
-	public ImportCSV(String name, ComposableFunction previousFunction, Indexer indexer, String[] args) {
-		super(name, previousFunction, indexer, args);
+	public ImportCSV(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
 	}
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
-		if (args.length < 1) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		if (getArgs().length < 1) {
 			throw new IllegalArgumentException(name + " requires at least one argument.");
 		}
-		boolean includesHeader = args.length > 1 ? Boolean.parseBoolean(args[1]) : true;
+		boolean includesHeader = getArgs().length > 1 ? Boolean.parseBoolean(getArgs()[1]) : true;
 		try {
 			List<String> lines = null;
-			if(!args[0].contains("http")) {
-				lines = Files.readAllLines(Paths.get(args[0]));
+			if(!getArgs()[0].contains("http")) {
+				lines = Files.readAllLines(Paths.get(getArgs()[0]));
 			} else {
 				lines = new ArrayList<>();
-		        BufferedReader in = new BufferedReader(new InputStreamReader(new URL(args[0]).openStream()));
+		        BufferedReader in = new BufferedReader(new InputStreamReader(new URL(getArgs()[0]).openStream()));
 		        String inputLine;
 		        while ((inputLine = in.readLine()) != null)
 		            lines.add(inputLine);
@@ -74,7 +74,7 @@ public class ImportCSV extends ComposableFunction {
 				}
 			}
 		} catch (IOException e) {
-			throw new RuntimeException("Unable to import file \"" + args[0] + "\".", e);
+			throw new RuntimeException("Unable to import file \"" + getArgs()[0] + "\".", e);
 		}
 		// IntStream.range(0,count).mapToDouble(i -> (double)i).mapToObj(
 		// value -> new EvaluableFunction(inputs -> Double.toString(value),

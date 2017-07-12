@@ -22,13 +22,13 @@ public class Cross extends ComposableFunction {
 	private final Supplier<DoubleCollector> collectorSupplier;
 	
 	
-	public Cross(String name, ComposableFunction previousFunction, Indexer indexer, Supplier<DoubleCollector> collectorSupplier, String... args) {
-		super(name, previousFunction, indexer, args);
+	public Cross(String name, ComposableFunction previousFunction, Indexer indexer, Supplier<DoubleCollector> collectorSupplier) {
+		super(name, previousFunction, indexer);
 		this.collectorSupplier = collectorSupplier;
 	}
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
 		return asList(new Column(inputs -> toString(),
 				inputs -> range -> {
 					Builder b = DoubleStream.builder();

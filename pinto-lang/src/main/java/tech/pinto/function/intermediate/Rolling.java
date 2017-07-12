@@ -23,14 +23,21 @@ import tech.pinto.time.Periodicity;
 public class Rolling extends ComposableFunction {
 
 	private final Supplier<DoubleCollector> collectorSupplier;
-	private int size;
-	private final Optional<Periodicity<?>> windowFrequency;
+	private final boolean countIncludesCurrent;
 	
 	public Rolling(String name, ComposableFunction previousFunction, Indexer indexer,
-			Supplier<DoubleCollector> collectorSupplier, boolean countIncludesCurrent, String... args) {
-		super(name, previousFunction, indexer, args);
+			Supplier<DoubleCollector> collectorSupplier, boolean countIncludesCurrent) {
+		super(name, previousFunction, indexer);
 		this.collectorSupplier = collectorSupplier;
-		if(args.length < 1) {
+		this.countIncludesCurrent = countIncludesCurrent;
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		int size;
+		Optional<Periodicity<?>> windowFrequency;
+		if(getArgs().length < 1) {
 			if(countIncludesCurrent) {
 				throw new IllegalArgumentException("window requires at least one parameter (window size)");
 			} else {
@@ -38,40 +45,36 @@ public class Rolling extends ComposableFunction {
 			}
 		} else {
 			try {
-				size = Math.abs(Integer.parseInt(args[0].replaceAll("\\s+", "")));
+				size = Math.abs(Integer.parseInt(getArgs()[0].replaceAll("\\s+", "")));
 				size += countIncludesCurrent ? 0 : 1;
 			} catch(NumberFormatException nfe) {
-				throw new IllegalArgumentException("Non-numeric argument \"" + args[0] + "\" for window"
-						+ " size in rolling function args: \"" + Joiner.on(",").join(args) + "\"");
+				throw new IllegalArgumentException("Non-numeric argument \"" + getArgs()[0] + "\" for window"
+						+ " size in rolling function args: \"" + Joiner.on(",").join(getArgs()) + "\"");
 			}
 		}
-		if(args.length < 2) {
+		int finalSize = size;
+		if(getArgs().length < 2) {
 			windowFrequency =  Optional.empty();
 		} else {
-			Periodicity<?> p =	Periodicities.get(args[1].replaceAll("\\s+", ""));
+			Periodicity<?> p =	Periodicities.get(getArgs()[1].replaceAll("\\s+", ""));
 			if(p == null) {
-				throw new IllegalArgumentException("invalid periodicity code for window: \"" + args[1] + "\"");
+				throw new IllegalArgumentException("invalid periodicity code for window: \"" + getArgs()[1] + "\"");
 			}
 			windowFrequency =  Optional.of(p);
 		}
-	}
-	
-	@SuppressWarnings("unchecked")
-	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
 		LinkedList<Column> outputs = new LinkedList<>();
 		for (Column function : stack) {
 			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
 				Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
-				Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
+				Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (finalSize - 1));
 				Period windowEnd = wf.from(range.end().endDate());
 				PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
 				ColumnValues input = inputs[0].getValues(expandedWindow);
 				Builder b = DoubleStream.builder();
 				double[] data = input.getSeries().get().toArray();
 				for(Period p : range.values()) {
-					long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - size + 1;
-					DoubleCollector dc = Arrays.stream(data, (int) windowStartIndex, (int) windowStartIndex + size)
+					long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - finalSize + 1;
+					DoubleCollector dc = Arrays.stream(data, (int) windowStartIndex, (int) windowStartIndex + finalSize)
 								.collect(collectorSupplier, (v,d) -> v.add(d), (v,v1) -> v.combine(v1));
 					b.accept(dc.finish());
 				}

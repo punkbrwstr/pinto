@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -13,40 +14,55 @@ import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.PintoSyntaxException;
 
-public class ComposableFunction implements Cloneable {
+public abstract class ComposableFunction implements Cloneable {
     
 
 	protected final Optional<String> name;
-    protected String[] args;
+	protected final ParameterType parameterType;
+	private Optional<Supplier<String[]>> argumentSupplier = Optional.empty();
+	private String[] cachedArguments = null; 
     protected Indexer indexer;
     protected Optional<ComposableFunction> previousFunction;
-    protected ComposableFunction nextFuction;
     protected boolean subFunction = false;
     
 
-    public ComposableFunction(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
-    	this(Optional.of(name),Optional.of(previousFunction), indexer, args);
+    public ComposableFunction(String name, ComposableFunction previousFunction, Indexer indexer) {
+    	this(Optional.of(name),Optional.of(previousFunction), indexer,ParameterType.arguments_optional);
     }
 
-    protected ComposableFunction(Optional<String> name, Optional<ComposableFunction> previousFunction, Indexer indexer, String... args) {
+    public ComposableFunction(String name,ComposableFunction previousFunction, Indexer indexer, ParameterType parameterType) {
+    	this(Optional.of(name),Optional.of(previousFunction), indexer,parameterType );
+    }
+
+    protected ComposableFunction(Optional<String> name, Optional<ComposableFunction> previousFunction,
+    		Indexer indexer, ParameterType parameterType) {
+    	this.parameterType = parameterType;
         this.name = name;
-        this.args = args;
         this.indexer = indexer;
         this.previousFunction = previousFunction;
-        this.previousFunction.ifPresent(f -> f.setNext(this));
     }
     
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
-		return stack;
-	}
-
+	abstract protected LinkedList<Column> compose(LinkedList<Column> stack);
+	
     public LinkedList<Column> compose() throws PintoSyntaxException {
     	LinkedList<Column> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
     	LinkedList<Column> outputs = new LinkedList<>();
+    	if(parameterType.equals(ParameterType.arguments_optional) || 
+    			parameterType.equals(ParameterType.arguments_required)) {
+    		if(inputs.size() > 0 && inputs.getFirst().getHeaderFunction().isPresent() &&
+    				! inputs.getFirst().getSeriesFunction().isPresent()) {
+    			final Column argumentInput = inputs.removeFirst();
+    			argumentSupplier = Optional.of(() -> argumentInput.toString().split(","));
+    		} else {
+    			if(parameterType.equals(ParameterType.arguments_required)) {
+    				throw new PintoSyntaxException("Function \"" + name + "\" requires arguments.");
+    			}
+    		}
+    	}
     	int i = 0;
     	do {
     		try {
-    			outputs.addAll(composeIndexed(indexer.index(inputs)));
+    			outputs.addAll(compose(indexer.index(inputs)));
     		} catch(PintoSyntaxException pse) {
     			if(i > 0) {
     				break;
@@ -59,14 +75,12 @@ public class ComposableFunction implements Cloneable {
     	outputs.addAll(inputs);
     	return outputs;
     }
-    
-	public void setNext(ComposableFunction nextFunction) {
-		this.nextFuction = nextFunction;
-	}
 
-	public void setPrevious(ComposableFunction previousFunction) {
-		this.previousFunction = Optional.of(previousFunction);
-        this.previousFunction.ifPresent(f -> f.setNext(this));
+	protected String[] getArgs() {
+		if(cachedArguments == null) {
+			cachedArguments = argumentSupplier.orElse(() -> new String[]{}).get();
+		}
+		return cachedArguments;
 	}
 	
     public Optional<ComposableFunction> getPrevious() {
@@ -75,8 +89,8 @@ public class ComposableFunction implements Cloneable {
 
 	final public String toString() {
     	String output = name.orElse("HEAD");
-    	if(args.length > 0) {
-    		output += Stream.of(args).collect(Collectors.joining(",", "(", ")"));
+    	if(getArgs().length > 0) {
+    		output += Stream.of(getArgs()).collect(Collectors.joining(",", "(", ")"));
     	}
         return output;	
     }
@@ -132,6 +146,7 @@ public class ComposableFunction implements Cloneable {
 			clone.previousFunction = previousFunction.isPresent() ? 
 					Optional.of((ComposableFunction) previousFunction.get().clone()) : Optional.empty();
 			clone.indexer = indexer.clone();
+			clone.cachedArguments = null;
 			return clone;
 		} catch (CloneNotSupportedException e) { throw new RuntimeException(); }
 	}
@@ -162,14 +177,6 @@ public class ComposableFunction implements Cloneable {
     	return !previousFunction.isPresent();
     }
 
-	public String[] getArgs() {
-		return args;
-	}
-
-	public void setArgs(String[] args) {
-		this.args = args;
-	}
-
 	public Indexer getIndexer() {
 		return indexer;
 	}
@@ -184,6 +191,10 @@ public class ComposableFunction implements Cloneable {
 
 	public Optional<String> getName() {
 		return name;
+	}
+
+	public ParameterType getParameterType() {
+		return parameterType;
 	}
 
 }

@@ -7,13 +7,14 @@ import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.function.ComposableFunction;
+import tech.pinto.function.ParameterType;
 
 public class Head extends ComposableFunction {
 	
 	private Optional<Defined> definedTail = Optional.empty();
 
 	public Head(Indexer indexer) {
-		super(Optional.empty(), Optional.empty(), indexer);
+		super(Optional.empty(),Optional.empty(),indexer, ParameterType.no_arguments);
 	}
 
 	@Override
@@ -24,10 +25,16 @@ public class Head extends ComposableFunction {
     	return outputs;
 	}
 	
+	@Override
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		return stack;
+	}
+	
 	public void setDefinedTail(Defined definedTail) {
 		this.definedTail = Optional.of(definedTail);
 	}
-	
-	
 
+	public void setPrevious(ComposableFunction previousFunction) {
+		this.previousFunction = Optional.of(previousFunction);
+	}
 }

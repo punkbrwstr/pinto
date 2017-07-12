@@ -71,8 +71,6 @@ public class Console implements Runnable {
 						} else if(nfs.length > 1 && nfs[1].equals("currency")) {
 							nf = NumberFormat.getCurrencyInstance();
 						}
-
-
 					} else if(line.startsWith("\\help")) {
 						out.println("Other console options:");
 						out.println("\t\"\\log\" print message log");

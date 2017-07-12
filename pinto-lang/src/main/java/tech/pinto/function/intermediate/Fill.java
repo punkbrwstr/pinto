@@ -17,12 +17,10 @@ import tech.pinto.function.ComposableFunction;
 public class Fill extends ComposableFunction {
 
 	private final boolean lookBack;
-	private final String periodicityCode;
 	
-	public Fill(String name, ComposableFunction previousFunction, Indexer indexer, boolean lookBack, String... args) {
-		super(name, previousFunction, indexer, args);
+	public Fill(String name, ComposableFunction previousFunction, Indexer indexer, boolean lookBack) {
+		super(name, previousFunction, indexer);
 		this.lookBack = lookBack;
-		this.periodicityCode = args.length < 1 ? "BQ-DEC" : args[0];
 	}
 
 	public static FunctionHelp getHelp(String name) {
@@ -42,7 +40,8 @@ public class Fill extends ComposableFunction {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		String periodicityCode = getArgs().length < 1 ? "BQ-DEC" : getArgs()[0];
 		LinkedList<Column> outputs = new LinkedList<>();
 		for (Column function : stack) {
 			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {

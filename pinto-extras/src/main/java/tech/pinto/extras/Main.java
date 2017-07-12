@@ -52,8 +52,8 @@ public class Main extends tech.pinto.Main {
 		public BloombergClient bc = new BloombergClient();
 		
 		public ExtraVocabulary() {
-			names.put("bbg", new Name((n,p,s,f,i,a) -> new Bloomberg(n,f,i,bc,a), n -> Bloomberg.getHelp(n)));
-			names.put("fut", new Name((n,p,s,f,i,a) -> new Futures(n,p,f,i,a), n -> Futures.getHelp(n)));
+			names.put("bbg", new Name((n,p,s,f,i) -> new Bloomberg(n,f,i,bc), n -> Bloomberg.getHelp(n)));
+			names.put("fut", new Name((n,p,s,f,i) -> new Futures(n,p,f,i), n -> Futures.getHelp(n)));
 
 		}
 	}

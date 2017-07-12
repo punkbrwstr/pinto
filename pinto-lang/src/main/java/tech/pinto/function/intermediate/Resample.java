@@ -16,8 +16,8 @@ import tech.pinto.function.ComposableFunction;
 public class Resample extends ComposableFunction {
 
 	
-	public Resample(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, previousFunction, indexer, args);
+	public Resample(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
 	}
 
 	public static FunctionHelp getHelp(String name) {
@@ -30,13 +30,13 @@ public class Resample extends ComposableFunction {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
-		if(args.length == 0) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		if(getArgs().length == 0) {
 			throw new IllegalArgumentException(name + " requires a periodicity as an argument.");
-		} else if(!Periodicities.allCodes().contains(args[0])) {
-			throw new IllegalArgumentException("Invalid periodicity \"" + args[0] + "\" for " + name + ".");
+		} else if(!Periodicities.allCodes().contains(getArgs()[0])) {
+			throw new IllegalArgumentException("Invalid periodicity \"" + getArgs()[0] + "\" for " + name + ".");
 		}
-		final Periodicity newPeriodicity  = Periodicities.get(args[0]);
+		final Periodicity newPeriodicity  = Periodicities.get(getArgs()[0]);
 		LinkedList<Column> outputs = new LinkedList<>();
 		for (Column function : stack) {
 			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {

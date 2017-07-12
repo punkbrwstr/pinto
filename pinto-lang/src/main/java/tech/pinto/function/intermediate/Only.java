@@ -12,8 +12,8 @@ public class Only extends ComposableFunction {
 	
 	
 
-	public Only(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, previousFunction, indexer, args);
+	public Only(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
 	}
 
     public LinkedList<Column> compose() throws PintoSyntaxException {
@@ -40,6 +40,11 @@ public class Only extends ComposableFunction {
 				.description("Clears stack except for functions specified by indexing expression.")
 				.outputs("Determined by index expression")
 				.build();
+	}
+
+	@Override
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		return stack;
 	}
 
 }

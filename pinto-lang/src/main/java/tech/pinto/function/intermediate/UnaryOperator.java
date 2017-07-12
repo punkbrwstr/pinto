@@ -14,13 +14,13 @@ public class UnaryOperator extends ComposableFunction {
 
 	protected final DoubleUnaryOperator operator;
 	
-	public UnaryOperator(String name, ComposableFunction previousFunction, Indexer indexer, DoubleUnaryOperator operator, String... args) {
-		super(name, previousFunction, indexer, args);
+	public UnaryOperator(String name, ComposableFunction previousFunction, Indexer indexer, DoubleUnaryOperator operator) {
+		super(name, previousFunction, indexer);
 		this.operator = operator;
 	}
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
 		LinkedList<Column> outputs = new LinkedList<>();
 		for (Column function : stack) {
 			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()),

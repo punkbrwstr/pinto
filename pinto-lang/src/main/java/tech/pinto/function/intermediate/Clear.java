@@ -11,12 +11,12 @@ final public class Clear extends ComposableFunction {
 	
 	
 
-	public Clear(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, previousFunction, indexer, args);
+	public Clear(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
 	}
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
 		stack.clear();
 		return stack;
 	}

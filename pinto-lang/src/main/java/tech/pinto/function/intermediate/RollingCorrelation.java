@@ -23,35 +23,35 @@ import tech.pinto.time.Periodicity;
 
 public class RollingCorrelation extends ComposableFunction {
 
-	private int size;
-	private final Optional<Periodicity<?>> windowFrequency;
 	
-	public RollingCorrelation(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, previousFunction, indexer, args);
-		if(args.length < 1) {
-			throw new IllegalArgumentException("window requires at least one parameter (window size)");
-		} else {
-			try {
-				size = Math.abs(Integer.parseInt(args[0].replaceAll("\\s+", "")));
-			} catch(NumberFormatException nfe) {
-				throw new IllegalArgumentException("Non-numeric argument \"" + args[0] + "\" for window"
-						+ " size in rolling function args: \"" + Joiner.on(",").join(args) + "\"");
-			}
-		}
-		if(args.length < 2) {
-			windowFrequency =  Optional.empty();
-		} else {
-			Periodicity<?> p =	Periodicities.get(args[1].replaceAll("\\s+", ""));
-			if(p == null) {
-				throw new IllegalArgumentException("invalid periodicity code for window: \"" + args[1] + "\"");
-			}
-			windowFrequency =  Optional.of(p);
-		}
+	public RollingCorrelation(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		int size;
+		Optional<Periodicity<?>> windowFrequency;
+		if(getArgs().length < 1) {
+			throw new IllegalArgumentException("window requires at least one parameter (window size)");
+		} else {
+			try {
+				size = Math.abs(Integer.parseInt(getArgs()[0].replaceAll("\\s+", "")));
+			} catch(NumberFormatException nfe) {
+				throw new IllegalArgumentException("Non-numeric argument \"" + getArgs()[0] + "\" for window"
+						+ " size in rolling function args: \"" + Joiner.on(",").join(getArgs()) + "\"");
+			}
+		}
+		if(getArgs().length < 2) {
+			windowFrequency =  Optional.empty();
+		} else {
+			Periodicity<?> p =	Periodicities.get(getArgs()[1].replaceAll("\\s+", ""));
+			if(p == null) {
+				throw new IllegalArgumentException("invalid periodicity code for window: \"" + getArgs()[1] + "\"");
+			}
+			windowFrequency =  Optional.of(p);
+		}
 		return asList(new Column(inputs -> toString(),
 				inputArray -> range -> {
 					Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());

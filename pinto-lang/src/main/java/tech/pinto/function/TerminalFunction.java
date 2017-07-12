@@ -14,9 +14,15 @@ abstract public class TerminalFunction extends ComposableFunction {
 	
 	protected final Namespace namespace;
 
+	public TerminalFunction(ParameterType parameterType,String name, Namespace namespace,
+			ComposableFunction previousFunction, Indexer indexer) {
+		super(name,previousFunction, indexer, parameterType);
+		this.namespace = namespace;
+	}
+
 	public TerminalFunction(String name, Namespace namespace,
-			ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, previousFunction, indexer, args);
+			ComposableFunction previousFunction, Indexer indexer) {
+		super(name,previousFunction, indexer, ParameterType.arguments_optional);
 		this.namespace = namespace;
 	}
 
@@ -27,7 +33,7 @@ abstract public class TerminalFunction extends ComposableFunction {
 	}
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
 		throw new UnsupportedOperationException();
 	}
 

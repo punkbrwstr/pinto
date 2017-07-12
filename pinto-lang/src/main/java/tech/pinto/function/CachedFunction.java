@@ -30,8 +30,12 @@ abstract public class CachedFunction extends ComposableFunction {
 	public static HashMap<String, RangeMap<Long, CachedSeriesList>> seriesCache = new HashMap<>();
 	public static HashMap<String, List<String>> textCache = new HashMap<>();
 
-	public CachedFunction(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, previousFunction, indexer, args);
+	public CachedFunction(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
+	}
+
+	public CachedFunction(String name, ComposableFunction previousFunction, Indexer indexer, ParameterType parameterType) {
+		super(name, previousFunction, indexer, parameterType);
 	}
 
 	abstract protected <P extends Period> List<DoubleStream> getUncachedSeries(PeriodicRange<P> range);
@@ -41,7 +45,7 @@ abstract public class CachedFunction extends ComposableFunction {
 	abstract protected int columns();
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
 		for (int i = 0; i < columns(); i++) {
 			final int index = i;
 			stack.addFirst(new Column(inputs -> getCachedText().get(index),

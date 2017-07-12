@@ -6,16 +6,16 @@ import java.util.stream.DoubleStream;
 
 public class ColumnValues  {
 
-	final private Optional<String> text;
+	final private Optional<String> header;
 	final private Optional<DoubleStream> series;
 	
-	public ColumnValues(Optional<String> text, Optional<DoubleStream> series) {
-		this.text = text;
+	public ColumnValues(Optional<String> header, Optional<DoubleStream> series) {
+		this.header = header;
 		this.series = series;
 	}
 
-	public Optional<String> getText() {
-		return text;
+	public Optional<String> getHeader() {
+		return header;
 	}
 
 	public Optional<DoubleStream> getSeries() {

@@ -67,7 +67,7 @@ public class AllTests {
 	public static class TestVocabulary extends StandardVocabulary {
 		
 		public TestVocabulary() {
-			names.put("counter", new tech.pinto.Name((n,p,s,f,i,a) -> new CallCounter(n,f,i,a), n -> new FunctionHelp.Builder(n).build()));
+			names.put("counter", new tech.pinto.Name((n,p,s,f,i) -> new CallCounter(n,f,i), n -> new FunctionHelp.Builder(n).build()));
 		}
 
 	}
@@ -76,8 +76,8 @@ public class AllTests {
 		
 		private static AtomicInteger count = new AtomicInteger();
 
-		public CallCounter(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
-			super(name, previousFunction, indexer, args);
+		public CallCounter(String name, ComposableFunction previousFunction, Indexer indexer) {
+			super(name, previousFunction, indexer);
 		}
 
 		@Override

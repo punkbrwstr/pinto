@@ -11,6 +11,7 @@ import tech.pinto.extras.BloombergClient;
 import tech.pinto.function.CachedFunction;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
+import tech.pinto.function.ParameterType;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
@@ -21,9 +22,8 @@ public class Bloomberg extends CachedFunction {
 	private List<String> securityCodeFieldCode = new ArrayList<>();
 	private final BloombergClient bc;
 
-	public Bloomberg(String name, ComposableFunction previousFunction, Indexer indexer, BloombergClient bc,
-			String... args) {
-		super(name, previousFunction, indexer, args);
+	public Bloomberg(String name, ComposableFunction previousFunction, Indexer indexer, BloombergClient bc) {
+		super(name, previousFunction, indexer,ParameterType.arguments_required);
 		this.bc = bc;
 	}
 
@@ -47,14 +47,14 @@ public class Bloomberg extends CachedFunction {
 	}
 
 	private void parseArgs() {
-		if (args.length == 0) {
+		if (getArgs().length == 0) {
 			throw new IllegalArgumentException("bbg requires at least one argument");
 		} else if (securityCodes.size() == 0) {
-			Stream.of(args[0].split(":")).map(s -> s.trim()).forEach(securityCodes::add);
-			if(args.length == 1) {
+			Stream.of(getArgs()[0].split(":")).map(s -> s.trim()).forEach(securityCodes::add);
+			if(getArgs().length == 1) {
 				fieldCodes.add("PX_LAST");
 			} else {
-				Stream.of(args[1].split(":")).map(s -> s.trim()).map(String::toUpperCase)
+				Stream.of(getArgs()[1].split(":")).map(s -> s.trim()).map(String::toUpperCase)
 							.map(s -> s.replaceAll(" ", "_")).forEach(fieldCodes::add);
 			}
 			securityCodes.stream().flatMap(s -> fieldCodes.stream().map(c -> s + ":" + c))

@@ -26,29 +26,29 @@ import tech.pinto.tools.Outputs;
 
 public class Export extends TerminalFunction {
 
-	public Export(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, namespace, previousFunction, indexer, args);
+	public Export(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, namespace, previousFunction, indexer);
 	}
 
 	@Override
 	public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException {
-		if(args.length < 4) {
+		if(getArgs().length < 4) {
 			throw new PintoSyntaxException(name + " requires 4 arguments.");
 		}
-		Periodicity<?> p =  Periodicities.get(args.length > 2 ? args[2] : "B");
-		LocalDate start = args.length > 0 ? LocalDate.parse(args[0]) : 
+		Periodicity<?> p =  Periodicities.get(getArgs().length > 2 ? getArgs()[2] : "B");
+		LocalDate start = getArgs().length > 0 ? LocalDate.parse(getArgs()[0]) : 
 							p.from(LocalDate.now()).previous().endDate();
-		LocalDate end = args.length > 1 ? LocalDate.parse(args[1]) : 
+		LocalDate end = getArgs().length > 1 ? LocalDate.parse(getArgs()[1]) : 
 							p.from(LocalDate.now()).previous().endDate();
 		PeriodicRange<?> range = p.range(start, end, false);
 		Outputs.StringTable t = this.previousFunction.get().compose().stream()
 				.map(f -> f.getValues(range)).collect(Outputs.columnValuesCollector(range));
-		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(args[3])))) {
+		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(getArgs()[3])))) {
 			out.println(Stream.of(t.getHeader()).collect(Collectors.joining(",")));
 			Stream.of(t.getCells())
 						.forEach(line -> out.println(Stream.of(line).collect(Collectors.joining(","))));
 		} catch (IOException e) {
-				throw new IllegalArgumentException("Unable to open file \"" + args[3] + "\" for export");
+				throw new IllegalArgumentException("Unable to open file \"" + getArgs()[3] + "\" for export");
 		}
 		return createTextColumn("Successfully exported.");
 	}

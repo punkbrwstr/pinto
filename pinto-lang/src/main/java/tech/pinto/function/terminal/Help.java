@@ -1,8 +1,7 @@
 package tech.pinto.function.terminal;
 
 import java.util.LinkedList;
-
-
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import tech.pinto.ColumnValues;
@@ -12,11 +11,12 @@ import tech.pinto.PintoSyntaxException;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
+import tech.pinto.function.header.HeaderLiteral;
 
 public class Help extends TerminalFunction {
 
-	public Help(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, namespace, previousFunction, indexer, args);
+	public Help(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, namespace, previousFunction, indexer);
 	}
 
 	public static FunctionHelp getHelp(String name) {
@@ -29,12 +29,16 @@ public class Help extends TerminalFunction {
 
 	@Override
 	public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException {
+		Optional<String> argument = Optional.empty();
+		if(previousFunction.isPresent() && previousFunction.get() instanceof HeaderLiteral) {
+			argument = Optional.of(((HeaderLiteral) previousFunction.get()).getValue());
+		}
 		StringBuilder sb = new StringBuilder();
 		String crlf = System.getProperty("line.separator");
-		if(args.length == 1 && args[0].equals("full")) {
+		if(argument.isPresent() && argument.get().equals("full")) {
 			sb.append(namespace.getAllHelp().stream().map(FunctionHelp::toTableRowString).collect(Collectors.joining(crlf))).append(crlf);
-		} else if(args.length == 1) {
-			String functionName = args[0].trim();
+		} else if(argument.isPresent()) {
+			String functionName = argument.get().trim();
 			if(namespace.contains(functionName)) {
 				sb.append(namespace.getHelp(functionName).toConsoleHelpString());
 			} else {

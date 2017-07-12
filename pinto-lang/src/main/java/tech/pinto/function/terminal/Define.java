@@ -10,28 +10,28 @@ import tech.pinto.PintoSyntaxException;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.TerminalFunction;
+import tech.pinto.function.header.HeaderLiteral;
 
 public class Define extends TerminalFunction {
 
-	public Define(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, namespace, previousFunction, indexer, args);
+	public Define(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, namespace, previousFunction, indexer);
 	}
 	
 	@Override
 	public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException {
-		if(args.length < 1) {
-			throw new IllegalArgumentException("Define requires a name argument.");
+		if(!(previousFunction.isPresent() && previousFunction.get() instanceof HeaderLiteral)) {
+			throw new PintoSyntaxException("Define requires a string literal for the name.");
 		}
-		String desc = previousFunction.get().toExpression().toString();
-		previousFunction.get().setIsSubFunction();
+		String[] args = ((HeaderLiteral) previousFunction.get()).getValue().split(",");
+		ComposableFunction function = previousFunction.get().getPrevious().orElseThrow(
+				() -> new PintoSyntaxException("Nothing to define."));
+		String desc = function.toExpression().toString();
+		function.setIsSubFunction();
 		if(args.length > 1) {
-			String indexString = args[1].trim().replaceAll("\\[|\\]", "").replaceAll("\\s", "");
-	        previousFunction.get().getHead().setIndexer(new Indexer(indexString));
+			desc += " (" + args[1] + ")";
 		}
-		if(args.length > 2) {
-			desc += " (" + args[2] + ")";
-		}
-		namespace.define(args[0], desc, previousFunction.get());
+		namespace.define(args[0], desc, function);
 		return createTextColumn("Successfully saved.");
 	}
 	
@@ -40,7 +40,6 @@ public class Define extends TerminalFunction {
 				.outputs("none")
 				.description("Defines the preceding function as *name*.")
 				.parameter("name")
-				.parameter("indexer","[:]", null)
 				.parameter("description)", "none", null)
 				.build();
 	}

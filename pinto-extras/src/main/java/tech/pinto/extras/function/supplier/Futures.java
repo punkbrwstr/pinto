@@ -22,6 +22,7 @@ import tech.pinto.PintoSyntaxException;
 import tech.pinto.function.CachedFunction;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
+import tech.pinto.function.ParameterType;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
@@ -30,10 +31,6 @@ public class Futures extends CachedFunction {
 	
     final static String[] monthCodes = new String[]{"H","M","U","Z"};
 
-    final private String contractCode, contractYellowKey, criteriaFieldCode,
-    							priceModifierFormula, priceFieldCode, pricePreviousCode;
-    final private boolean calcReturn;
-    final private int previousOffset;
     final private Pinto pinto;
     
 	public static FunctionHelp getHelp(String name) {
@@ -51,21 +48,9 @@ public class Futures extends CachedFunction {
 				.build();
 	}
 
-	public Futures(String name, Pinto pinto, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, previousFunction, indexer, args);
+	public Futures(String name, Pinto pinto, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer, ParameterType.arguments_required);
 		this.pinto = pinto;
-        if(args.length == 0) {
-            throw new IllegalArgumentException("Wrong arguments for futures return");
-        }
-        contractCode = args[0].toUpperCase(); // don't trim because of "G "
-        contractYellowKey = args.length > 1 && !args[1].equals("") ? args[1].trim() : "Comdty";
-        priceModifierFormula = args.length > 2 ? args[2] : "";
-        criteriaFieldCode = args.length > 3 && ! args[3].equals("") ?
-                args[3].trim().toUpperCase().replaceAll("\\s+","_") : "OPEN_INT";
-        priceFieldCode = args.length > 4 && !args[4].equals("") ? args[4].trim().toUpperCase().replaceAll("\\s+","_") : "PX_LAST";
-        pricePreviousCode = args.length > 5 && !args[5].equals("") ? args[5].trim().toUpperCase().replaceAll("\\s+","_") : priceFieldCode;
-        previousOffset = args.length > 6 && !args[6].equals("") ? Integer.parseInt(args[6]) : -1;
-        calcReturn = args.length > 7 ? Boolean.parseBoolean(args[7]) : true;
 	}
 
 	@Override
@@ -75,6 +60,22 @@ public class Futures extends CachedFunction {
 
 	@Override
 	protected <P extends Period> List<DoubleStream> getUncachedSeries(PeriodicRange<P> range) {
+		String contractCode, contractYellowKey, criteriaFieldCode,
+    							priceModifierFormula, priceFieldCode, pricePreviousCode;
+		boolean calcReturn;
+		int previousOffset;
+        if(getArgs().length == 0) {
+            throw new IllegalArgumentException("Wrong arguments for futures return");
+        }
+        contractCode = getArgs()[0].toUpperCase(); // don't trim because of "G "
+        contractYellowKey = getArgs().length > 1 && !getArgs()[1].equals("") ? getArgs()[1].trim() : "Comdty";
+        priceModifierFormula = getArgs().length > 2 ? getArgs()[2] : "";
+        criteriaFieldCode = getArgs().length > 3 && ! getArgs()[3].equals("") ?
+                getArgs()[3].trim().toUpperCase().replaceAll("\\s+","_") : "OPEN_INT";
+        priceFieldCode = getArgs().length > 4 && !getArgs()[4].equals("") ? getArgs()[4].trim().toUpperCase().replaceAll("\\s+","_") : "PX_LAST";
+        pricePreviousCode = getArgs().length > 5 && !getArgs()[5].equals("") ? getArgs()[5].trim().toUpperCase().replaceAll("\\s+","_") : priceFieldCode;
+        previousOffset = getArgs().length > 6 && !getArgs()[6].equals("") ? Integer.parseInt(getArgs()[6]) : -1;
+        calcReturn = getArgs().length > 7 ? Boolean.parseBoolean(getArgs()[7]) : true;
         int numberOfContracts = 0;
         // key is code ("Z-2010") and value is column index for data
         HashMap<String,Integer> contracts = new HashMap<>();

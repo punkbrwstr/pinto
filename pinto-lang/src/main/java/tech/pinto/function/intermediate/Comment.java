@@ -9,12 +9,12 @@ import tech.pinto.function.FunctionHelp;
 
 public class Comment extends ComposableFunction {
 
-	public Comment(String name, ComposableFunction previousFunction, Indexer indexer, String[] args) {
-		super(name, previousFunction, indexer, args);
+	public Comment(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
 	}
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
 		return stack;
 	}
 

@@ -20,6 +20,7 @@ public class Indexer implements Cloneable {
 	private boolean everything = true;
 	private boolean none = false;
 	private boolean repeat = false;
+	private boolean copy = false;
 	private Integer start = null;
 	private Integer end = null;
 	private TreeMultimap<Integer,Integer> indicies = TreeMultimap.create(Collections.reverseOrder(), Collections.reverseOrder());
@@ -41,6 +42,13 @@ public class Indexer implements Cloneable {
 		if(indexString.contains("+")) {
 			repeat = true;
 			indexString = indexString.replace("+", "");
+		}
+		if(indexString.contains("&")) {
+			if(repeat) {
+				throw new PintoSyntaxException("Cannot copy and repeat an index because it will create an infinite loop.");
+			}
+			copy = true;
+			indexString = indexString.replace("&", "");
 		}
 		if(indexString.contains(":") && indexString.contains(",")) {
 			throw new PintoSyntaxException("Invalid index \"" + indexString + "\". Cannot combine range indexing with multiple indexing.");
@@ -77,8 +85,12 @@ public class Indexer implements Cloneable {
 	public LinkedList<Column> index(LinkedList<Column> stack) throws PintoSyntaxException {
 		LinkedList<Column> indexed = new LinkedList<>();
 		if(everything) {
-			indexed.addAll(stack);
-			stack.clear();
+			if(!copy) {
+				indexed.addAll(stack);
+				stack.clear();
+			} else {
+				stack.stream().map(Column::clone).forEach(indexed::addLast);
+			}
 		} else if(none) {
 			indexed = new LinkedList<>();
 		} else {
@@ -116,8 +128,8 @@ public class Indexer implements Cloneable {
 				}
 				int index = e.getKey().intValue() < 0 ? e.getKey().intValue() + stack.size() : e.getKey().intValue();
 				checkIndex(index, stack.size(),false);
-				Column f = stack.remove(index);
-				boolean needsCloning = false;
+				Column f = copy ? stack.get(index) : stack.remove(index);
+				boolean needsCloning = copy;
 				for(int i : e.getValue()) {
 					functions.put(i, needsCloning ? f.clone() : f);
 					needsCloning = true;
@@ -134,6 +146,10 @@ public class Indexer implements Cloneable {
 
 	public boolean isEverything() {
 		return  everything;
+	}
+
+	public boolean isCopy() {
+		return copy;
 	}
 
 	private static boolean isNumeric(String s) {  

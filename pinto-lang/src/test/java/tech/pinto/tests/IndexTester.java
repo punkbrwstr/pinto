@@ -36,7 +36,7 @@ public class IndexTester {
 
 	@Test
 	public void testWildcards() throws Exception {
-		List<ColumnValues> ts = pinto.execute("1 2 3 label(hotdiggitydog,burger,hotdog) [hot*dog] eval").get(0).getColumnValues();
+		List<ColumnValues> ts = pinto.execute("1 2 3 \"hotdiggitydog,burger,hotdog\" label [hot*dog] only eval").get(0).getColumnValues();
 		assertEquals("wildcard label", 2, ts.size());
 	}
 
@@ -70,12 +70,12 @@ public class IndexTester {
 
 	@Test
 	public void testLabels() throws Exception {
-		List<ColumnValues> ts = pinto.execute("1 2 3 label(a,b,c) [c] eval").get(0).getColumnValues();
+		List<ColumnValues> ts = pinto.execute("1 2 3 \"a,b,c\" label [c] eval").get(0).getColumnValues();
 		assertEquals("label index (simple) value", 3.0, ts.get(0).getSeries().get().toArray()[0], 0.1);
-		ts = pinto.execute("1 2 3 label(a,b,c) [b,b] neg eval").get(0).getColumnValues();
+		ts = pinto.execute("1 2 3 \"a,b,c\" label [b,b] neg eval").get(0).getColumnValues();
 		double sum = ts.stream().map(ColumnValues::getSeries).map(Optional::get).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
 		assertEquals("label index (get one twice) value", sum,0.0,0.1);
-		ts = pinto.execute("1 2 3 label(b,b,a) [b] neg eval").get(0).getColumnValues();
+		ts = pinto.execute("1 2 3 \"b,b,a\" label [b] neg eval").get(0).getColumnValues();
 		sum = ts.stream().map(ColumnValues::getSeries).map(Optional::get).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
 		assertEquals("label index (repeated label) value", sum,0.0,0.1);
 		

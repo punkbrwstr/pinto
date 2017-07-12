@@ -9,20 +9,22 @@ import tech.pinto.PintoSyntaxException;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
+import tech.pinto.function.header.HeaderLiteral;
 
 public class Delete extends TerminalFunction {
 
 
-	public Delete(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, namespace, previousFunction, indexer, args);
+	public Delete(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, namespace, previousFunction, indexer);
 	}
 
 	@Override
 	public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException {
-		if(args.length < 1) {
-			throw new IllegalArgumentException("del requires one argument.");
+		if(!(previousFunction.isPresent() && previousFunction.get() instanceof HeaderLiteral)) {
+			throw new PintoSyntaxException(name + " requires a string literal for the name.");
 		}
-		namespace.undefine(args[0]);
+		String nameToDelete = ((HeaderLiteral) previousFunction.get()).getValue();
+		namespace.undefine(nameToDelete);
 		return createTextColumn("Successfully deleted.");
 	}	
 

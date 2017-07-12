@@ -8,6 +8,6 @@ import tech.pinto.Pinto;
 public interface FunctionFactory {
 	
 	public ComposableFunction build(String name, Pinto pinto, Namespace namespace, ComposableFunction previousFunction,
-								Indexer indexer, String...arguments);
+								Indexer indexer);
 
 }

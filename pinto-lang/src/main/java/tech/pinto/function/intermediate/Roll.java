@@ -9,13 +9,13 @@ import tech.pinto.function.ComposableFunction;
 
 public class Roll extends ComposableFunction {
 	
-	public Roll(String name, ComposableFunction previousFunction, Indexer indexer, String... args) {
-		super(name, previousFunction, indexer, args);
+	public Roll(String name, ComposableFunction previousFunction, Indexer indexer) {
+		super(name, previousFunction, indexer);
 	}
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
-		int times = args.length == 0 ? 1 : Integer.parseInt(args[0]);
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		int times = getArgs().length == 0 ? 1 : Integer.parseInt(getArgs()[0]);
 		for(int i = 0; i < times; i++) {
 			stack.addFirst(stack.removeLast());
 		}

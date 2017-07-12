@@ -11,50 +11,60 @@ import tech.pinto.time.PeriodicRange;
 final public class Column implements Cloneable {
 
 	final private Column[] inputs;
-	final private Function<Column[],Optional<String>> textFunction;
-	final private Function<Column[],Function<PeriodicRange<?>,Optional<DoubleStream>>> seriesFunction;
+	final private Optional<Function<Column[],String>> headerFunction;
+	final private Optional<Function<Column[],Function<PeriodicRange<?>,DoubleStream>>> seriesFunction;
 	
-	private Column(Column[] inputs, Function<Column[], Optional<String>> textFunction,
-			Function<Column[], Function<PeriodicRange<?>, Optional<DoubleStream>>> seriesFunction) {
+	public Column(Column[] inputs, Optional<Function<Column[], String>> headerFunction,
+			Optional<Function<Column[], Function<PeriodicRange<?>, DoubleStream>>> seriesFunction) {
 		this.inputs = inputs;
-		this.textFunction = textFunction;
+		this.headerFunction = headerFunction;
 		this.seriesFunction = seriesFunction;
 	}
 
-	public Column(Function<Column[],String> textFunction,
+	public Column(Function<Column[],String> headerFunction,
 			Function<Column[], Function<PeriodicRange<?>,DoubleStream>> seriesFunction,
 				Column... inputs) {
 		this.inputs = inputs;
-		this.textFunction = c -> Optional.of(textFunction.apply(c));
-		this.seriesFunction = c -> r -> Optional.of(seriesFunction.apply(c).apply(r));
+		this.headerFunction = Optional.of(headerFunction);
+		this.seriesFunction = Optional.of(seriesFunction);
 	}
 
 	public Column(Function<Column[],String> textFunction, Column... inputs) {
 		this.inputs = inputs;
-		this.textFunction = c -> Optional.of(textFunction.apply(c));
-		this.seriesFunction = c -> r -> Optional.empty();
+		this.headerFunction = Optional.of(textFunction);
+		this.seriesFunction = Optional.empty();
 	}
 
 	public <P extends Period> ColumnValues getValues(PeriodicRange<P> range) {
-		return new ColumnValues(textFunction.apply(inputs),
-				seriesFunction.apply(inputs).apply(range));
+		Optional<String> header = headerFunction.isPresent() ? Optional.of(headerFunction.get().apply(inputs)) : Optional.empty(); 
+		Optional<DoubleStream> series = seriesFunction.isPresent() ? Optional.of(seriesFunction.get().apply(inputs).apply(range))
+				: Optional.empty();
+		return new ColumnValues(header, series);
+	}
+	
+	public Optional<String> getHeader() {
+		return headerFunction.isPresent() ? Optional.of(headerFunction.get().apply(inputs)) : Optional.empty();
+	}
+	
+	public <P extends Period> Optional<DoubleStream> getSeries(PeriodicRange<P> range) {
+		return seriesFunction.isPresent() ? Optional.of(seriesFunction.get().apply(inputs).apply(range)) : Optional.empty();
 	}
 	
 	public Column[] getInputs() {
 		return inputs;
 	}
 
-	public Function<Column[], Optional<String>> getTextFunction() {
-		return textFunction;
+	public Optional<Function<Column[], String>> getHeaderFunction() {
+		return headerFunction;
 	}
 
-	public Function<Column[], Function<PeriodicRange<?>, Optional<DoubleStream>>> getSeriesFunction() {
+	public Optional<Function<Column[], Function<PeriodicRange<?>, DoubleStream>>> getSeriesFunction() {
 		return seriesFunction;
 	}
 
 	@Override
 	public String toString() {
-		return textFunction.apply(inputs).orElse("");
+		return headerFunction.isPresent() ? headerFunction.get().apply(inputs) : "";
 	}
 	
 	@Override
@@ -63,7 +73,7 @@ final public class Column implements Cloneable {
 		for(int i = 0; i < inputs.length; i++) {
 			cloneInputs[i] = (Column) inputs[i].clone();
 		}
-		return new Column(cloneInputs,textFunction,seriesFunction);
+		return new Column(cloneInputs,headerFunction,seriesFunction);
 	}
 	
 	

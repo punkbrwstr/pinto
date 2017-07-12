@@ -18,14 +18,14 @@ public class BinaryOperator extends ComposableFunction {
 
 	protected final DoubleBinaryOperator operator;
 
-	public BinaryOperator(String name, ComposableFunction previousFunction, Indexer indexer, DoubleBinaryOperator operator, String... args) {
-		super(name, previousFunction, indexer, args);
+	public BinaryOperator(String name, ComposableFunction previousFunction, Indexer indexer, DoubleBinaryOperator operator) {
+		super(name, previousFunction, indexer);
 		this.operator = operator;
 	}
 
 	@Override
-	public LinkedList<Column> composeIndexed(LinkedList<Column> stack) {
-		int fixedCount = args.length > 0 ? Integer.parseInt(args[0]) : 1;
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		int fixedCount = getArgs().length > 0 ? Integer.parseInt(getArgs()[0]) : 1;
 		if (stack.size() < fixedCount + 1) {
 			throw new IllegalArgumentException("Not enough inputs for " + name.get());
 		}

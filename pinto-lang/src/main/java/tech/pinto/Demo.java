@@ -27,6 +27,7 @@ import dagger.Provides;
 import jline.TerminalFactory;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.TerminalFunction;
+import tech.pinto.function.header.HeaderLiteral;
 import tech.pinto.function.supplier.ImportCSV;
 import tech.pinto.tools.LogAppender;
 
@@ -105,10 +106,11 @@ public class Demo {
 	public static class DemoVocabulary extends StandardVocabulary {
 		
 		public DemoVocabulary() {
-			names.put("exec", new Name((n,p,s,f,i,a) -> new DummyFunction(n), n -> new FunctionHelp.Builder(n).build()));
-			names.put("export", new Name((n,p,s,f,i,a) -> new DummyFunction(n),  n -> new FunctionHelp.Builder(n).build()));
-            names.put("read", new Name((n,p,s,f,i,a) -> new ImportCSV(n,f,i,
-            		new String[]{"https://pinto.tech/files/stocks.csv"}), ImportCSV::getHelp));
+			names.put("exec", new Name((n,p,s,f,i) -> new DummyFunction(n), n -> new FunctionHelp.Builder(n).build()));
+			names.put("export", new Name((n,p,s,f,i) -> new DummyFunction(n),  n -> new FunctionHelp.Builder(n).build()));
+            names.put("read", new Name((n,p,s,f,i) -> {
+            	return new ImportCSV(n,new HeaderLiteral(f, i, "https://pinto.tech/files/stocks.csv"),i);}, ImportCSV::getHelp
+            	));
 		}
 		
 	}
