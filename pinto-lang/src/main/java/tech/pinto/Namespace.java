@@ -47,9 +47,12 @@ public class Namespace implements Completer {
 	}
 
 	public synchronized void undefine(String name) throws IllegalArgumentException {
-		if(getDependedOnBy(name).size() != 0) {
-			throw new IllegalArgumentException("Cannot delete \"" + name + "\" because other "
-						+ "saved commands depend on it.");
+		SortedSet<String> dependedOnBy = getDependedOnBy(name);
+		if(dependedOnBy.size() != 0) {
+			String d = dependedOnBy.stream().map(s -> s.split(DELIMITER)[2])
+					.map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
+			throw new IllegalArgumentException("Cannot delete \"" + name + "\" because other names (" + d
+						+ ") depend on it.");
 		}
 		for(String dependencyCode : getDependsOn(name)) {
 			dependencyGraph.remove(join(name, "dependsOn", dependencyCode));
@@ -90,7 +93,7 @@ public class Namespace implements Completer {
 	
 	protected synchronized SortedSet<String> dependenciesStartingWith(String query) {
 		SortedSet<String> matching = new TreeSet<>();
-		for(String key : matching.tailSet(query)) {
+		for(String key : dependencyGraph.tailSet(query)) {
 			if(key.startsWith(query)) {
 				matching.add(key);
 			} else {

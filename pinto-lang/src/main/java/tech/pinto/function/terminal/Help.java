@@ -1,13 +1,12 @@
 package tech.pinto.function.terminal;
 
-import java.util.LinkedList;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import tech.pinto.ColumnValues;
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
+import tech.pinto.Table;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
@@ -28,7 +27,7 @@ public class Help extends TerminalFunction {
 	}
 
 	@Override
-	public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException {
+	public Table getTable() throws PintoSyntaxException {
 		Optional<String> argument = Optional.empty();
 		if(previousFunction.isPresent() && previousFunction.get() instanceof HeaderLiteral) {
 			argument = Optional.of(((HeaderLiteral) previousFunction.get()).getValue());
@@ -54,6 +53,4 @@ public class Help extends TerminalFunction {
 		}
 		return createTextColumn(sb.toString());
 	}
-	
-
 }

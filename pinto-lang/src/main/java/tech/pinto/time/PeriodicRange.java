@@ -2,11 +2,13 @@ package tech.pinto.time;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ContiguousSet;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 
 public final class PeriodicRange<P extends Period> {
@@ -61,6 +63,13 @@ public final class PeriodicRange<P extends Period> {
 	
 	public boolean clearCache() {
 		return clearCache;
+	}
+	
+	public Map<String,String> asStringMap() {
+		return new ImmutableMap.Builder<String, String>()
+				.put("start", start().endDate().toString())
+				.put("end", end().endDate().toString())
+				.put("freq", periodicity().code()).build();	
 	}
 	
 	@Override

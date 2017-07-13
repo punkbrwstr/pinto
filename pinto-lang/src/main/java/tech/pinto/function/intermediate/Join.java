@@ -42,7 +42,7 @@ public class Join extends ComposableFunction {
 				P chunkEnd = range.end().isBefore(cutoverPeriods.get(i)) ? range.end()
 						: range.periodicity().previous(cutoverPeriods.get(i));
 				PeriodicRange<?> chunkRange = range.periodicity().range(current, chunkEnd, range.clearCache());
-				ds = DoubleStream.concat(ds, currentFunction.getValues(chunkRange).getSeries().get());
+				ds = DoubleStream.concat(ds, currentFunction.getSeries(chunkRange).get());
 				current = range.periodicity().next(chunkEnd);
 			}
 			i++;
@@ -54,7 +54,7 @@ public class Join extends ComposableFunction {
 		Column currentFunction = inputs.removeFirst();
 		if (!current.isAfter(range.end())) {
 			PeriodicRange<?> chunkRange = range.periodicity().range(current, range.end(), range.clearCache());
-			ds = DoubleStream.concat(ds, currentFunction.getValues(chunkRange).getSeries().get());
+			ds = DoubleStream.concat(ds, currentFunction.getSeries(chunkRange).get());
 		}
 		return ds;
 

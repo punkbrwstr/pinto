@@ -8,7 +8,6 @@ import java.util.stream.DoubleStream;
 
 import tech.pinto.Indexer;
 import tech.pinto.Column;
-import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.time.Period;
@@ -58,13 +57,11 @@ public class Expanding extends ComposableFunction {
 				PeriodicRange<Period> window = wf.range(windowStart, windowEnd, range.clearCache());
 
 				DoubleStream.Builder b = DoubleStream.builder();
-				ColumnValues input = null;
 				DoubleCollector dc = collectorSupplier.get();
-				input = (ColumnValues) inputs[0].getValues(window);
-				double[] output = input.getSeries().get().map(d -> {
-					dc.add(d);
-					return dc.finish();
-				}).toArray();
+				double[] output = inputs[0].getSeries(window).get().map(d -> {
+						dc.add(d);
+						return dc.finish();
+					}).toArray();
 				for (Period p : range.values()) {
 					int index = (int) window.indexOf(p.endDate());
 					if (index >= 0) {

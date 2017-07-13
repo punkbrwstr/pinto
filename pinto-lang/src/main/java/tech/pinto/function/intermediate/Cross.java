@@ -12,7 +12,6 @@ import java.util.stream.DoubleStream.Builder;
 
 import tech.pinto.Indexer;
 import tech.pinto.Column;
-import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 
@@ -32,8 +31,8 @@ public class Cross extends ComposableFunction {
 		return asList(new Column(inputs -> toString(),
 				inputs -> range -> {
 					Builder b = DoubleStream.builder();
-					List<OfDouble> l = stack.stream().map(c -> c.getValues(range)).map(c -> (ColumnValues) c)
-								.map(ColumnValues::getSeries).map(Optional::get).map(ds -> ds.iterator()).collect(Collectors.toList());
+					List<OfDouble> l = stack.stream().map(c -> c.getSeries(range))
+								.map(Optional::get).map(ds -> ds.iterator()).collect(Collectors.toList());
 					for(int i = 0; i < range.size(); i++) {
 						DoubleCollector dc = collectorSupplier.get();
 						l.forEach(di -> dc.add(di.nextDouble()));

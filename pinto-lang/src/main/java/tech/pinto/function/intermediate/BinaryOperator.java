@@ -10,7 +10,6 @@ import java.util.stream.DoubleStream;
 
 import tech.pinto.Indexer;
 import tech.pinto.Column;
-import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 
@@ -40,11 +39,10 @@ public class BinaryOperator extends ComposableFunction {
 			}
 			stack.add(new Column(inputs -> join(inputs[1].toString(), inputs[0].toString(), toString()),
 				inputs -> range -> {
-					ColumnValues a = inputs[0].getValues(range);
-					ColumnValues b = inputs[1].getValues(range);
-					OfDouble bIterator = b.getSeries().get().iterator();
-					DoubleStream outputStream = a.getSeries().get()
-							.map(aValue -> operator.applyAsDouble(bIterator.nextDouble(), aValue));
+					DoubleStream a = inputs[0].getSeries(range).get();
+					DoubleStream b = inputs[1].getSeries(range).get();
+					OfDouble bIterator = b.iterator();
+					DoubleStream outputStream = a.map(aValue -> operator.applyAsDouble(bIterator.nextDouble(), aValue));
 					return outputStream;
 				}, secondOperand, firstOperands.get(i)));
 			}

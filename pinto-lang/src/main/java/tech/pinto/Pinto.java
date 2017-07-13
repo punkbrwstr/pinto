@@ -18,14 +18,14 @@ public class Pinto {
 	@Inject
 	Namespace namespace;
 	//private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(getClass());
+	private ComposableFunction currentFunction = null;
 
 	@Inject
 	public Pinto() {
 	}
 
-	public List<TerminalFunction> execute(String expression) throws Exception {
-		List<TerminalFunction> output = new ArrayList<>();
-		ComposableFunction currentFunction = null;
+	public List<Table> execute(String expression) throws Exception {
+		List<Table> output = new ArrayList<>();
 		Indexer indexer = Indexer.ALL;
 		try (Scanner sc = new Scanner(expression)) {
 			while (sc.hasNext()) {
@@ -63,7 +63,7 @@ public class Pinto {
 						indexer = Indexer.ALL;
 					}
 					if (currentFunction instanceof TerminalFunction) {
-						output.add((TerminalFunction) currentFunction);
+						output.add(((TerminalFunction) currentFunction).getTable());
 						currentFunction = null;
 					}
 				}
@@ -71,6 +71,7 @@ public class Pinto {
 			}
 			return output;
 		} catch (RuntimeException e) {
+			currentFunction = null;
 			throw new Exception(e);
 		}
 	}

@@ -1,12 +1,10 @@
 package tech.pinto.function.terminal;
 
 
-import java.util.LinkedList;
-
-import tech.pinto.ColumnValues;
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
+import tech.pinto.Table;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.TerminalFunction;
@@ -19,7 +17,7 @@ public class Define extends TerminalFunction {
 	}
 	
 	@Override
-	public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException {
+	public Table getTable() throws PintoSyntaxException {
 		if(!(previousFunction.isPresent() && previousFunction.get() instanceof HeaderLiteral)) {
 			throw new PintoSyntaxException("Define requires a string literal for the name.");
 		}

@@ -6,19 +6,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import com.jakewharton.fliptables.FlipTable;
 
 import jline.console.ConsoleReader;
-import tech.pinto.function.TerminalFunction;
 import tech.pinto.tools.LogAppender;
-import tech.pinto.tools.Outputs;
 
 public class Console implements Runnable {
 	
@@ -79,17 +71,15 @@ public class Console implements Runnable {
 					}
 				} else {
 					try {
-				    	for(TerminalFunction tf : pinto.execute(line.toString())) {
-				    		Outputs.StringTable table = streamInReverse(tf.getColumnValues())
-				    				.collect(Outputs.columnValuesCollector(nf,tf.getRange()));
-				    		out.println(FlipTable.of(table.getHeader(), table.getCells()));
+				    	for(Table t : pinto.execute(line.toString())) {
+				    		out.println(FlipTable.of(t.headerToText(), t.seriesToText(nf)));
 				    	}
 					} catch (PintoSyntaxException pse) {
 						System.out.println("Incorrect syntax: " + pse.getMessage());
-						pse.printStackTrace();
+						//pse.printStackTrace();
 					} catch (Throwable e) {
-						System.out.println("Evaluation error");
-						e.printStackTrace();
+						System.out.println("Evaluation error: " + e.getMessage());
+						//e.printStackTrace();
 					}
 				}
 				out.flush();
@@ -100,10 +90,4 @@ public class Console implements Runnable {
 		}
 	}
 	
-	private static <T> Stream<T> streamInReverse(LinkedList<T> input) {
-		  Iterator<T> descendingIterator = input.descendingIterator();
-		  return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-		    descendingIterator, Spliterator.ORDERED), false);
-	}
-
 }

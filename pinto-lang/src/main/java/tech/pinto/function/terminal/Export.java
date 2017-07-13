@@ -1,28 +1,26 @@
 package tech.pinto.function.terminal;
 
 import java.io.BufferedWriter;
-
-
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.LinkedList;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import tech.pinto.Column;
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.PintoSyntaxException;
-import tech.pinto.ColumnValues;
+import tech.pinto.Table;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
-import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
-import tech.pinto.tools.Outputs;
 
 public class Export extends TerminalFunction {
 
@@ -31,7 +29,8 @@ public class Export extends TerminalFunction {
 	}
 
 	@Override
-	public LinkedList<ColumnValues> getColumnValues() throws PintoSyntaxException {
+	public Table getTable() throws PintoSyntaxException {
+		LinkedList<Column> stack = compose();
 		if(getArgs().length < 4) {
 			throw new PintoSyntaxException(name + " requires 4 arguments.");
 		}
@@ -40,12 +39,10 @@ public class Export extends TerminalFunction {
 							p.from(LocalDate.now()).previous().endDate();
 		LocalDate end = getArgs().length > 1 ? LocalDate.parse(getArgs()[1]) : 
 							p.from(LocalDate.now()).previous().endDate();
-		PeriodicRange<?> range = p.range(start, end, false);
-		Outputs.StringTable t = this.previousFunction.get().compose().stream()
-				.map(f -> f.getValues(range)).collect(Outputs.columnValuesCollector(range));
+		Table t = new Table(stack, Optional.of(p.range(start, end, false)));
 		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(getArgs()[3])))) {
-			out.println(Stream.of(t.getHeader()).collect(Collectors.joining(",")));
-			Stream.of(t.getCells())
+			out.println(Stream.of(t.headerToText()).collect(Collectors.joining(",")));
+			Stream.of(t.seriesToText(NumberFormat.getInstance()))
 						.forEach(line -> out.println(Stream.of(line).collect(Collectors.joining(","))));
 		} catch (IOException e) {
 				throw new IllegalArgumentException("Unable to open file \"" + getArgs()[3] + "\" for export");
@@ -63,6 +60,4 @@ public class Export extends TerminalFunction {
 				.parameter("filename")
 				.build();
 	}
-
-
 }

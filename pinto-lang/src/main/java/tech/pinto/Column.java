@@ -34,13 +34,6 @@ final public class Column implements Cloneable {
 		this.headerFunction = Optional.of(textFunction);
 		this.seriesFunction = Optional.empty();
 	}
-
-	public <P extends Period> ColumnValues getValues(PeriodicRange<P> range) {
-		Optional<String> header = headerFunction.isPresent() ? Optional.of(headerFunction.get().apply(inputs)) : Optional.empty(); 
-		Optional<DoubleStream> series = seriesFunction.isPresent() ? Optional.of(seriesFunction.get().apply(inputs).apply(range))
-				: Optional.empty();
-		return new ColumnValues(header, series);
-	}
 	
 	public Optional<String> getHeader() {
 		return headerFunction.isPresent() ? Optional.of(headerFunction.get().apply(inputs)) : Optional.empty();

@@ -11,7 +11,6 @@ import com.google.common.base.Joiner;
 
 import tech.pinto.Indexer;
 import tech.pinto.Column;
-import tech.pinto.ColumnValues;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.time.Period;
@@ -69,9 +68,8 @@ public class Rolling extends ComposableFunction {
 				Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (finalSize - 1));
 				Period windowEnd = wf.from(range.end().endDate());
 				PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
-				ColumnValues input = inputs[0].getValues(expandedWindow);
 				Builder b = DoubleStream.builder();
-				double[] data = input.getSeries().get().toArray();
+				double[] data = inputs[0].getSeries(expandedWindow).get().toArray();
 				for(Period p : range.values()) {
 					long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - finalSize + 1;
 					DoubleCollector dc = Arrays.stream(data, (int) windowStartIndex, (int) windowStartIndex + finalSize)

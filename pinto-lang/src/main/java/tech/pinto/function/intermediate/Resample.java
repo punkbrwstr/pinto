@@ -28,7 +28,7 @@ public class Resample extends ComposableFunction {
 				.build();
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	protected LinkedList<Column> compose(LinkedList<Column> stack) {
 		if(getArgs().length == 0) {
@@ -46,7 +46,7 @@ public class Resample extends ComposableFunction {
 				}
 				Period newEnd = newPeriodicity.from(range.end().endDate());
 				PeriodicRange newDr = newPeriodicity.range(newStart, newEnd, range.clearCache());
-				double[] d = inputs[0].getValues(newDr).getSeries().get().toArray();
+				double[] d = ((DoubleStream) inputs[0].getSeries(newDr).get()).toArray();
 				DoubleStream.Builder b = DoubleStream.builder();
 				range.values().stream().map(Period::endDate).forEach( ed ->
 						b.accept(d[(int) newDr.indexOf(newPeriodicity.roundDown(ed))]));

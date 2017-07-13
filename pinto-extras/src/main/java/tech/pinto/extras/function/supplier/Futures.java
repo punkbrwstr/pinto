@@ -205,8 +205,7 @@ public class Futures extends CachedFunction {
     	try {
     		String e = exp + " eval(" + range.start().endDate().toString() + ","
     					+ range.end().endDate().toString() + "," + range.periodicity().code() + ")";
-    		return pinto.execute(e).get(0).getColumnValues().get(0)
-    				.getSeries().get().toArray();
+    		return pinto.execute(e).get(0).getSeries(0).get().toArray();
     	} catch(PintoSyntaxException pse) {
     		throw new RuntimeException();
     	}

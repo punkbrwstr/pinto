@@ -2,22 +2,18 @@ package tech.pinto.tests;
 
 import org.junit.BeforeClass;
 
+
 import org.junit.Rule;
 
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import tech.pinto.Pinto;
-import tech.pinto.function.TerminalFunction;
-import tech.pinto.ColumnValues;
-import tech.pinto.time.PeriodicRange;
+import tech.pinto.Table;
 
 import static org.junit.Assert.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.DoubleStream;
+import java.util.Arrays;
 
 public class IndexTester {
 
@@ -36,8 +32,8 @@ public class IndexTester {
 
 	@Test
 	public void testWildcards() throws Exception {
-		List<ColumnValues> ts = pinto.execute("1 2 3 \"hotdiggitydog,burger,hotdog\" label [hot*dog] only eval").get(0).getColumnValues();
-		assertEquals("wildcard label", 2, ts.size());
+		Table t = pinto.execute("1 2 3 \"hotdiggitydog,burger,hotdog\" label [hot*dog] only eval").get(0);
+		assertEquals("wildcard label", 2, t.getColumnCount());
 	}
 
 	/*@Test
@@ -51,53 +47,37 @@ public class IndexTester {
 
 	@Test
 	public void testNumbers() throws Exception {
-		List<ColumnValues> ts = pinto.execute("1 2 3 [0] eval").get(0).getColumnValues();
-		assertEquals("number index (simple) value", 3.0, ts.get(0).getSeries().get().toArray()[0],0.1);
-		ts = pinto.execute("1 2 3 [-1] eval").get(0).getColumnValues();
-		assertEquals("number index (neg) value",1.0, ts.get(0).getSeries().get().toArray()[0],0.1);
-		ts = pinto.execute("1 2 3 [1:2] eval").get(0).getColumnValues();
-		assertEquals("number index (range) value",2.0, ts.get(0).getSeries().get().toArray()[0],0.1);
-		ts = pinto.execute("1 2 3 [-3:-1] eval").get(0).getColumnValues();
-		assertEquals("number index (range w/ neg) value",2.0, ts.get(1).getSeries().get().toArray()[0],0.1);
-		ts = pinto.execute("1 2 3 [2,1,0] eval").get(0).getColumnValues();
-		assertEquals("number index (list) value", 2.0, ts.get(1).getSeries().get().toArray()[0],0.1);
-		/*ts = pinto.execute("1 2 3 rev [~] label(a,b,c) [1,1] neg eval").get(0).getColumnValues().get();
-		double sum = ts.stream().map(TimeSeries::stream).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
-		assertEquals("number index (list) value", 0.0, sum, 0.1);*/
-
-
+		Table ts = pinto.execute("1 2 3 [0] eval").get(0);
+		assertEquals("number index (simple) value", 3.0, first(0,ts),0.1);
+		ts = pinto.execute("1 2 3 [-1] eval").get(0);
+		assertEquals("number index (neg) value",1.0, first(0,ts),0.1);
+		ts = pinto.execute("1 2 3 [1:2] eval").get(0);
+		assertEquals("number index (range) value",2.0, first(0,ts),0.1);
+		ts = pinto.execute("1 2 3 [-3:-1] eval").get(0);
+		assertEquals("number index (range w/ neg) value",2.0, first(1,ts),0.1);
+		ts = pinto.execute("1 2 3 [2,1,0] eval").get(0);
+		assertEquals("number index (list) value", 2.0, first(1,ts),0.1);
 	}
 
 	@Test
 	public void testLabels() throws Exception {
-		List<ColumnValues> ts = pinto.execute("1 2 3 \"a,b,c\" label [c] eval").get(0).getColumnValues();
-		assertEquals("label index (simple) value", 3.0, ts.get(0).getSeries().get().toArray()[0], 0.1);
-		ts = pinto.execute("1 2 3 \"a,b,c\" label [b,b] neg eval").get(0).getColumnValues();
-		double sum = ts.stream().map(ColumnValues::getSeries).map(Optional::get).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
-		assertEquals("label index (get one twice) value", sum,0.0,0.1);
-		ts = pinto.execute("1 2 3 \"b,b,a\" label [b] neg eval").get(0).getColumnValues();
-		sum = ts.stream().map(ColumnValues::getSeries).map(Optional::get).map(DoubleStream::toArray).mapToDouble(a -> a[0]).sum();
-		assertEquals("label index (repeated label) value", sum,0.0,0.1);
+		Table ts = pinto.execute("1 2 3 \"a,b,c\" label [c] eval").get(0);
+		assertEquals("label index (simple) value", 3.0, first(0,ts), 0.1);
+		ts = pinto.execute("1 2 3 \"a,b,c\" label [b,b] neg eval").get(0);
+		assertEquals("repeated label index", sumRow(0,ts),0.0,0.1);
+		ts = pinto.execute("1 2 3 \"b,b,a\" label [b] neg eval").get(0);
+		assertEquals("label index (repeated label) value", sumRow(0,ts),0.0,0.1);
 		
 	}
+	
+	
 
-	@SuppressWarnings("unused")
-	private double[][] run(String line) throws Exception {
-		TerminalFunction tf = pinto.execute(line).get(0);
-		List<ColumnValues> dd = tf.getColumnValues();
-		if(dd.size() > 0) {
-			PeriodicRange<?> range = tf.getRange().get();
-			double[][] table = new double[dd.size()][(int) range.size()];
-			for(AtomicInteger i = new AtomicInteger(0); i.get() < dd.size();i.incrementAndGet()) {
-				AtomicInteger j = new AtomicInteger(0);
-				dd.get(i.get()).getSeries().get().forEach(
-						d -> table[i.get()][j.getAndIncrement()] = d);
-			}
-			return table;
-		} else {
-			return null;
-		}
-			
+	private double sumRow(int row, Table t) {
+		return Arrays.stream(t.toRowMajorArray().get()[0]).sum();
+	}
+	
+	private double first(int column, Table t) {
+		return t.getSeries(column).get().limit(1).sum();
 	}
 
 

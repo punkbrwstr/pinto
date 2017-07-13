@@ -13,7 +13,6 @@ import com.google.common.base.Joiner;
 
 import tech.pinto.Indexer;
 import tech.pinto.Column;
-import tech.pinto.ColumnValues;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
@@ -60,9 +59,8 @@ public class RollingCorrelation extends ComposableFunction {
 					PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
 					
 					
-					List<double[]> inputs = Stream.of(inputArray).map(c -> c.getValues(expandedWindow))
-										.map(d -> (ColumnValues) d).map(ColumnValues::getSeries).map(Optional::get).map(DoubleStream::toArray)
-										.collect(Collectors.toList());
+					List<double[]> inputs = Stream.of(inputArray).map(c -> c.getSeries(expandedWindow))
+										.map(Optional::get).map(DoubleStream::toArray).collect(Collectors.toList());
 					
 					Builder b = DoubleStream.builder();
 					double[] input = new double[inputs.size()];
