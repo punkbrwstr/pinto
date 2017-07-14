@@ -9,15 +9,16 @@ import javax.inject.Inject;
 
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
-import tech.pinto.function.header.HeaderLiteral;
-import tech.pinto.function.intermediate.Head;
-import tech.pinto.function.supplier.SeriesLiteral;
+import tech.pinto.function.functions.Constant;
+import tech.pinto.function.functions.Head;
+import tech.pinto.function.functions.HeaderLiteral;
 
 public class Pinto {
 
 	@Inject
 	Namespace namespace;
-	//private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(getClass());
+	// private final org.slf4j.Logger log =
+	// org.slf4j.LoggerFactory.getLogger(getClass());
 	private ComposableFunction currentFunction = null;
 
 	@Inject
@@ -29,37 +30,38 @@ public class Pinto {
 		Indexer indexer = Indexer.ALL;
 		try (Scanner sc = new Scanner(expression)) {
 			while (sc.hasNext()) {
-				if (sc.hasNext(Pattern.compile("\\[.*"))) { // index
+				if (sc.hasNext(Pattern.compile("\\[.*"))) { // indexer
 					indexer = new Indexer(parseIndexString(sc));
 				} else {
-					if(currentFunction == null) {
+					if (currentFunction == null) {
 						currentFunction = new Head(indexer);
 						indexer = Indexer.ALL;
 					}
 					if (sc.hasNextDouble()) { // double literal
 						final double d = sc.nextDouble();
-						currentFunction = new SeriesLiteral(currentFunction, indexer, d);
+						currentFunction = new Constant(currentFunction, indexer, d);
 						indexer = Indexer.ALL;
-					} else if(sc.hasNext(Pattern.compile("\".*"))) {
+					} else if (sc.hasNext(Pattern.compile("\".*"))) { // string literal
 						StringBuilder sb = new StringBuilder();
 						do {
-							if(!sc.hasNext()) {
+							if (!sc.hasNext()) {
 								throw new PintoSyntaxException("Unmatched double quote in literal.");
 							}
 							sb.append(sc.next()).append(" ");
-						} while(countOccurrences(sb.toString(), '"') < 2);
-						currentFunction = new HeaderLiteral(currentFunction, indexer, sb.toString().replaceAll("\"", "").trim());
-						
-					} else {
-						String s = sc.next();
-						String commandName = s.contains("(") ? s.substring(0, s.indexOf("(")) : s;
-						if (!namespace.contains(commandName)) {
-							throw new PintoSyntaxException("Name not found: \"" + s + "\" in expression \"" + expression + "\"");
+						} while (countOccurrences(sb.toString(), '"') < 2);
+						currentFunction = new HeaderLiteral(currentFunction, indexer,
+								sb.toString().replaceAll("\"", "").trim());
+						// keep indexer for next function
+					} else { // function
+						String name = sc.next();
+						if (!namespace.contains(name)) {
+							throw new PintoSyntaxException(
+									"Name not found: \"" + name + "\" in expression \"" + expression + "\"");
 						}
 						try {
-							currentFunction = namespace.getFunction(commandName, this, currentFunction, indexer);
+							currentFunction = namespace.getFunction(name, this, currentFunction, indexer);
 						} catch (IllegalArgumentException e) {
-								throw new PintoSyntaxException("Wrong arguments for " + commandName + ": " + e.getMessage(), e);
+							throw new PintoSyntaxException("Wrong arguments for " + name + ": " + e.getMessage(), e);
 						}
 						indexer = Indexer.ALL;
 					}
@@ -82,26 +84,26 @@ public class Pinto {
 	}
 
 	private String parseIndexString(Scanner scanner) throws PintoSyntaxException {
-			StringBuilder sb = new StringBuilder();
-			String next = null;
-			do {
-				if(!scanner.hasNext()) {
-					throw new PintoSyntaxException("Missing \"]\" for index.");
-				}
-				next = scanner.next();
-				sb.append(next);
-			} while (!next.contains("]"));
-			return sb.toString().replaceAll("\\[|\\]", "").replaceAll("\\s", "");
+		StringBuilder sb = new StringBuilder();
+		String next = null;
+		do {
+			if (!scanner.hasNext()) {
+				throw new PintoSyntaxException("Missing \"]\" for index.");
+			}
+			next = scanner.next();
+			sb.append(next);
+		} while (!next.contains("]"));
+		return sb.toString().replaceAll("\\[|\\]", "").replaceAll("\\s", "");
 	}
-	
+
 	public static int countOccurrences(String haystack, char needle) {
-	    int count = 0;
-	    for(int i=0; i < haystack.length(); i++) {
-	        if (haystack.charAt(i) == needle) {
-	             count++;
-	        }
-	    }
-	    return count;
+		int count = 0;
+		for (int i = 0; i < haystack.length(); i++) {
+			if (haystack.charAt(i) == needle) {
+				count++;
+			}
+		}
+		return count;
 	}
 
 }

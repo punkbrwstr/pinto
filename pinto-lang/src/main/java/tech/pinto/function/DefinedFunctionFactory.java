@@ -3,7 +3,7 @@ package tech.pinto.function;
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
 import tech.pinto.Pinto;
-import tech.pinto.function.intermediate.Defined;
+import tech.pinto.function.functions.Defined;
 
 public class DefinedFunctionFactory implements FunctionFactory {
 

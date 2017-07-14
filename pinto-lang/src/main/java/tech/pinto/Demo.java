@@ -26,8 +26,8 @@ import dagger.Provides;
 import jline.TerminalFactory;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.TerminalFunction;
-import tech.pinto.function.header.HeaderLiteral;
-import tech.pinto.function.supplier.ImportCSV;
+import tech.pinto.function.functions.HeaderLiteral;
+import tech.pinto.function.functions.ImportCSV;
 import tech.pinto.tools.LogAppender;
 
 public class Demo {

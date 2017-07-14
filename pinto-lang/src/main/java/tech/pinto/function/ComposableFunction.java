@@ -1,7 +1,6 @@
 package tech.pinto.function;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Optional;
@@ -151,28 +150,6 @@ public abstract class ComposableFunction implements Cloneable {
 		} catch (CloneNotSupportedException e) { throw new RuntimeException(); }
 	}
     
-    protected static <T> LinkedList<T> reverse(LinkedList<T> list) {
-		LinkedList<T> reversed = new LinkedList<>();
-		list.stream().forEach(reversed::addFirst);
-		return reversed;
-    }
-	
-    protected static String join(String... s) {
-        return Stream.of(s).collect(Collectors.joining(" "));
-    }
-
-    protected static String join(Stream<String> s1, String... s) {
-        return Stream.concat(s1, Stream.of(s)).collect(Collectors.joining(" "));
-    }
-    
-    protected static String join(Collection<String> s) {
-    	return s.stream().collect(Collectors.joining(" "));
-    }
-
-    protected static LinkedList<Column> asList(Column... functions) {
-    	return Arrays.stream(functions).collect(Collectors.toCollection(() -> new LinkedList<Column>()));
-    }
-    
     public boolean isHead() {
     	return !previousFunction.isPresent();
     }
@@ -189,4 +166,12 @@ public abstract class ComposableFunction implements Cloneable {
 		return parameterType;
 	}
 
+    protected static String join(String... s) {
+        return Stream.of(s).collect(Collectors.joining(" "));
+    }
+
+    protected static LinkedList<Column> asList(Column... functions) {
+    	return Arrays.stream(functions).collect(Collectors.toCollection(() -> new LinkedList<Column>()));
+    }
+    
 }
