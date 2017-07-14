@@ -69,6 +69,14 @@ public class IndexTester {
 		assertEquals("label index (repeated label) value", sumRow(0,ts),0.0,0.1);
 		
 	}
+
+	@Test
+	public void testCopyAndRepeat() throws Exception {
+		pinto.execute("[&0] 1 + \"function_that_copies\" def");
+		Table t = pinto.execute("98 99 [0+] function_that_copies eval").get(0);
+		assertEquals("Repeat a defined that copies", t.getColumnCount(),4);
+		assertEquals("Repeat a defined that copies", first(1,t),99, 0.1);
+	}
 	
 	
 
