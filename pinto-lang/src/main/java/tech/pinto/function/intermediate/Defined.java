@@ -23,7 +23,6 @@ public class Defined extends ComposableFunction {
 	@Override
 	public LinkedList<Column> compose() throws PintoSyntaxException {
 		ComposableFunction clone = namespace.getFunction(name.get(), null, null, null);
-		//Optional<ComposableFunction> second = clone.getSecondToHead();
 		if(!previousFunction.get().isHead()) {
 			Head head = (Head) clone.getHead();
 			head.setPrevious(previousFunction.get());
@@ -31,11 +30,15 @@ public class Defined extends ComposableFunction {
             if(!indexer.isEverything()) {
 			    head.setIndexer(indexer);
             }
+            LinkedList<Column> outputs = new LinkedList<>();
+            while(head.hasInputs()) {
+            	outputs.addAll(clone.compose());
+            }
+            outputs.addAll(skippedInputs);
+            return outputs;
+		} else {
+			return clone.compose();
 		}
-		LinkedList<Column> outputs = new LinkedList<>();
-		outputs.addAll(clone.compose());
-		outputs.addAll(skippedInputs);
-		return outputs;
 	}
 	
 	public void addSkippedInputs(LinkedList<Column> skippedInputs) {
