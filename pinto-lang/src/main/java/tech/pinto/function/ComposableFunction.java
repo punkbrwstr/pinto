@@ -18,11 +18,11 @@ public abstract class ComposableFunction implements Cloneable {
     
 
 	protected final Optional<String> name;
+    protected Optional<ComposableFunction> previousFunction;
+    protected final Indexer indexer;
 	protected final ParameterType parameterType;
 	private Optional<Supplier<String[]>> argumentSupplier = Optional.empty();
 	private String[] cachedArguments = null; 
-    protected Indexer indexer;
-    protected Optional<ComposableFunction> previousFunction;
     protected boolean subFunction = false;
     
 
@@ -145,7 +145,7 @@ public abstract class ComposableFunction implements Cloneable {
 			clone = (ComposableFunction) super.clone();
 			clone.previousFunction = previousFunction.isPresent() ? 
 					Optional.of((ComposableFunction) previousFunction.get().clone()) : Optional.empty();
-			clone.indexer = indexer.clone();
+			//clone.indexer = indexer.clone();
 			clone.cachedArguments = null;
 			return clone;
 		} catch (CloneNotSupportedException e) { throw new RuntimeException(); }
@@ -179,14 +179,6 @@ public abstract class ComposableFunction implements Cloneable {
 
 	public Indexer getIndexer() {
 		return indexer;
-	}
-
-	public void setIndexer(Indexer indexer) {
-		this.indexer = indexer;
-	}
-
-	public void setPreviousFunction(Optional<ComposableFunction> previousFunction) {
-		this.previousFunction = previousFunction;
 	}
 
 	public Optional<String> getName() {

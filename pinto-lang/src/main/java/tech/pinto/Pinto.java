@@ -34,6 +34,7 @@ public class Pinto {
 				} else {
 					if(currentFunction == null) {
 						currentFunction = new Head(indexer);
+						indexer = Indexer.ALL;
 					}
 					if (sc.hasNextDouble()) { // double literal
 						final double d = sc.nextDouble();

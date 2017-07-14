@@ -27,9 +27,7 @@ public class Defined extends ComposableFunction {
 			Head head = (Head) clone.getHead();
 			head.setPrevious(previousFunction.get());
 			head.setDefinedTail(this);
-            if(!indexer.isEverything()) {
-			    head.setIndexer(indexer);
-            }
+			head.setPreIndexer(indexer);
             LinkedList<Column> outputs = new LinkedList<>();
             while(head.hasInputs()) {
             	outputs.addAll(clone.compose());

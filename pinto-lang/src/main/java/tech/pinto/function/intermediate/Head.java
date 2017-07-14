@@ -13,6 +13,7 @@ public class Head extends ComposableFunction {
 
 	private Optional<Defined> definedTail = Optional.empty();
 	private LinkedList<Column> inputs = null;
+	private Optional<Indexer> preIndexer = Optional.empty();
 
 	public Head(Indexer indexer) {
 		super(Optional.empty(), Optional.empty(), indexer, ParameterType.no_arguments);
@@ -29,7 +30,15 @@ public class Head extends ComposableFunction {
 		}
 		LinkedList<Column> outputs = null;
 		try {
-			outputs = indexer.index(inputs);
+			LinkedList<Column> actualInputs;
+			if(preIndexer.isPresent()) {
+				actualInputs = preIndexer.get().index(inputs);
+				outputs = indexer.index(actualInputs);
+				inputs.addAll(actualInputs);
+			} else {
+				actualInputs = inputs;
+				outputs = indexer.index(inputs);
+			}
 		} catch (PintoSyntaxException pse) {
 			if (inputs.size() > 0) {
 				definedTail.ifPresent(dt -> dt.addSkippedInputs(inputs));
@@ -40,16 +49,15 @@ public class Head extends ComposableFunction {
 			}
 		}
 
-		if (!indexer.isRepeated()) {
+		if (preIndexer.isPresent() && ! preIndexer.get().isRepeated()) {
 			definedTail.ifPresent(dt -> dt.addSkippedInputs(inputs));
 			inputs.clear();
 		}
 		return outputs;
 	}
-
-	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
-		return stack;
+	
+	public void setPreIndexer(Indexer indexer) {
+		this.preIndexer = Optional.of(indexer);
 	}
 
 	public void setDefinedTail(Defined definedTail) {
@@ -58,5 +66,10 @@ public class Head extends ComposableFunction {
 
 	public void setPrevious(ComposableFunction previousFunction) {
 		this.previousFunction = Optional.of(previousFunction);
+	}
+
+	@Override
+	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+		return stack;
 	}
 }
