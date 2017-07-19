@@ -39,7 +39,7 @@ public class Rolling extends ComposableFunction {
 		Optional<Periodicity<?>> windowFrequency;
 		if(getArgs().length < 1) {
 			if(countIncludesCurrent) {
-				throw new IllegalArgumentException("window requires at least one parameter (window size)");
+				throw new IllegalArgumentException(name + " requires at least one argument (window size)");
 			} else {
 				size = 2;
 			}

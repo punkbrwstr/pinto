@@ -46,6 +46,28 @@ public abstract class ComposableFunction implements Cloneable {
     public LinkedList<Column> compose() throws PintoSyntaxException {
     	LinkedList<Column> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
     	LinkedList<Column> outputs = new LinkedList<>();
+    	int i = 0;
+    	do {
+    		try {
+    			LinkedList<Column> indexedInputs = indexer.index(inputs);
+    			if(argumentSupplier == null) {
+    				parseArgs(indexedInputs);
+    			}
+    			outputs.addAll(compose(indexedInputs));
+    		} catch(PintoSyntaxException pse) {
+    			if(i > 0) {
+    				break;
+    			} else {
+    				throw pse;
+    			}
+    		}
+    		i++;
+    	} while(indexer.isRepeated() && inputs.size() > 0);
+    	outputs.addAll(inputs);
+    	return outputs;
+    }
+    
+    private void parseArgs(LinkedList<Column> inputs) throws PintoSyntaxException {
     	if(parameterType.equals(ParameterType.arguments_optional) || 
     			parameterType.equals(ParameterType.arguments_required)) {
     		if(inputs.size() > 0 && inputs.getFirst().getHeaderFunction().isPresent() &&
@@ -58,21 +80,6 @@ public abstract class ComposableFunction implements Cloneable {
     			}
     		}
     	}
-    	int i = 0;
-    	do {
-    		try {
-    			outputs.addAll(compose(indexer.index(inputs)));
-    		} catch(PintoSyntaxException pse) {
-    			if(i > 0) {
-    				break;
-    			} else {
-    				throw pse;
-    			}
-    		}
-    		i++;
-    	} while(indexer.isRepeated() && inputs.size() > 0);
-    	outputs.addAll(inputs);
-    	return outputs;
     }
 
 	protected String[] getArgs() {

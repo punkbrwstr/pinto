@@ -76,10 +76,10 @@ public class Console implements Runnable {
 				    	}
 					} catch (PintoSyntaxException pse) {
 						System.out.println("Incorrect syntax: " + pse.getMessage());
-						//pse.printStackTrace();
+						pse.printStackTrace();
 					} catch (Throwable e) {
 						System.out.println("Evaluation error: " + e.getMessage());
-						//e.printStackTrace();
+						e.printStackTrace();
 					}
 				}
 				out.flush();

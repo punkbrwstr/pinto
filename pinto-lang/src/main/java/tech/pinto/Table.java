@@ -116,7 +116,7 @@ public class Table {
 					colData.get().forEach(d -> table[row.getAndIncrement()][columns.size() - thisCol] = nf.format(d));
 				} else {
 					for(int row = 0; row < range.get().size(); row++) {
-						table[row][col + 1] = "";
+						table[row][columns.size() - col] = "";
  					}
 				}
 				
