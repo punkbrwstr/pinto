@@ -17,7 +17,7 @@ public class Reverse extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		Collections.reverse(stack);
 		return stack;
 	}

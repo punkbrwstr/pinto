@@ -30,7 +30,7 @@ public class RollingCorrelation extends ComposableFunction {
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		int size;
 		Optional<Periodicity<?>> windowFrequency;
 		if(getArgs().length < 1) {

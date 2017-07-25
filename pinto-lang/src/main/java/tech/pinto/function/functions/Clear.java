@@ -16,7 +16,7 @@ final public class Clear extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		stack.clear();
 		return stack;
 	}

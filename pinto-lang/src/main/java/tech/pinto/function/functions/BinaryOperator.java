@@ -23,7 +23,7 @@ public class BinaryOperator extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		int fixedCount = getArgs().length > 0 ? Integer.parseInt(getArgs()[0]) : 1;
 		if (stack.size() < fixedCount + 1) {
 			throw new IllegalArgumentException("Not enough inputs for " + name.get());

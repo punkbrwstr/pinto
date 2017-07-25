@@ -45,7 +45,7 @@ abstract public class CachedFunction extends ComposableFunction {
 	abstract protected int columns();
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		for (int i = 0; i < columns(); i++) {
 			final int index = i;
 			stack.addFirst(new Column(inputs -> getCachedText().get(index),

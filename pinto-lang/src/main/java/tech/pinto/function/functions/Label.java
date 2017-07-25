@@ -20,7 +20,7 @@ public class Label extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		List<String> l = Arrays.asList(getArgs());
 		List<String> labels = l.subList(0, Math.min(l.size(), stack.size()));
 		ArrayDeque<Column> temp = new ArrayDeque<>();

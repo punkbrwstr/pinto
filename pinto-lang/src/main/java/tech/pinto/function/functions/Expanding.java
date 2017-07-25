@@ -35,7 +35,7 @@ public class Expanding extends ComposableFunction {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		Optional<Periodicity<?>> windowFrequency;
 		Optional<LocalDate> start = getArgs().length == 0 ? Optional.empty() : Optional.of(LocalDate.parse(getArgs()[0]));
 		if (getArgs().length < 2) {

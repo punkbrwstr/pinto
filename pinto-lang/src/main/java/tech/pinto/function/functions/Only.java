@@ -19,19 +19,9 @@ public class Only extends ComposableFunction {
     public LinkedList<Column> compose() throws PintoSyntaxException {
     	LinkedList<Column> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
     	LinkedList<Column> outputs = new LinkedList<>();
-    	int i = 0;
-    	do {
-    		try {
-    			outputs.addAll(indexer.index(inputs));
-    		} catch(PintoSyntaxException pse) {
-    			if(i > 0) {
-    				break;
-    			} else {
-    				throw pse;
-    			}
-    		}
-    		i++;
-    	} while(indexer.isRepeated() && inputs.size() > 0);
+    	for(LinkedList<Column> indexedInputs : indexer.index(inputs)) {
+    		outputs.addAll(apply(indexedInputs));
+    	} 
     	return outputs;
     }
 	
@@ -43,7 +33,7 @@ public class Only extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		return stack;
 	}
 

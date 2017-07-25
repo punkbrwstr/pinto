@@ -37,7 +37,7 @@ public class Fill extends ComposableFunction {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		String periodicityCode = getArgs().length < 1 ? "BQ-DEC" : getArgs()[0];
 		LinkedList<Column> outputs = new LinkedList<>();
 		for (Column function : stack) {

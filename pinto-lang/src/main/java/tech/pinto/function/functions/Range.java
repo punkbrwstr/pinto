@@ -16,7 +16,7 @@ public class Range extends ComposableFunction {
 	}
 	
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		int count = getArgs().length > 0 ? Integer.parseInt(getArgs()[0]) : 5;
 		IntStream.range(0,count).mapToDouble(i -> (double)i).mapToObj(
 				value -> new Column(inputs -> Double.toString(value),

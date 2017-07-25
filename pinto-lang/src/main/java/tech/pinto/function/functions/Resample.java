@@ -30,7 +30,7 @@ public class Resample extends ComposableFunction {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		if(getArgs().length == 0) {
 			throw new IllegalArgumentException(name + " requires a periodicity as an argument.");
 		} else if(!Periodicities.allCodes().contains(getArgs()[0])) {

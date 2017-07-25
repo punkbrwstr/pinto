@@ -14,7 +14,7 @@ public class Roll extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		int times = getArgs().length == 0 ? 1 : Integer.parseInt(getArgs()[0]);
 		for(int i = 0; i < times; i++) {
 			stack.addFirst(stack.removeLast());

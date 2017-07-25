@@ -22,7 +22,7 @@ public class Join extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		return asList(new Column(inputs -> toString(), inputs -> range -> evaluationFunction(range, inputs),
 				stack.toArray(new Column[] {})));
 	}

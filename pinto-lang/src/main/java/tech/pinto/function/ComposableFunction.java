@@ -41,28 +41,17 @@ public abstract class ComposableFunction implements Cloneable {
         this.previousFunction = previousFunction;
     }
     
-	abstract protected LinkedList<Column> compose(LinkedList<Column> stack);
+	abstract protected LinkedList<Column> apply(LinkedList<Column> stack);
 	
     public LinkedList<Column> compose() throws PintoSyntaxException {
     	LinkedList<Column> inputs = previousFunction.isPresent() ? previousFunction.get().compose() : new LinkedList<>();
     	LinkedList<Column> outputs = new LinkedList<>();
-    	int i = 0;
-    	do {
-    		try {
-    			LinkedList<Column> indexedInputs = indexer.index(inputs);
-    			if(argumentSupplier == null) {
-    				parseArgs(indexedInputs);
-    			}
-    			outputs.addAll(compose(indexedInputs));
-    		} catch(PintoSyntaxException pse) {
-    			if(i > 0) {
-    				break;
-    			} else {
-    				throw pse;
-    			}
+    	for(LinkedList<Column> indexedInputs : indexer.index(inputs)) {
+    		if(!argumentSupplier.isPresent()) {
+    			parseArgs(indexedInputs);
     		}
-    		i++;
-    	} while(indexer.isRepeated() && inputs.size() > 0);
+    		outputs.addAll(apply(indexedInputs));
+    	} 
     	outputs.addAll(inputs);
     	return outputs;
     }
@@ -112,9 +101,7 @@ public abstract class ComposableFunction implements Cloneable {
     	StringBuilder expression = previousFunction.isPresent() ?
     			previousFunction.get().toExpression() : new StringBuilder();
     	if(name.isPresent() && ! subFunction) {
-    		if(!indexer.isEverything()) {
-    			expression.append(indexer.toString()).append(" ");
-    		}
+    		expression.append(indexer.toString()).append(" ");
     		expression.append(toString()).append(" ");
     	}
     	return expression;

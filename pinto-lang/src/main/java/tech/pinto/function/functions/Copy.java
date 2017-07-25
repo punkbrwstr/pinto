@@ -17,7 +17,7 @@ public class Copy extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		int times = getArgs().length == 0 ? 2 : Integer.parseInt(getArgs()[0]);
 		ArrayDeque<Column> temp = new ArrayDeque<>();
         stack.stream().forEach(temp::addFirst);

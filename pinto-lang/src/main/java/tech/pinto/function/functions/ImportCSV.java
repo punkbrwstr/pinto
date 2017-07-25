@@ -29,7 +29,7 @@ public class ImportCSV extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		if (getArgs().length < 1) {
 			throw new IllegalArgumentException(name + " requires at least one argument.");
 		}

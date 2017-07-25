@@ -12,7 +12,6 @@ import tech.pinto.function.ParameterType;
 public class Defined extends ComposableFunction {
 	
 	private final Namespace namespace;
-	private LinkedList<Column> skippedInputs = new LinkedList<>();
 
 	public Defined(String name, Namespace namespace, ComposableFunction previousFunction, 
 			Indexer indexer) {
@@ -22,37 +21,21 @@ public class Defined extends ComposableFunction {
 
 	@Override
 	public LinkedList<Column> compose() throws PintoSyntaxException {
+		LinkedList<Column> outputs = new LinkedList<>();
 		ComposableFunction clone = namespace.getFunction(name.get(), null, null, null);
-		if(!previousFunction.get().isHead()) {
-			Head head = (Head) clone.getHead();
-			head.setPrevious(previousFunction.get());
-			head.setDefinedTail(this);
-			head.setPreIndexer(indexer);
-            LinkedList<Column> outputs = new LinkedList<>();
-            while(head.hasInputs()) {
-            	outputs.addAll(clone.compose());
-            	outputs.addAll(skippedInputs);
-            	skippedInputs.clear();
-            }
-            return outputs;
-		} else {
-			return clone.compose();
+		Head head = (Head) clone.getHead();
+		LinkedList<Column> inputs = previousFunction.get().compose();
+		for(LinkedList<Column> definedInputs : indexer.index(inputs)) {
+			head.setInputs(definedInputs);
+           	outputs.addAll(clone.compose());
+           	outputs.addAll(definedInputs);
 		}
+		outputs.addAll(inputs);
+		return outputs;
 	}
 	
-	public void addSkippedInputs(LinkedList<Column> skippedInputs) {
-		this.skippedInputs.addAll(skippedInputs);
-	}
-
 	@Override
-	protected Object clone() {
-		Defined clone = (Defined) super.clone();
-		clone.skippedInputs = new LinkedList<>();
-		return clone;
-	}
-
-	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 		return stack;
 	}
 	

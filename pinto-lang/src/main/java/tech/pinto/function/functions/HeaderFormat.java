@@ -26,7 +26,7 @@ public class HeaderFormat extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> compose(LinkedList<Column> stack) {
+	protected LinkedList<Column> apply(LinkedList<Column> stack) {
 			MessageFormat mf = new MessageFormat(getHeaderFormat());
 			ArrayDeque<Column> temp = new ArrayDeque<>();
 			while(!stack.isEmpty()) {
