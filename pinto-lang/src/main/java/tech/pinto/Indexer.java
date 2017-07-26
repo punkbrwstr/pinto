@@ -50,9 +50,13 @@ public class Indexer implements Cloneable {
 		TreeSet<Integer> alreadyUsed = new TreeSet<>();
 		LinkedList<Column> indexed = new LinkedList<>();
 		for(StackOperation o : ops) {
-			Column c = stack.get(o.getOrdinal());
-			indexed.add(o.isCopy() || alreadyUsed.contains(o.getOrdinal()) ? c.clone() : c);
-			alreadyUsed.add(o.getOrdinal());
+			if(!alreadyUsed.contains(o.getOrdinal())) {
+				Column c = stack.get(o.getOrdinal());
+				indexed.add(o.isCopy() ? c.clone() : c);
+				if(!o.isCopy()) {
+					alreadyUsed.add(o.getOrdinal());
+				}
+			}
 		}
 		new TreeSet<>(ops).descendingIterator().forEachRemaining(o -> {
 			if(!o.isCopy()) {
@@ -93,12 +97,21 @@ public class Indexer implements Cloneable {
 		private Optional<Integer> ordinal = Optional.empty();
 		private Optional<Integer> sliceStart = Optional.empty();
 		private Optional<Integer> sliceEnd = Optional.empty();
+		private Optional<Index> or = Optional.empty();
 		private boolean copy = false;
 		private boolean repeat = false;
 		private boolean optional = false;
 		private boolean everything = false;
 		
 		public Index(String s) throws PintoSyntaxException {
+			if(s.contains("|")) {
+				String[] thisOrThat = s.split("\\|");
+				if(thisOrThat.length != 2) {
+					throw new PintoSyntaxException("Index \"|\" should separate a pair of index expressions.");
+				}
+				or = Optional.of(new Index(thisOrThat[1]));
+				s = thisOrThat[0];
+			}
 			if(s.contains("+")) {
 				repeat = true;
 				s = s.replace("+", "");
@@ -187,13 +200,17 @@ public class Indexer implements Cloneable {
 				}
 				boolean found = false;
 				for(int n = 0; n < stack.size(); n++) {
-					if(test.test(stack.get(n).getHeader().orElse(""))) {
+					if(test.test(stack.get(n).getHeader())) {
 						ops.add(new StackOperation(n, isCopy()));
 						found = true;
 					}
 				}
 				if(!found && !optional) {
-					throw new PintoSyntaxException("Missing required index header \"" + query + "\"");
+					if(or.isPresent()) {
+						ops.addAll(or.get().index(stack));
+					} else {
+						throw new PintoSyntaxException("Missing required index header \"" + query + "\"");
+					}
 				}
 			}
 			return ops;

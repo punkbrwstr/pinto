@@ -134,7 +134,7 @@ public class FunctionTester {
 	
 		
 	private double sumColumn(int col, Table t) {
-		return t.getSeries(col).get().sum();
+		return t.getSeries(col).sum();
 	}
 
 	private double sumRow(int row, Table t) {
@@ -142,11 +142,11 @@ public class FunctionTester {
 	}
 	
 	private double first(int column, Table t) {
-		return t.getSeries(column).get().limit(1).sum();
+		return t.getSeries(column).limit(1).sum();
 	}
 
 	private double last(int column, Table t) {
-		return t.getSeries(column).get().skip(t.getRowCount().get()-1).sum();
+		return t.getSeries(column).skip(t.getRowCount()-1).sum();
 	}
 
 

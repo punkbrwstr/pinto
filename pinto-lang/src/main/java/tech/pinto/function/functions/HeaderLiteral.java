@@ -18,7 +18,7 @@ public class HeaderLiteral extends ComposableFunction {
 
 	@Override
 	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-		stack.addFirst(new Column(inputs -> value));
+		stack.addFirst(new Column(value));
 		return stack;
 	}
 	

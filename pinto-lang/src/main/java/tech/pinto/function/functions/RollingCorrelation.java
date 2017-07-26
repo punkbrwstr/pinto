@@ -60,8 +60,8 @@ public class RollingCorrelation extends ComposableFunction {
 					PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
 					
 					
-					List<double[]> inputs = Stream.of(inputArray).map(c -> c.getSeries(expandedWindow))
-										.map(Optional::get).map(DoubleStream::toArray).collect(Collectors.toList());
+					List<double[]> inputs = Stream.of(inputArray).map(c -> c.getCells(expandedWindow))
+										.map(DoubleStream::toArray).collect(Collectors.toList());
 					
 					Builder b = DoubleStream.builder();
 					double[] input = new double[inputs.size()];

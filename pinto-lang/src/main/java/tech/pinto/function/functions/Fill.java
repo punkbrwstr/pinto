@@ -45,14 +45,14 @@ public class Fill extends ComposableFunction {
 				DoubleStream input = null;
 				int skip = 0;
 				if (!lookBack) {
-					input = inputs[0].getSeries(range).get();
+					input = inputs[0].getCells(range);
 				} else {
 					Periodicity<Period> p = Periodicities.get(periodicityCode);
 					Period start = p.previous(p.from(range.start().endDate()));
 					PeriodicRange<Period> r = (PeriodicRange<Period>) range.periodicity().range(start.endDate(),
 							range.end().endDate(), range.clearCache());
 					skip = (int) r.indexOf(range.start());
-					input = inputs[0].getSeries(r).get();
+					input = inputs[0].getCells(r);
 				}
 				final AtomicReference<Double> lastGoodValue = new AtomicReference<>(Double.NaN);
 				return input.map(d -> {

@@ -74,7 +74,7 @@ public class IndexTester {
 	}
 	
 	private double first(int column, Table t) {
-		return t.getSeries(column).get().limit(1).sum();
+		return t.getSeries(column).limit(1).sum();
 	}
 	
 	private boolean compareRow(String pintoExpression, double... results) throws Exception {

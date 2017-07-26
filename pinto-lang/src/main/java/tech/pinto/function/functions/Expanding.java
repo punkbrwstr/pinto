@@ -59,7 +59,7 @@ public class Expanding extends ComposableFunction {
 
 				DoubleStream.Builder b = DoubleStream.builder();
 				DoubleCollector dc = collectorSupplier.get();
-				double[] output = inputs[0].getSeries(window).get().map(d -> {
+				double[] output = inputs[0].getCells(window).map(d -> {
 						dc.add(d);
 						return dc.finish();
 					}).toArray();

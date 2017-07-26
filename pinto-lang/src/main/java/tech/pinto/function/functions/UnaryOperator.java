@@ -24,7 +24,7 @@ public class UnaryOperator extends ComposableFunction {
 		LinkedList<Column> outputs = new LinkedList<>();
 		for (Column function : stack) {
 			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()),
-				inputs -> range -> inputs[0].getSeries(range).get().map(operator), function));
+				inputs -> range -> inputs[0].getCells(range).map(operator), function));
 		}
 		return outputs;
 	}

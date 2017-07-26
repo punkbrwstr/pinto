@@ -46,7 +46,7 @@ public class Resample extends ComposableFunction {
 				}
 				Period newEnd = newPeriodicity.from(range.end().endDate());
 				PeriodicRange newDr = newPeriodicity.range(newStart, newEnd, range.clearCache());
-				double[] d = ((DoubleStream) inputs[0].getSeries(newDr).get()).toArray();
+				double[] d = ((DoubleStream) inputs[0].getCells(newDr)).toArray();
 				DoubleStream.Builder b = DoubleStream.builder();
 				range.values().stream().map(Period::endDate).forEach( ed ->
 						b.accept(d[(int) newDr.indexOf(newPeriodicity.roundDown(ed))]));

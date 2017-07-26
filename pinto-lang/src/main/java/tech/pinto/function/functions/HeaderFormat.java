@@ -4,7 +4,6 @@ package tech.pinto.function.functions;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.LinkedList;
-import java.util.Optional;
 
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ParameterType;
@@ -31,7 +30,8 @@ public class HeaderFormat extends ComposableFunction {
 			ArrayDeque<Column> temp = new ArrayDeque<>();
 			while(!stack.isEmpty()) {
 				Column old = stack.removeFirst();
-				temp.addFirst(new Column(old.getInputs(),Optional.of(inputs -> mf.format(new Object[] {old.toString()})), old.getSeriesFunction()));
+				temp.addFirst(new Column( i -> mf.format(new Object[] {old.toString()}),
+						old.getSeriesFunction(), old.getInputs()));
 			}
 			temp.stream().forEach(stack::addFirst);
 		return stack;

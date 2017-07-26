@@ -1,6 +1,7 @@
 package tech.pinto.function;
 
 import java.util.LinkedList;
+import java.util.Optional;
 
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
@@ -27,8 +28,8 @@ abstract public class TerminalFunction extends ComposableFunction {
 
 	protected Table createTextColumn(String s) {
 		LinkedList<Column> ll = new LinkedList<>();
-		ll.add(new Column(c -> s));
-		return new Table(ll);
+		ll.add(new Column(s));
+		return new Table(ll,Optional.empty());
 	}
 
 	@Override

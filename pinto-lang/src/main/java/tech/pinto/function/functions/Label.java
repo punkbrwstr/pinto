@@ -5,7 +5,6 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.Column;
@@ -27,9 +26,7 @@ public class Label extends ComposableFunction {
 		for(int i = 0; i < labels.size(); i++) {
 			final int index = labels.size() - i - 1;
 			Column old = stack.removeFirst();
-//			Function<Column[], Function<PeriodicRange<?>,DoubleStream>> seriesFunction = 
-//					c-> r-> old.getSeriesFunction().apply(c).apply(r).get();
-			temp.addFirst(new Column(old.getInputs(),Optional.of(inputs -> labels.get(index)), old.getSeriesFunction()));
+			temp.addFirst(new Column(inputs -> labels.get(index), old.getSeriesFunction(), old.getInputs()));
 		}
        	temp.stream().forEach(stack::addFirst);
 		return stack;

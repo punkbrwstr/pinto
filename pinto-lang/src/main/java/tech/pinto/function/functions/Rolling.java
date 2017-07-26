@@ -70,7 +70,7 @@ public class Rolling extends ComposableFunction {
 				Period windowEnd = wf.from(range.end().endDate());
 				PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
 				Builder b = DoubleStream.builder();
-				double[] data = inputs[0].getSeries(expandedWindow).get().toArray();
+				double[] data = inputs[0].getCells(expandedWindow).toArray();
 				for(Period p : range.values()) {
 					long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - finalSize + 1;
 					DoubleCollector dc = Arrays.stream(data, (int) windowStartIndex, (int) windowStartIndex + finalSize)

@@ -59,8 +59,7 @@ public abstract class ComposableFunction implements Cloneable {
     private void parseArgs(LinkedList<Column> inputs) throws PintoSyntaxException {
     	if(parameterType.equals(ParameterType.arguments_optional) || 
     			parameterType.equals(ParameterType.arguments_required)) {
-    		if(inputs.size() > 0 && inputs.getFirst().getHeaderFunction().isPresent() &&
-    				! inputs.getFirst().getSeriesFunction().isPresent()) {
+    		if(inputs.size() > 0 ) {
     			final Column argumentInput = inputs.removeFirst();
     			argumentSupplier = Optional.of(() -> argumentInput.toString().split(","));
     		} else {
