@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
+import com.google.common.base.Joiner;
+
 import tech.pinto.Indexer;
 import tech.pinto.Parameters;
 import tech.pinto.extras.BloombergClient;
@@ -43,6 +45,9 @@ public class Bloomberg extends CachedFunction {
 
 	@Override
 	protected List<String> getUncachedText() {
+		if (securityCodes.size() == 0) {
+			parseArgs();
+		}
 		return securityCodeFieldCode;
 	}
 
@@ -56,8 +61,8 @@ public class Bloomberg extends CachedFunction {
 
 	private void parseArgs() {
 		if (securityCodes.size() == 0) {
-			Stream.of(parameters.get().getArgument("tickers")).map(s -> s.trim()).forEach(securityCodes::add);
-			Stream.of(parameters.get().getArgument("fields")).map(s -> s.trim()).map(String::toUpperCase)
+			Stream.of(parameters.get().getArgument("tickers").split(",")).map(s -> s.trim()).forEach(securityCodes::add);
+			Stream.of(parameters.get().getArgument("fields").split(",")).map(s -> s.trim()).map(String::toUpperCase)
 							.map(s -> s.replaceAll(" ", "_")).forEach(fieldCodes::add);
 			securityCodes.stream().flatMap(s -> fieldCodes.stream().map(c -> s + ":" + c))
 					.forEach(securityCodeFieldCode::add);

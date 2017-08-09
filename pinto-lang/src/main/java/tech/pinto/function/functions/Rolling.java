@@ -50,7 +50,7 @@ public class Rolling extends ComposableFunction {
 		LinkedList<Column> inputStack = new LinkedList<>(stack);
 		stack.clear();
 		for (Column col : inputStack) {
-			stack.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+			stack.add(new Column(inputs -> join(inputs[0].toString(), parameters.get().toString(),toString()), inputs -> range -> {
 				Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
 				Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
 				Period windowEnd = wf.from(range.end().endDate());

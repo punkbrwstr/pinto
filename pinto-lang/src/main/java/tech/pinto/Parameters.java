@@ -64,6 +64,17 @@ public class Parameters {
 		}
 		return null;
 	}
+	
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		for(String name : getNames()) {
+			String value = getArgument(name);
+			if(value != null) {
+				sb.append("\"").append(name).append("=").append(value).append("\"");
+			}
+		}
+		return sb.toString();
+	}
 
 	public boolean hasArgument(String parameterName) {
 		return getArgument(parameterName) != null;
