@@ -8,19 +8,13 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 
 public class Indexer implements Cloneable {
-	public static Indexer ALL = new Indexer();
+	public static Indexer ALL = new Indexer(":");
 
 	private List<Index> indexes = new ArrayList<>();
 	private String indexString;
 	
-	private Indexer()  {
-		this.indexString = ":";
-		try {
-			indexes.add(new Index(":"));
-		} catch (PintoSyntaxException e) {}
-	}
-
-	public Indexer(String indexString) throws PintoSyntaxException {
+	public Indexer(String indexString) {
+		indexString = indexString.replaceAll("\\[|\\]", "");
 		this.indexString = indexString;
 		String[] indexParts = indexString.split(",");
 		for(int n = 0; n < indexParts.length; n++) {
@@ -28,18 +22,16 @@ public class Indexer implements Cloneable {
 		}
 	}
 
-	public List<LinkedList<Column>> index(LinkedList<Column> stack) throws PintoSyntaxException {
+	public List<LinkedList<Column>> index(LinkedList<Column> stack) {
 		List<LinkedList<Column>> indexed = new ArrayList<>();
 		List<StackOperation> ops = new ArrayList<>();
-		for(Index i : indexes) {
-			ops.addAll(i.index(stack));
-		}
+
 		indexed.add(operate(stack,ops));
 		Index last = indexes.get(indexes.size()-1);
 		while(last.isRepeat() && stack.size() > 0) {
 			try {
 				indexed.add(operate(stack,last.index(stack)));
-			} catch(PintoSyntaxException pse) {
+			} catch(IllegalArgumentException pse) {
 				break;
 			}
 		}
@@ -47,6 +39,20 @@ public class Indexer implements Cloneable {
 	}
 	
 	private LinkedList<Column> operate(LinkedList<Column> stack, List<StackOperation> ops) {
+		@SuppressWarnings("unchecked")
+		LinkedList<StackOperation>[] opsByOrdinal = new LinkedList[stack.size()];
+		for(Index i : indexes) {
+			List<StackOperation> opsForIndex = i.index(stack);
+			for(StackOperation op: opsForIndex) {
+				if(opsByOrdinal[op.getOrdinal()] != null) {
+					opsByOrdinal[op.getOrdinal()].getLast().setCopy();
+				} else {
+					opsByOrdinal[op.getOrdinal()] = new LinkedList<>();
+				}
+				opsByOrdinal[op.getOrdinal()].add(op);
+			}
+			ops.addAll(opsForIndex);
+		}
 		TreeSet<Integer> alreadyUsed = new TreeSet<>();
 		LinkedList<Column> indexed = new LinkedList<>();
 		for(StackOperation o : ops) {
@@ -58,19 +64,18 @@ public class Indexer implements Cloneable {
 				}
 			}
 		}
-		new TreeSet<>(ops).descendingIterator().forEachRemaining(o -> {
-			if(!o.isCopy()) {
-				stack.remove(o.getOrdinal());
+		for(int i = opsByOrdinal.length - 1; i >= 0; i--) {
+			if(opsByOrdinal[i] != null) {
+				opsByOrdinal[i].stream().filter(((Predicate<StackOperation>) StackOperation::isCopy).negate())
+					.findAny().ifPresent(op -> stack.remove(op.getOrdinal()));
 			}
-		});
-		return indexed;
-	}
-
-
-	private static void checkIndex(int index, int stackSize, boolean exclusive) throws PintoSyntaxException {
-		if (index < 0 || (exclusive && index > stackSize) || (!exclusive && index >= stackSize)) {
-			throw new PintoSyntaxException( index + " is outside bounds of inputs.");
 		}
+//		new TreeSet<>(ops).descendingIterator().forEachRemaining(o -> {
+//			if(!o.isCopy()) {
+//				stack.remove(o.getOrdinal());
+//			}
+//		});
+		return indexed;
 	}
 
 	private static boolean isNumeric(String s) {
@@ -103,11 +108,11 @@ public class Indexer implements Cloneable {
 		private boolean optional = false;
 		private boolean everything = false;
 		
-		public Index(String s) throws PintoSyntaxException {
+		public Index(String s) {
 			if(s.contains("|")) {
 				String[] thisOrThat = s.split("\\|");
 				if(thisOrThat.length != 2) {
-					throw new PintoSyntaxException("Index \"|\" should separate a pair of index expressions.");
+					throw new IllegalArgumentException("Index \"|\" should separate a pair of index expressions.");
 				}
 				or = Optional.of(new Index(thisOrThat[1]));
 				s = thisOrThat[0];
@@ -118,7 +123,7 @@ public class Indexer implements Cloneable {
 			}
 			if(s.contains("&")) {
 				if (repeat) {
-					throw new PintoSyntaxException(
+					throw new IllegalArgumentException(
 							"Cannot copy and repeat an index because it will create an infinite loop.");
 				}
 				copy = true;
@@ -155,7 +160,7 @@ public class Indexer implements Cloneable {
 			
 		}
 		
-		public List<StackOperation> index(LinkedList<Column> stack) throws PintoSyntaxException {
+		public List<StackOperation> index(LinkedList<Column> stack) {
 			List<StackOperation> ops = new ArrayList<>();
 			if (stack.size() == 0) {
 				return ops;
@@ -176,12 +181,16 @@ public class Indexer implements Cloneable {
 					end = start + 1;
 				}
 				if (start >= end) {
-					throw new PintoSyntaxException("Invalid index. Start is after end.");
+					throw new IllegalArgumentException("Invalid index. Start is after end.");
 				}
-				checkIndex(start, stack.size(), false);
-				checkIndex(end, stack.size(), true);
-				for(int n = start; n < end; n++) {
-					ops.add(new StackOperation(n, isCopy()));
+				if (start < 0 || start >= stack.size() || end > stack.size()) {
+					if(!optional) {
+						throw new IllegalArgumentException( "Index [" + start + ":" + end + "] is outside bounds of inputs.");
+					} 
+				} else {
+					for(int n = start; n < end; n++) {
+						ops.add(new StackOperation(n, isCopy()));
+					}
 				}
 			} else if(header.isPresent()) {
 				final String query = header.get();
@@ -209,7 +218,7 @@ public class Indexer implements Cloneable {
 					if(or.isPresent()) {
 						ops.addAll(or.get().index(stack));
 					} else {
-						throw new PintoSyntaxException("Missing required index header \"" + query + "\"");
+						throw new IllegalArgumentException("Missing required index header \"" + query + "\"");
 					}
 				}
 			}
@@ -229,7 +238,7 @@ public class Indexer implements Cloneable {
 
 	private static class StackOperation implements Comparable<StackOperation> {
 		private final int ordinal;
-		private final boolean copy;
+		private boolean copy;
 
 		public StackOperation(int ordinal, boolean copy) {
 			this.ordinal = ordinal;
@@ -242,6 +251,10 @@ public class Indexer implements Cloneable {
 
 		public boolean isCopy() {
 			return copy;
+		}
+		
+		public void setCopy() {
+			copy = true;
 		}
 
 		@Override

@@ -6,13 +6,10 @@ import tech.pinto.function.FunctionHelp;
 public class Name {
 
 	final private FunctionFactory function;
-	final private java.util.function.Function<String, FunctionHelp> help;
+	final private FunctionHelp.Builder help;
 
-	public Name(FunctionFactory function, String helpText) {
-		this(function, name -> new FunctionHelp.Builder(name).description(helpText).build());
-	}
 
-	public Name(FunctionFactory function, java.util.function.Function<String, FunctionHelp> help) {
+	public Name(FunctionFactory function, FunctionHelp.Builder help) {
 		this.function = function;
 		this.help = help;
 	}
@@ -20,8 +17,8 @@ public class Name {
 	public FunctionFactory getFactory() {
 		return function;
 	}
-
-	public java.util.function.Function<String, FunctionHelp> getHelpFactory() {
+	
+	public FunctionHelp.Builder getHelpBuilder() {
 		return help;
 	}
 

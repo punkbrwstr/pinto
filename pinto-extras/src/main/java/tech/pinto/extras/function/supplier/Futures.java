@@ -6,6 +6,7 @@ import java.text.MessageFormat;
 
 
 
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
@@ -13,43 +14,42 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.DoubleStream;
 import java.util.stream.DoubleStream.Builder;
 
 import tech.pinto.Indexer;
+import tech.pinto.Parameters;
 import tech.pinto.Pinto;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.function.CachedFunction;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.ParameterType;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
 public class Futures extends CachedFunction {
+	private static final Parameters.Builder PARAMETERS_BUILDER = new Parameters.Builder()
+			.add("code", true, "Two-letter Bloomberg contract series code")
+			.add("yellow_key", "Comdty", "Bloomberg yellow key")
+			.add("price_modified", false, "Price modifier pinto function (acgbConvert)")
+			.add("criteria_field", "OPEN_INT", "Bloomberg field for criteria to determine front contract")
+			.add("price_field", "PX_LAST", "Bloomberg price field to compute returns")
+			.add("price_field_previous", "PX_LAST", "Bloomberg price field for the start of each return period")
+			.add("previous_offset", "-1", "Number of periods back start of each return period")
+			.add("calc_return", "true", "Whether or not to calculate returns");
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.description("Calculates returns for front contract of given futures contract series.")
+			.parameters(PARAMETERS_BUILDER.build());
 	
 	
     final static String[] monthCodes = new String[]{"H","M","U","Z"};
 
     final private Pinto pinto;
     
-	public static FunctionHelp getHelp(String name) {
-		return new FunctionHelp.Builder(name)
-				.outputs("1")
-				.description("Calculates returns for front contract of given futures contract series.")
-				.parameter("two-letter contract code")
-				.parameter("bloomberg yellow key", "Comdty", null)
-				.parameter("price modifier pinto function (acgbConvert)")
-				.parameter("front contract criteria bloomberg field", "OPEN_INT", null)
-				.parameter("price bloomberg field", "PX_LAST", null)
-				.parameter("previous bloomberg field", "PX_LAST", null)
-				.parameter("previous offset", "-1", null)
-				.parameter("calc return", "true", null)
-				.build();
-	}
-
 	public Futures(String name, Pinto pinto, ComposableFunction previousFunction, Indexer indexer) {
-		super(name, previousFunction, indexer, ParameterType.arguments_required);
+		super(name, previousFunction, indexer);
+		this.parameters = Optional.of(PARAMETERS_BUILDER.build());
 		this.pinto = pinto;
 	}
 
@@ -64,18 +64,14 @@ public class Futures extends CachedFunction {
     							priceModifierFormula, priceFieldCode, pricePreviousCode;
 		boolean calcReturn;
 		int previousOffset;
-        if(getArgs().length == 0) {
-            throw new IllegalArgumentException("Wrong arguments for futures return");
-        }
-        contractCode = getArgs()[0].toUpperCase(); // don't trim because of "G "
-        contractYellowKey = getArgs().length > 1 && !getArgs()[1].equals("") ? getArgs()[1].trim() : "Comdty";
-        priceModifierFormula = getArgs().length > 2 ? getArgs()[2] : "";
-        criteriaFieldCode = getArgs().length > 3 && ! getArgs()[3].equals("") ?
-                getArgs()[3].trim().toUpperCase().replaceAll("\\s+","_") : "OPEN_INT";
-        priceFieldCode = getArgs().length > 4 && !getArgs()[4].equals("") ? getArgs()[4].trim().toUpperCase().replaceAll("\\s+","_") : "PX_LAST";
-        pricePreviousCode = getArgs().length > 5 && !getArgs()[5].equals("") ? getArgs()[5].trim().toUpperCase().replaceAll("\\s+","_") : priceFieldCode;
-        previousOffset = getArgs().length > 6 && !getArgs()[6].equals("") ? Integer.parseInt(getArgs()[6]) : -1;
-        calcReturn = getArgs().length > 7 ? Boolean.parseBoolean(getArgs()[7]) : true;
+        contractCode = parameters.get().getArgument("code").toUpperCase(); // don't trim because of "G "
+        contractYellowKey = parameters.get().getArgument("yellow_key");
+        priceModifierFormula = parameters.get().hasArgument("price_modifier") ? parameters.get().getArgument("price_modifier") : "";
+        criteriaFieldCode = parameters.get().getArgument("criteria_field").trim().toUpperCase().replaceAll("\\s+","_");
+        priceFieldCode = parameters.get().getArgument("price_field").trim().toUpperCase().replaceAll("\\s+","_");
+        pricePreviousCode = parameters.get().getArgument("price_field_previous").trim().toUpperCase().replaceAll("\\s+","_");
+        previousOffset = Integer.parseInt(parameters.get().getArgument("previous_offset"));
+        calcReturn = Boolean.parseBoolean(parameters.get().getArgument("calc_return"));
         int numberOfContracts = 0;
         // key is code ("Z-2010") and value is column index for data
         HashMap<String,Integer> contracts = new HashMap<>();

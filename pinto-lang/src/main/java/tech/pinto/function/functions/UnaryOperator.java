@@ -11,6 +11,8 @@ import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
 
 public class UnaryOperator extends ComposableFunction {
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.description("Calculates {0} of inputs.");
 
 	protected final DoubleUnaryOperator operator;
 	
@@ -20,20 +22,12 @@ public class UnaryOperator extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-		LinkedList<Column> outputs = new LinkedList<>();
-		for (Column function : stack) {
-			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()),
-				inputs -> range -> inputs[0].getCells(range).map(operator), function));
+	protected void apply(LinkedList<Column> stack) {
+		LinkedList<Column> inputStack = new LinkedList<>(stack);
+		stack.clear();
+		for (Column col : inputStack) {
+			stack.add(new Column(inputs -> join(inputs[0].toString(), toString()),
+				inputs -> range -> inputs[0].getCells(range).map(operator), col));
 		}
-		return outputs;
 	}
-
-	public static FunctionHelp getHelp(String name, String desc) {
-		return new FunctionHelp.Builder(name)
-				.outputs("n")
-				.description("Unary operator for " + desc + ". Applies operation to each input.")
-				.build();
-	}
-
 }

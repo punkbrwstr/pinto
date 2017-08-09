@@ -1,6 +1,7 @@
 package tech.pinto.function.functions;
 
 import java.util.LinkedList;
+
 import java.util.List;
 
 import java.util.Optional;
@@ -8,8 +9,6 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.DoubleStream.Builder;
 import java.util.stream.Stream;
-
-import com.google.common.base.Joiner;
 
 import tech.pinto.Indexer;
 import tech.pinto.Column;
@@ -30,29 +29,14 @@ public class RollingCorrelation extends ComposableFunction {
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-		int size;
-		Optional<Periodicity<?>> windowFrequency;
-		if(getArgs().length < 1) {
-			throw new IllegalArgumentException("window requires at least one parameter (window size)");
-		} else {
-			try {
-				size = Math.abs(Integer.parseInt(getArgs()[0].replaceAll("\\s+", "")));
-			} catch(NumberFormatException nfe) {
-				throw new IllegalArgumentException("Non-numeric argument \"" + getArgs()[0] + "\" for window"
-						+ " size in rolling function args: \"" + Joiner.on(",").join(getArgs()) + "\"");
-			}
-		}
-		if(getArgs().length < 2) {
-			windowFrequency =  Optional.empty();
-		} else {
-			Periodicity<?> p =	Periodicities.get(getArgs()[1].replaceAll("\\s+", ""));
-			if(p == null) {
-				throw new IllegalArgumentException("invalid periodicity code for window: \"" + getArgs()[1] + "\"");
-			}
-			windowFrequency =  Optional.of(p);
-		}
-		return asList(new Column(inputs -> toString(),
+	protected void apply(LinkedList<Column> stack) {
+		int size = !stack.getFirst().isHeaderOnly() ? 1 :
+			Integer.parseInt(stack.removeFirst().getHeader().replaceAll("\\s","").replaceAll("size=", ""));
+		Optional<Periodicity<?>> windowFrequency = !stack.getFirst().isHeaderOnly() ? Optional.empty() :
+			Optional.of(Periodicities.get(stack.removeFirst().getHeader().replaceAll("\\s","").replaceAll("freq=", "")));
+		Column[] inputStack = stack.toArray(new Column[] {});
+		stack.clear();
+		stack.add(new Column(inputs -> toString(),
 				inputArray -> range -> {
 					Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
 					Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
@@ -77,7 +61,7 @@ public class RollingCorrelation extends ComposableFunction {
 						b.accept(cc.getAverage());
 					}
 					return b.build();
-				}, stack.toArray(new Column[]{})));
+				}, inputStack));
 	}
 	
 }

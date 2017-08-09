@@ -10,6 +10,8 @@ import tech.pinto.function.TerminalFunction;
 import tech.pinto.function.functions.HeaderLiteral;
 
 public class Delete extends TerminalFunction {
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.description("Deletes previously defined name");
 
 
 	public Delete(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer) {
@@ -25,13 +27,5 @@ public class Delete extends TerminalFunction {
 		namespace.undefine(nameToDelete);
 		return createTextColumn("Successfully deleted.");
 	}	
-
-	public static FunctionHelp getHelp(String name) {
-		return new FunctionHelp.Builder(name)
-				.outputs("none")
-				.description("Deletes previously defined command *name*.")
-				.parameter("name")
-				.build();
-	}
 
 }

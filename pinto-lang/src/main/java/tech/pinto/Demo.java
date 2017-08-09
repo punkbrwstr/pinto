@@ -105,10 +105,12 @@ public class Demo {
 	public static class DemoVocabulary extends StandardVocabulary {
 		
 		public DemoVocabulary() {
-			names.put("exec", new Name((n,p,s,f,i) -> new DummyFunction(n), n -> new FunctionHelp.Builder(n).build()));
-			names.put("export", new Name((n,p,s,f,i) -> new DummyFunction(n),  n -> new FunctionHelp.Builder(n).build()));
+			names.put("exec", new Name((n,p,s,f,i) -> new DummyFunction(n),
+					new FunctionHelp.Builder().description("Not implemented in demo mode")));
+			names.put("export", new Name((n,p,s,f,i) -> new DummyFunction(n), new FunctionHelp.Builder()
+					.description("Not implemented in demo mode")));
             names.put("read", new Name((n,p,s,f,i) -> {
-            	return new ImportCSV(n,new HeaderLiteral(f, i, "https://pinto.tech/files/stocks.csv"),i);}, ImportCSV::getHelp
+            	return new ImportCSV(n,new HeaderLiteral(f, i, "https://pinto.tech/files/stocks.csv"),i);}, ImportCSV.HELP_BUILDER
             	));
 		}
 		

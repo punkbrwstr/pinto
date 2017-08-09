@@ -3,6 +3,7 @@ package tech.pinto.function.functions;
 import java.util.LinkedList;
 
 
+
 import java.util.List;
 import java.util.PrimitiveIterator.OfDouble;
 import java.util.function.Supplier;
@@ -12,12 +13,14 @@ import java.util.stream.DoubleStream.Builder;
 
 import tech.pinto.Indexer;
 import tech.pinto.Column;
-import tech.pinto.function.FunctionHelp;
 import tech.pinto.tools.DoubleCollector;
 import tech.pinto.function.ComposableFunction;
+import tech.pinto.function.FunctionHelp;
 
 
 public class Cross extends ComposableFunction {
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.description("Calculates cross-sectional {0} per period for all inputs.");
 	
 	private final Supplier<DoubleCollector> collectorSupplier;
 	
@@ -28,8 +31,10 @@ public class Cross extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-		return asList(new Column(inputs -> toString(),
+	protected void apply(LinkedList<Column> stack) {
+		final LinkedList<Column> inputStack = new LinkedList<>(stack);
+		stack.clear();
+		stack.add(new Column(inputs -> toString(),
 				inputs -> range -> {
 					Builder b = DoubleStream.builder();
 					List<OfDouble> l = stack.stream().map(c -> c.getCells(range))
@@ -40,14 +45,6 @@ public class Cross extends ComposableFunction {
 						b.accept(dc.finish());
 					}
 					return b.build();
-				}, stack.toArray(new Column[]{})));
+				}, inputStack.toArray(new Column[]{})));
 	}
-
-	public static FunctionHelp getHelp(String name, String description) {
-		return new FunctionHelp.Builder(name)
-				.outputs("1")
-				.description("Calculates " + description + " across inputs.")
-				.build();
-	}
-
 }

@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import tech.pinto.Indexer;
 import tech.pinto.Namespace;
+import tech.pinto.Parameters;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.Table;
 import tech.pinto.function.FunctionHelp;
@@ -13,17 +14,15 @@ import tech.pinto.function.TerminalFunction;
 import tech.pinto.function.functions.HeaderLiteral;
 
 public class Help extends TerminalFunction {
+	 
+	private static final Parameters.Builder PARAMETER_BUILDER = new Parameters.Builder()
+			.add("type", false, "Pinto name for which you want help.");
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.parameters(PARAMETER_BUILDER.build())
+			.description("Prints help for proceding commands or prints *help type*.");
 
 	public Help(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer) {
 		super(name, namespace, previousFunction, indexer);
-	}
-
-	public static FunctionHelp getHelp(String name) {
-		return new FunctionHelp.Builder(name)
-				.outputs("none")
-				.description("Prints help for proceding commands or prints *help type*.")
-				.parameter("help type")
-				.build();
 	}
 
 	@Override

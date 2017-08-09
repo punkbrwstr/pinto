@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
@@ -11,26 +12,36 @@ import java.util.stream.Stream;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.Column;
 import tech.pinto.Indexer;
+import tech.pinto.Parameters;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
 public class Join extends ComposableFunction {
+	private static final Parameters.Builder PARAMETERS_BUILDER = new Parameters.Builder()
+			.add("dates", true, "Cutover dates separated by commas (yyyy-mm-dd)");
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.parameters(PARAMETERS_BUILDER.build())
+			.description("Joins series a given cutover dates");
 
 	public Join(String name, ComposableFunction previousFunction, Indexer indexer) {
 		super(name, previousFunction, indexer);
+		this.parameters = Optional.of(PARAMETERS_BUILDER.build());
 	}
 
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-		return asList(new Column(inputs -> toString(), inputs -> range -> evaluationFunction(range, inputs),
-				stack.toArray(new Column[] {})));
+	protected void apply(LinkedList<Column> stack) {
+		LinkedList<Column> inputStack = new LinkedList<>(stack);
+		stack.clear();
+		stack.add(new Column(inputs -> toString(), inputs -> range -> evaluationFunction(range, inputs),
+				inputStack.toArray(new Column[] {})));
 	}
 
 	private <P extends Period> DoubleStream evaluationFunction(PeriodicRange<P> range, Column[] inputArray) {
 		LinkedList<Column> inputs = asList(inputArray);
+		String[] datesStrings = parameters.get().getArgument("dates").split(",");
+		List<LocalDate> cutoverDates = Stream.of(datesStrings).map(String::trim).map(LocalDate::parse).collect(Collectors.toList());
 		Collections.reverse(inputs);
-		List<LocalDate> cutoverDates = Stream.of(getArgs()).map(LocalDate::parse).collect(Collectors.toList());
 		DoubleStream ds = DoubleStream.empty().sequential();
 		List<P> cutoverPeriods = cutoverDates.stream().map(range.periodicity()::from).collect(Collectors.toList());
 		Period current = range.start();
@@ -59,10 +70,4 @@ public class Join extends ComposableFunction {
 		return ds;
 
 	}
-
-	public static FunctionHelp getHelp(String name) {
-		return new FunctionHelp.Builder(name).outputs("1").description("Fills missing data with last good obseration.")
-				.parameter("date<sub>1</sub>, date<sub>z</sub>", null, "yyyy-mm-dd").build();
-	}
-
 }

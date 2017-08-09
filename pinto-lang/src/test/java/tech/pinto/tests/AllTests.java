@@ -67,7 +67,7 @@ public class AllTests {
 	public static class TestVocabulary extends StandardVocabulary {
 		
 		public TestVocabulary() {
-			names.put("counter", new tech.pinto.Name((n,p,s,f,i) -> new CallCounter(n,f,i), n -> new FunctionHelp.Builder(n).build()));
+			names.put("counter", new tech.pinto.Name((n,p,s,f,i) -> new CallCounter(n,f,i), new FunctionHelp.Builder()));
 		}
 
 	}

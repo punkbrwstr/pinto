@@ -34,10 +34,6 @@ abstract public class CachedFunction extends ComposableFunction {
 		super(name, previousFunction, indexer);
 	}
 
-	public CachedFunction(String name, ComposableFunction previousFunction, Indexer indexer, ParameterType parameterType) {
-		super(name, previousFunction, indexer, parameterType);
-	}
-
 	abstract protected <P extends Period> List<DoubleStream> getUncachedSeries(PeriodicRange<P> range);
 
 	abstract protected List<String> getUncachedText();
@@ -45,13 +41,12 @@ abstract public class CachedFunction extends ComposableFunction {
 	abstract protected int columns();
 
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
+	protected void apply(LinkedList<Column> stack) {
 		for (int i = 0; i < columns(); i++) {
 			final int index = i;
 			stack.addFirst(new Column(inputs -> getCachedText().get(index),
 					inputs -> range -> this.getCachedValues(range).get(index)));
 		}
-		return stack;
 	}
 
 	private String getKey() {

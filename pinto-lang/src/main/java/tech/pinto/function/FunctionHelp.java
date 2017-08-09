@@ -1,44 +1,47 @@
 package tech.pinto.function;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.text.MessageFormat;
+import java.util.Optional;
+
+import tech.pinto.Parameters;
 
 public class FunctionHelp {
 	
 	final String name;
-	final String inputs;
 	final String outputs;
 	final String description;
-	final List<Parameter> parameters;
+	final Optional<Parameters> parameters;
 
 	private FunctionHelp(Builder b) {
-		this.name = b.name;
-		this.inputs = b.inputs;
 		this.outputs = b.outputs;
 		this.description = b.description;
 		this.parameters  = b.parameters;
+		this.name = b.name;
 	}
 	
 	public String toTableRowString() {
 		StringBuilder sb = new StringBuilder();
-	//	sb.append("*").append(inputs).append("*|")
 		sb.append("**").append(name);
-		if(parameters.size() > 0) {
-			sb.append(parameters.stream().map(p -> p.name).collect(Collectors.joining("*,*", "(*", "*)")));
-		}
 		sb.append("**|*").append(outputs).append("*|").append(description).append(" ");
-		Map<String,String> defs = new HashMap<>();
-		for(Parameter p : parameters) {
-			if(p.defaultValue != null) {
-				defs.put(p.name, p.defaultValue);
+		if(parameters.isPresent()) {
+			sb.append(parameters.get().indexString());
+			for(int i = 0; i < parameters.get().getNames().length; i++) {
+				sb.append(parameters.get().getNames()[i]);
+				if(parameters.get().getDescriptions()[i] != null ||
+						parameters.get().getDefaults()[i] != null) {
+					sb.append(" (");
+					if(parameters.get().getDescriptions()[i] != null) {
+							sb.append(parameters.get().getDescriptions()[i]);
+					}
+					if(parameters.get().getDefaults()[i] != null) {
+							sb.append(" default: ").append(parameters.get().getDefaults()[i]);
+					}
+					sb.append(")");
+				}
+				if(i < parameters.get().getNames().length -1) {
+					sb.append(", ");
+				}
 			}
-		}
-		if(defs.size() > 0) {
-			sb.append(defs.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue())
-					.collect(Collectors.joining("*,*", "(defaults: *", "*)")));
 		}
 		return sb.toString();
 	}
@@ -46,21 +49,26 @@ public class FunctionHelp {
 	public String toConsoleHelpString() {
 		String crlf = System.getProperty("line.separator");
 		StringBuilder sb = new StringBuilder();
-	//	sb.append("*").append(inputs).append("*|")
 		sb.append(name).append(crlf);
 		sb.append("\t").append(description).append(crlf);
-		if(parameters.size() > 0) {
-			sb.append(parameters.stream().map(p -> p.name).collect(Collectors.joining(", ", "\tParameters: ", crlf)));
-		}
-		Map<String,String> defs = new HashMap<>();
-		for(Parameter p : parameters) {
-			if(p.defaultValue != null) {
-				defs.put(p.name, p.defaultValue);
+		if(parameters.isPresent()) {
+			sb.append("\t").append("Parameters:").append(crlf);
+			sb.append(parameters.get().indexString());
+			for(int i = 0; i < parameters.get().getNames().length; i++) {
+				sb.append("\t\t").append(parameters.get().getNames()[i]);
+				if(parameters.get().getDescriptions()[i] != null ||
+						parameters.get().getDefaults()[i] != null) {
+					sb.append(" (");
+					if(parameters.get().getDescriptions()[i] != null) {
+							sb.append(parameters.get().getDescriptions()[i]);
+					}
+					if(parameters.get().getDefaults()[i] != null) {
+							sb.append(" default: ").append(parameters.get().getDefaults()[i]);
+					}
+					sb.append(")");
+				}
+				sb.append(crlf);
 			}
-		}
-		if(defs.size() > 0) {
-			sb.append(defs.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue())
-					.collect(Collectors.joining(", ", "\t(defaults: ", ")" + crlf)));
 		}
 		if(!outputs.equals("")) {
 			sb.append("\tOutput count for n inputs: ").append(outputs).append(crlf);
@@ -70,21 +78,14 @@ public class FunctionHelp {
 	
 	public static class Builder {
 		
-		final String name;
-		String inputs = "";
-		String outputs = "";
+		String name;
+		String outputs = "none";
 		String description = "";
-		List<Parameter> parameters = new ArrayList<>();
+		Optional<Parameters> parameters = Optional.empty();
 		
-		public Builder(String name) {
-			this.name = name;
+		public Builder() {
 		}
 		
-//		public Builder inputs(String inputs) {
-//			this.inputs = inputs;
-//			return this;
-//		}
-
 		public Builder outputs(String outputs) {
 			this.outputs = outputs;
 			return this;
@@ -94,33 +95,23 @@ public class FunctionHelp {
 			this.description = description;
 			return this;
 		}
-
-		public Builder parameter(String name) {
-			return parameter(name,null,null);
-		}
-
-		public Builder parameter(String name, String defaultValue, String format) {
-			parameters.add(new Parameter(name, defaultValue, format));
+		
+		public Builder formatDescription(String... formatInputs) {
+			MessageFormat mf = new MessageFormat(this.description);
+			this.description = mf.format(formatInputs);
 			return this;
 		}
-		
-		public FunctionHelp build() {
+
+		public Builder parameters(Parameters parameters) {
+			this.parameters = Optional.of(parameters);
+			return this;
+		}
+
+		public FunctionHelp build(String name) {
+			this.name = name;
 			return new FunctionHelp(this);
 		}
 				
-	}
-	
-	public static class Parameter {
-		final String name;
-		String defaultValue;
-		String format;
-
-		public Parameter(String name, String defaultValue, String format) {
-			this.name = name;
-			this.defaultValue = defaultValue;
-			this.format = format;
-		}
-		
 	}
 
 }

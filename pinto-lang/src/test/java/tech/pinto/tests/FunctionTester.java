@@ -113,10 +113,10 @@ public class FunctionTester {
 	 * @throws InterruptedException 
 	 * @throws TimeoutException 
 	 */
-	private String A = "\"2014-07-07,2014-07-11,B\" eval";
-	private String B = "\"2014-07-01,2014-07-07,B\" eval";
-	private String C = "\"2014-07-09,2014-07-09,B\" eval";
-	private String D = "\"2014-07-11,2014-07-15,B\" eval";
+	private String A = "\"2014-07-07;2014-07-11;B\" eval";
+	private String B = "\"2014-07-01;2014-07-07;B\" eval";
+	private String C = "\"2014-07-09;2014-07-09;B\" eval";
+	private String D = "\"2014-07-11;2014-07-15;B\" eval";
 	@Test
 	public void testCaching() throws Exception {
 		String formula = "counter ";

@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import java.util.stream.DoubleStream;
 
 import tech.pinto.Indexer;
+import tech.pinto.Parameters;
 import tech.pinto.Column;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.function.ComposableFunction;
@@ -18,38 +19,34 @@ import tech.pinto.tools.DoubleCollector;
 
 public class Expanding extends ComposableFunction {
 
+	private static final Parameters.Builder PARAMETERS_BUILDER = new Parameters.Builder()
+			.add("start", false, "Start date for expanding window (yyyy-mm-dd)")
+			.add("freq", "B", "Periodicity of window {B,W-FRI,BM,BQ-DEC,BA}");
+
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.parameters(PARAMETERS_BUILDER.build())
+			.description("Copies inputs.");
+
 	private final Supplier<DoubleCollector> collectorSupplier;
 
 	public Expanding(String name, ComposableFunction previousFunction, Indexer indexer,
 			Supplier<DoubleCollector> collectorSupplier) {
 		super(name, previousFunction, indexer);
 		this.collectorSupplier = collectorSupplier;
-	}
-
-	public static FunctionHelp getHelp(String name, String description) {
-		return new FunctionHelp.Builder(name).outputs("n")
-				.description("Calculates " + description
-						+ " over an expanding window starting *start_date* over *periodicity*.")
-				.parameter("start_date", "1", null).parameter("periodicity", "B", "{B,W-FRI,BM,BQ,BA}").build();
+		this.parameters = Optional.of(PARAMETERS_BUILDER.build());
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-		Optional<Periodicity<?>> windowFrequency;
-		Optional<LocalDate> start = getArgs().length == 0 ? Optional.empty() : Optional.of(LocalDate.parse(getArgs()[0]));
-		if (getArgs().length < 2) {
-			windowFrequency = Optional.empty();
-		} else {
-			Periodicity<?> p = Periodicities.get(getArgs()[1].replaceAll("\\s+", ""));
-			if (p == null) {
-				throw new IllegalArgumentException("invalid periodicity code for window: \"" + getArgs()[1] + "\"");
-			}
-			windowFrequency = Optional.of(p);
-		}
-		LinkedList<Column> outputs = new LinkedList<>();
-		for (Column function : stack) {
-			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+	protected void apply(LinkedList<Column> stack) {
+		Optional<LocalDate> start = parameters.get().getArgument("start") == null ? Optional.empty() :
+			Optional.of(LocalDate.parse(parameters.get().getArgument("start")));
+		Optional<Periodicity<?>> windowFrequency = 
+			Optional.of(Periodicities.get(parameters.get().getArgument("freq")));
+		LinkedList<Column> inputStack = new LinkedList<>(stack);
+		stack.clear();
+		for (Column function : inputStack) {
+			stack.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
 				Periodicity<Period> wf = (Periodicity<Period>) windowFrequency.orElse(range.periodicity());
 				LocalDate startDate = start.orElse(range.start().endDate());
 				Period windowStart = wf.from(startDate);
@@ -74,7 +71,6 @@ public class Expanding extends ComposableFunction {
 				return b.build();
 			}, function));
 		}
-		return outputs;
 	}
 
 }

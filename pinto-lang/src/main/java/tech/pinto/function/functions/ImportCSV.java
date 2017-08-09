@@ -12,35 +12,42 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 import tech.pinto.Column;
 import tech.pinto.Indexer;
+import tech.pinto.Parameters;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.time.Period;
 
 public class ImportCSV extends ComposableFunction {
+	private static final Parameters.Builder PARAMETERS_BUILDER = new Parameters.Builder()
+			.add("source", true, "URL or file path for csv")
+			.add("includes_header", "true", "Whether or not first row contains headers");
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.parameters(PARAMETERS_BUILDER.build())
+			.description("Imports table from a csv formatted file or URL");
 
 	public ImportCSV(String name, ComposableFunction previousFunction, Indexer indexer) {
 		super(name, previousFunction, indexer);
+		this.parameters = Optional.of(PARAMETERS_BUILDER.build());
 	}
 
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-		if (getArgs().length < 1) {
-			throw new IllegalArgumentException(name + " requires at least one argument.");
-		}
-		boolean includesHeader = getArgs().length > 1 ? Boolean.parseBoolean(getArgs()[1]) : true;
+	protected void apply(LinkedList<Column> stack) {
+		String source = parameters.get().getArgument("source");
+		boolean includesHeader = Boolean.parseBoolean(parameters.get().getArgument("includes_header"));
 		try {
 			List<String> lines = null;
-			if(!getArgs()[0].contains("http")) {
-				lines = Files.readAllLines(Paths.get(getArgs()[0]));
+			if(!source.contains("http")) {
+				lines = Files.readAllLines(Paths.get(source));
 			} else {
 				lines = new ArrayList<>();
-		        BufferedReader in = new BufferedReader(new InputStreamReader(new URL(getArgs()[0]).openStream()));
+		        BufferedReader in = new BufferedReader(new InputStreamReader(new URL(source).openStream()));
 		        String inputLine;
 		        while ((inputLine = in.readLine()) != null)
 		            lines.add(inputLine);
@@ -74,18 +81,12 @@ public class ImportCSV extends ComposableFunction {
 				}
 			}
 		} catch (IOException e) {
-			throw new RuntimeException("Unable to import file \"" + getArgs()[0] + "\".", e);
+			throw new RuntimeException("Unable to import file \"" + source + "\".", e);
 		}
 		// IntStream.range(0,count).mapToDouble(i -> (double)i).mapToObj(
 		// value -> new EvaluableFunction(inputs -> Double.toString(value),
 		// inputs -> range -> DoubleStream.iterate(value, r ->
 		// value).limit(range.size()))).forEach(stack::add);;
-		return stack;
-	}
-
-	public static FunctionHelp getHelp(String name) {
-		return new FunctionHelp.Builder(name).description("Imports series from a csv formatted file or url")
-				.parameter("filename or url", null, null).outputs("columns in file").build();
 	}
 
 	private static String[] getColumnLetters(int columnCount) {

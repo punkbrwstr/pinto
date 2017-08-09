@@ -1,45 +1,41 @@
 package tech.pinto.function.functions;
 
 import java.util.LinkedList;
-
+import java.util.Optional;
 import java.util.stream.DoubleStream;
 
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.Column;
 import tech.pinto.Indexer;
+import tech.pinto.Parameters;
 import tech.pinto.function.FunctionHelp;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 import tech.pinto.function.ComposableFunction;
 
 public class Resample extends ComposableFunction {
+	private static final Parameters.Builder PARAMETERS_BUILDER = new Parameters.Builder()
+			.add("freq", true, "New perioditicy");
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.parameters(PARAMETERS_BUILDER.build())
+			.description("Changes periodicity of inputs to *freq*");
 
 	
 	public Resample(String name, ComposableFunction previousFunction, Indexer indexer) {
 		super(name, previousFunction, indexer);
-	}
-
-	public static FunctionHelp getHelp(String name) {
-		return new FunctionHelp.Builder(name)
-				.outputs("n")
-				.parameter("periodicity")
-				.description("Changes periodicity of inputs to *periodicity*.")
-				.build();
+		this.parameters = Optional.of(PARAMETERS_BUILDER.build());
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-		if(getArgs().length == 0) {
-			throw new IllegalArgumentException(name + " requires a periodicity as an argument.");
-		} else if(!Periodicities.allCodes().contains(getArgs()[0])) {
-			throw new IllegalArgumentException("Invalid periodicity \"" + getArgs()[0] + "\" for " + name + ".");
-		}
-		final Periodicity newPeriodicity  = Periodicities.get(getArgs()[0]);
-		LinkedList<Column> outputs = new LinkedList<>();
-		for (Column function : stack) {
-			outputs.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
+	protected void apply(LinkedList<Column> stack) {
+		final Periodicity newPeriodicity  = 
+			Periodicities.get(parameters.get().getArgument("freq"));
+		LinkedList<Column> inputStack = new LinkedList<>(stack);
+		stack.clear();
+		for (Column col : inputStack) {
+			stack.add(new Column(inputs -> join(inputs[0].toString(), toString()), inputs -> range -> {
 				Period newStart = newPeriodicity.roundDown(range.start().endDate());
 				if(newStart.endDate().isAfter(range.start().endDate())) {
 					newStart = newStart.previous();
@@ -51,9 +47,8 @@ public class Resample extends ComposableFunction {
 				range.values().stream().map(Period::endDate).forEach( ed ->
 						b.accept(d[(int) newDr.indexOf(newPeriodicity.roundDown(ed))]));
 				return b.build();
-			}, function));
+			}, col));
 		}
-		return outputs;
 	}
 
 }

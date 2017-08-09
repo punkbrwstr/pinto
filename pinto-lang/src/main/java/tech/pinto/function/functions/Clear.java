@@ -9,6 +9,8 @@ import tech.pinto.function.ComposableFunction;
 
 final public class Clear extends ComposableFunction {
 	
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.description("Removes inputs from the stack.");
 	
 
 	public Clear(String name, ComposableFunction previousFunction, Indexer indexer) {
@@ -16,16 +18,7 @@ final public class Clear extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
+	protected void apply(LinkedList<Column> stack) {
 		stack.clear();
-		return stack;
 	}
-
-	public static FunctionHelp getHelp(String name) {
-		return new FunctionHelp.Builder(name)
-				.description("Removes inputs from stack")
-				.outputs("none")
-				.build();
-	}
-	
 }

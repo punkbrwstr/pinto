@@ -11,6 +11,8 @@ import tech.pinto.function.TerminalFunction;
 import tech.pinto.function.functions.HeaderLiteral;
 
 public class Define extends TerminalFunction {
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.description("Defines stack as a name");
 
 	public Define(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer) {
 		super(name, namespace, previousFunction, indexer);
@@ -31,14 +33,5 @@ public class Define extends TerminalFunction {
 		}
 		namespace.define(args[0], desc, function);
 		return createTextColumn("Successfully saved.");
-	}
-	
-	public static FunctionHelp getHelp(String name) {
-		return new FunctionHelp.Builder(name)
-				.outputs("none")
-				.description("Defines the preceding function as *name*.")
-				.parameter("name")
-				.parameter("description)", "none", null)
-				.build();
 	}
 }

@@ -11,6 +11,7 @@ final public class Column implements Cloneable {
 	final private Column[] inputs;
 	final private Function<Column[],String> headerFunction;
 	final private Function<Column[],Function<PeriodicRange<?>,DoubleStream>> cellsFunction;
+	final private boolean header_only;
 	
 	public Column(Function<Column[],String> headerFunction,
 			Function<Column[], Function<PeriodicRange<?>,DoubleStream>> cellsFunction,
@@ -18,12 +19,18 @@ final public class Column implements Cloneable {
 		this.inputs = inputs;
 		this.headerFunction = headerFunction;
 		this.cellsFunction = cellsFunction;
+		this.header_only = false;
 	}
 
 	public Column(String header) {
 		this.inputs = new Column[]{};
 		this.headerFunction = i -> header;
 		this.cellsFunction = i -> range -> DoubleStream.iterate(Double.NaN, r -> Double.NaN).limit(range.size());
+		this.header_only = true;
+	}
+	
+	public boolean isHeaderOnly() {
+		return header_only;
 	}
 	
 	public String getHeader() {

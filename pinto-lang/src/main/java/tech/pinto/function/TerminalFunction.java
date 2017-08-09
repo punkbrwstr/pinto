@@ -13,14 +13,8 @@ abstract public class TerminalFunction extends ComposableFunction {
 
 	protected final Namespace namespace;
 
-	public TerminalFunction(ParameterType parameterType, String name, Namespace namespace,
-			ComposableFunction previousFunction, Indexer indexer) {
-		super(name, previousFunction, indexer, parameterType);
-		this.namespace = namespace;
-	}
-
 	public TerminalFunction(String name, Namespace namespace, ComposableFunction previousFunction, Indexer indexer) {
-		super(name, previousFunction, indexer, ParameterType.arguments_optional);
+		super(name, previousFunction, indexer);
 		this.namespace = namespace;
 	}
 
@@ -33,8 +27,7 @@ abstract public class TerminalFunction extends ComposableFunction {
 	}
 
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-		return stack;
+	protected void apply(LinkedList<Column> stack) {
 	}
 	
 	

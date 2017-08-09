@@ -43,7 +43,8 @@ public class Namespace implements Completer {
 			dependencyGraph.add(join(name, "dependsOn", dependencyName));
 			dependencyGraph.add(join(dependencyName, "dependedOnBy", name));
 		}
-		names.put(name, new Name(new DefinedFunctionFactory(function), description));
+		names.put(name, new Name(new DefinedFunctionFactory(function), new FunctionHelp.Builder()
+				.description(description)));
 	}
 
 	public synchronized void undefine(String name) throws IllegalArgumentException {
@@ -79,7 +80,7 @@ public class Namespace implements Completer {
 	}
 
     public synchronized FunctionHelp getHelp(String functionName) {
-        return names.get(functionName).getHelpFactory().apply(functionName);
+        return names.get(functionName).getHelpBuilder().build(functionName);
     }
 
     public synchronized Set<String> getNames() {

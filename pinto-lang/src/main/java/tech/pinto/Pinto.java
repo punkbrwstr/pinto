@@ -10,7 +10,6 @@ import javax.inject.Inject;
 import tech.pinto.function.ComposableFunction;
 import tech.pinto.function.TerminalFunction;
 import tech.pinto.function.functions.Constant;
-import tech.pinto.function.functions.Head;
 import tech.pinto.function.functions.HeaderLiteral;
 
 public class Pinto {
@@ -34,7 +33,7 @@ public class Pinto {
 					indexer = new Indexer(parseIndexString(sc));
 				} else {
 					if (currentFunction == null) {
-						currentFunction = new Head(indexer);
+						currentFunction = new ComposableFunction(indexer);
 						indexer = Indexer.ALL;
 					}
 					if (sc.hasNextDouble()) { // double literal
@@ -93,7 +92,7 @@ public class Pinto {
 			next = scanner.next();
 			sb.append(next);
 		} while (!next.contains("]"));
-		return sb.toString().replaceAll("\\[|\\]", "").replaceAll("\\s", "");
+		return sb.toString();
 	}
 
 	public static int countOccurrences(String haystack, char needle) {

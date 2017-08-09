@@ -1,50 +1,42 @@
 package tech.pinto.function.functions;
 
-
 import java.text.MessageFormat;
-import java.util.ArrayDeque;
+
 import java.util.LinkedList;
+import java.util.Optional;
 
 import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.ParameterType;
 import tech.pinto.Column;
 import tech.pinto.Indexer;
+import tech.pinto.Parameters;
 import tech.pinto.function.ComposableFunction;
 
 public class HeaderFormat extends ComposableFunction {
-	
-	
+	private static final Parameters.Builder PARAMETERS_BUILDER = new Parameters.Builder()
+			.add("format", true, "Format string (\"{}\" is existing header)");
+	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+			.parameters(PARAMETERS_BUILDER.build())
+			.description("Formats headers according to supplied format string.");
+
 	public HeaderFormat(String name, ComposableFunction previousFunction, Indexer indexer) {
-		super(name,previousFunction, indexer, ParameterType.arguments_required);
+		super(name, previousFunction, indexer);
+		this.parameters = Optional.of(PARAMETERS_BUILDER.build());
 	}
-	
-	protected String getHeaderFormat() {
-		String format = getArgs()[0];
+
+	protected String getHeaderFormat(LinkedList<Column> stack) {
+		String format = parameters.get().getArgument("format");
 		format = format.replaceAll("\\{\\}", "\\{0\\}");
 		return format;
 	}
 
 	@Override
-	protected LinkedList<Column> apply(LinkedList<Column> stack) {
-			MessageFormat mf = new MessageFormat(getHeaderFormat());
-			ArrayDeque<Column> temp = new ArrayDeque<>();
-			while(!stack.isEmpty()) {
-				Column old = stack.removeFirst();
-				temp.addFirst(new Column( i -> mf.format(new Object[] {old.toString()}),
-						old.getSeriesFunction(), old.getInputs()));
-			}
-			temp.stream().forEach(stack::addFirst);
-		return stack;
+	protected void apply(LinkedList<Column> stack) {
+		MessageFormat mf = new MessageFormat(getHeaderFormat(stack));
+		LinkedList<Column> inputStack = new LinkedList<>(stack);
+		stack.clear();
+		for (Column old : inputStack) {
+			stack.addFirst(new Column(i -> mf.format(new Object[] { old.toString() }), old.getSeriesFunction(),
+					old.getInputs()));
+		}
 	}
-
-	public static FunctionHelp getHelp(String name) {
-		return new FunctionHelp.Builder(name)
-				.outputs("n")
-				.description("Formats labels according to supplied format string.")
-				.parameter("format string ({0} for existing label)")
-				.build();
-	}
-
-	
-
 }
