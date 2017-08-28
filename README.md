@@ -1,20 +1,16 @@
 # Pinto
 
-Pinto is a domain-specific programming language for manipulating time series data. Technically, it is a stack-based functional  language that uses Reverse Polish notation (operators come after operands, like an HP12c calculator). Expressions written in Pinto define the manipulations necessary to create a tables of data and can be evaluated over any range of dates and for any frequency.
+Pinto is a domain-specific programming language for creating tables of time series data. Technically it is a [stack-based](https://en.wikipedia.org/wiki/Stack-oriented_programming_language) [functional](https://en.wikipedia.org/wiki/Functional_programming) (a/k/a [concatenative](https://en.wikipedia.org/wiki/Concatenative_programming_language)) language that uses [Reverse Polish](https://en.wikipedia.org/wiki/Reverse_Polish_notation) (a/k/a postfix) notation. Unlike general-purpose programming languages, Pinto has only one type of data: a column.  A Pinto column has a text header for its first row and number (double precision floating point) values for every subsequent row. Expressions written in Pinto create a table of columns with number value rows corresponding to a date range that you specify.  Expressions can be evaluated over any range of dates and for any frequency.
 
-With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equation, or an systematic trading system into one line of code!
+Pinto is the hybrid of Excel, pandas, and an HP12C calculator that you have been looking for!
 
-## What can I do with it?
+## How does it work?
 
-Calculate the returns of your favorite stocks and of a portfolio of those stocks:
+Every element of a Pinto expression is a function.  These functions take columns as inputs (zero or more) and return columns as outputs (also could be zero or more).  The input and output columns are stored in a [stack](https://en.wikipedia.org/wiki/Stack_(abstract_data_type))*, an ordered collection that operates on last-in-first-out basis.  When evaluated, expressions return a table comprised of the columns that are in the stack after all of the functions are applied.
 
-![alt text](http://pinto.tech/files/example0.2.png "Stock portfolio example")
+Here's a simple example of a Pinto expression broken down into numbered steps:
 
-Or find when 50 and 100-day moving averages cross for a stock:
-
-![alt text](http://pinto.tech/files/example1.1.png "Stock MA cross")
-
-
+![Alt text](https://pinto.tech/files/pencil_sketch.gif "Messy pencil sketch")
 
 For language details see the [Pinto Language Reference](./pinto_reference.md).  For examples and additional information see the  [Pinto Wiki](./wiki).
 
@@ -26,23 +22,11 @@ Try Pinto live [online](http://pinto.tech/)
 ## Key features
 
  - Concise: One line of pinto code can define an entire table of data
- - Updateable: Recalculate over any date range or periodicity 
- - Extensible: Build on other expressions that define specific data, or reusable transformation functions
+ - Updateable: Automatically update tables over any date range or periodicity 
+ - Extensible: Build reusable functions that define specific data or reusable transformations
  - Interoperable: Pinto is accessible through an http interface (works great with python/pandas)
  - Batteries included: Functions for rolling/expanding/cross window statistics, Bloomberg interface, etc.
- - Efficient: Lazy evaluation, range-based caching for supplier functions
-
-## How does it work?
-
-Pinto expressions are comprised of a sequence of functions.  Expressions are evaluated left-to-right, with the inputs for each function coming from the outputs of the functions to its left.  It is useful to think of the execution of a Pinto expression in terms of a common stack of data.  Each function takes its inputs from the stack, operates on them, and returns them to the stack.  In mathematical terms, a Pinto expression can be thought of as a compositions of functions:  The Pinto expression x f g is equivalent to g(f(x)).  In finance terms, it works like an HP12c calculator.
-
-Pinto functions may have multiple inputs and outputs.  By default, all function are variadic, meaning they will accept whatever number of inputs are on the stack when they get called.  (Some functions may have a minimum number of inputs).  An index/slice expression before a function limits the inputs for that function to a certain portion of the stack.  The indexing syntax will look familar to Pythonistas.
-
-Pinto functions may optionally take non-data arguments in parentheses after their name that modify how the function operates.  For example, the copy function takes a numeric argument that tells it how many copies of its input data to make.
-
-Pinto functions can be broadly divided into three types: supplier, intermediate and terminal.  Suppliers take no inputs, but return output data.  For example, a function that retrieves online stock closing prices is a supplier.  Intermediate operations take inputs and return outputs.  They may modify their input data or manipulate the composition of the stack.  Terminal functions initiate the evaluation of the expression.  Suppliers and intermediate functions are lazy--they don't perform their operation until a subsequent terminal function tells them to (and specifies the date range over which to operate).  
-
-Any Pinto expression may be saved as a named function.  Named functions may return output data without any inputs (suppliers), may be a tacit function that require inputs from the stack, or may have some saved ("curried") inputs and take some others from the stack. 
+ - Efficient: Lazy evaluation, range-based caching for supplier ([nullary](https://en.wikipedia.org/wiki/Arity)) functions
 
 
 ## Requirements
@@ -55,7 +39,7 @@ The Pinto interpreter is built in Java using Maven. It requires:
 
 ## How to get up and running locally
 
-If you have the requirements, it's easy to get up and running with the pinto console:
+If you have the requirements, it's easy to get up and running with the Rinto console:
 
 
 ```
@@ -65,7 +49,9 @@ mvn -pl pinto-lang compile
 mvn exec:java@REPL -pl pinto-lang
 ```
 
+## *There is no spoon
 
+(There never is any data on the stack it only used to compose the functions)
 
 ## License
 
