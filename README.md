@@ -10,7 +10,11 @@ Every element of a Pinto expression is a function.  These functions take columns
 
 Here's a simple example of a Pinto expression broken down into numbered steps:
 
-![Alt text](https://pinto.tech/files/pencil_sketch.gif "Messy pencil sketch")
+![Alt text](https://pinto.tech/files/diag.png "2 3 +")
+
+A more advanced example computes a moving average for a stock prcie:
+
+![Alt text](https://pinto.tech/files/diag2.png "CMG 200 r_mean")
 
 For language details see the [Pinto Language Reference](./pinto_reference.md).  For examples and additional information see the  [Pinto Wiki](./wiki).
 
