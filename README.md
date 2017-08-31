@@ -16,7 +16,7 @@ A more advanced example computes a moving average for a stock prcie:
 
 ![Alt text](https://pinto.tech/files/diag2.png "CMG 200 r_mean")
 
-For language details see the [Pinto Language Reference](./pinto_reference.md).  For examples and additional information see the  [Pinto Wiki](./wiki).
+For language details see the [Pinto Language Reference](./pinto_reference.md).
 
 
 ## Try Pinto!
