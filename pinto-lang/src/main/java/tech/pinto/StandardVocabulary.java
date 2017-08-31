@@ -13,6 +13,8 @@ import tech.pinto.function.functions.Cross;
 import tech.pinto.function.functions.Expanding;
 import tech.pinto.function.functions.Fill;
 import tech.pinto.function.functions.HeaderAppend;
+import tech.pinto.function.functions.HeaderConcatenate;
+import tech.pinto.function.functions.HeaderDate;
 import tech.pinto.function.functions.HeaderFormat;
 import tech.pinto.function.functions.HeaderPrepend;
 import tech.pinto.function.functions.ImportCSV;
@@ -59,6 +61,8 @@ public class StandardVocabulary extends Vocabulary {
                 .put("format", new Name((n,p,s,f,i) -> new HeaderFormat(n,f,i),HeaderFormat.HELP_BUILDER))
                 .put("append", new Name((n,p,s,f,i) -> new HeaderAppend(n,f,i),HeaderAppend.HELP_BUILDER))
                 .put("prepend", new Name((n,p,s,f,i) -> new HeaderPrepend(n,f,i),HeaderPrepend.HELP_BUILDER))
+                .put("concat", new Name((n,p,s,f,i) -> new HeaderConcatenate(n,f,i),HeaderConcatenate.HELP_BUILDER))
+                .put("date", new Name((n,p,s,f,i) -> new HeaderDate(n,f,i),HeaderDate.HELP_BUILDER))
             /* zeroth-order functions */
                 .put("range", new Name((n,p,s,f,i) -> new Range(n,f,i), Range.HELP_BUILDER))
                 .put("read", new Name((n,p,s,f,i) -> new ImportCSV(n,f,i), ImportCSV.HELP_BUILDER))

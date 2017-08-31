@@ -53,9 +53,13 @@ public class Parameters {
 	}
 
 	public String getArgument(String parameterName) {
+		return getArgument(parameterName, true);
+	}
+
+	public String getArgument(String parameterName, boolean getDefault) {
 		for(int i = 0; i < names.length; i++) {
 			if(parameterName.equals(names[i])) {
-				if(values[i] != null) {
+				if(values[i] != null || !getDefault) {
 					return values[i];
 				} else {
 					return defaults[i];
@@ -68,7 +72,7 @@ public class Parameters {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		for(String name : getNames()) {
-			String value = getArgument(name);
+			String value = getArgument(name, false);
 			if(value != null) {
 				sb.append("\"").append(name).append("=").append(value).append("\"");
 			}
@@ -94,6 +98,7 @@ public class Parameters {
 					for(int i = 0; i < names.length; i++) {
 						if(sa[0].trim().equals(names[i])) {
 							values[i] = sa[1].trim();
+							needed--;
 							break;
 						}
 					}
@@ -101,6 +106,7 @@ public class Parameters {
 					for(int i = 0; i < names.length; i++) {
 						if(values[i] == null) {
 							values[i] = s.trim();
+							needed--;
 							break;
 						}
 					}

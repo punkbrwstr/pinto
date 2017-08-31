@@ -1,5 +1,6 @@
 package tech.pinto.function.functions;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 
 
@@ -39,7 +40,7 @@ public class Cross extends ComposableFunction {
 		stack.add(new Column(inputs -> toString(),
 				inputs -> range -> {
 					Builder b = DoubleStream.builder();
-					List<OfDouble> l = stack.stream().map(c -> c.getCells(range))
+					List<OfDouble> l = Arrays.stream(inputs).map(c -> c.getCells(range))
 								.map(ds -> ds.iterator()).collect(Collectors.toList());
 					for(int i = 0; i < range.size(); i++) {
 						DoubleCollector dc = collectorSupplier.get();

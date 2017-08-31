@@ -25,7 +25,7 @@ public class FunctionHelp {
 		if(parameters.isPresent()) {
 			//sb.append(parameters.get().indexString());
 			for(int i = 0; i < parameters.get().getNames().length; i++) {
-				sb.append("*").append(parameters.get().getNames()[i]).append("*  ");
+				sb.append("***").append(parameters.get().getNames()[i]).append(":***  ");
 				if(parameters.get().getDescriptions()[i] != null ||
 						parameters.get().getDefaults()[i] != null) {
 					//sb.append(" (");

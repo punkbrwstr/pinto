@@ -110,7 +110,7 @@ public class Demo {
 			names.put("export", new Name((n,p,s,f,i) -> new DummyFunction(n), new FunctionHelp.Builder()
 					.description("Not implemented in demo mode")));
             names.put("read", new Name((n,p,s,f,i) -> {
-            	return new ImportCSV(n,new HeaderLiteral(f, i, "https://pinto.tech/files/stocks.csv"),i);}, ImportCSV.HELP_BUILDER
+            	return new ImportCSV(n,new HeaderLiteral(f, i, "https://pinto.tech/files/stocks.csv;true"),i);}, ImportCSV.HELP_BUILDER
             	));
 		}
 		

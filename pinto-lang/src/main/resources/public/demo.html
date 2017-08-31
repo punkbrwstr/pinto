@@ -25,11 +25,11 @@
         <p class="examples">(Type Pinto expressions into above terminal window. Tab will complete names.)</p>
         <ul>
         		<li>Define a function to read in a file with stock prices: <code>"https://pinto.tech/files/stocks.csv" read "get_stocks" def</code></li>
-        		<li>Isolate two series from the file using label indexing and compute a weekly ratio: <code>get_stocks [TRAN,UTIL] only / "2015-10-01,2016-09-30,W-FRI" eval</code></li>
-        		<li>Compute 20 and 200-day moving averages: <code>get_stocks [DOW] only "3" copy [0] "20" r_mean [1] "200" r_mean "2016-01-01,2016-09-30,B" eval</code></li>
+        		<li>Isolate two series from the file using label indexing and compute a weekly ratio: <code>get_stocks [TRAN,UTIL] only / "2015-10-01;2015-10-30;W-FRI" eval</code></li>
+        		<li>Compute 20 and 200-day moving averages: <code>get_stocks [DOW] only "3" copy [0] "20" r_mean [1] "200" r_mean "2016-01-01;2016-01-05;B" eval</code></li>
         		<li>Define a table of stock returns: <code>get_stocks [CMG,LOCO,TACO] only r_chgpct "my_stocks" def</code></li>
         		<li>Define a function to computer compound returns: <code> 1 + log e_sum exp -1 + "compound_return" def</code></li>
-        		<li>Apply the function to your stocks: <code>my_stocks x_mean compound_return "2015-09-30,2016-12-30" eval</code></li>
+        		<li>Apply the function to your stocks: <code>my_stocks x_mean compound_return "2015-09-30;2015-10-31" eval</code></li>
         </ul>
         <h3>Get Pinto</h3>
         <p>The latest version of Pinto, as well as <a href="https://github.com/punkbrwstr/pinto/blob/master/pinto_reference.md">documentation</a> are available on <a href="https://github.com/punkbrwstr/pinto">GitHub</a>.</p>
