@@ -1,6 +1,6 @@
 # Pinto Language Reference
 
-### Indexing
+## Indexing
 
 An indexing/slicing operator determines which columns in the stack are passed to the following function.  
 
@@ -8,13 +8,13 @@ An indexing/slicing operator determines which columns in the stack are passed to
 When no indexer is specified, the entire stack is passed to the following function.  To explicitly show that you want the whole stack you can also use the indexer ```[:]```.
 
 #### Indexing by number
-The operator can take numerical indicies or numerical ranges of indicies.  Index numbering starts with ```0```, which represents the top or rightmost column of the stack.  Ranges may specify an inclusive starting index, an exclusive ending index or both.  ```[0:3]```  represents the first through third columns in the stack.  ```[1:]``` represents all stack columns after the first.  Negative indicies are converted to the stack size minus that number.  ```[-2:]```  represents the last two columns in the stack.
+The indexer can take numerical indicies or ranges of numerical indicies (ala python).  Index numbering starts with ```0```, which represents the top or rightmost column of the stack.  Ranges may specify an inclusive starting index, an exclusive ending index or both.  ```[0:3]```  represents the first through third columns in the stack.  ```[1:]``` represents all stack columns after the first.  Negative indicies are converted to the stack size minus that number.  ```[-2:]```  represents the last two columns in the stack.
 
 #### Indexing by header
-The indexing operator can also take string arguments to select stack columns by their header like ```[my_label2]```. Header indicies support ```*``` as a wildcard for matching zero or more characters (potentially returning multiple columns for one argument).
+The indexer can also take string arguments to select stack columns by their header like ```[my_label2]```. Header indicies support ```*``` as a wildcard for matching zero or more characters (potentially returning multiple columns for one argument).
 
 #### Multiple indicies
-Lists of indicies are separated by commas.   ```[1,3]``` represents the second and fourth columns.   ```[1,3:]``` is the second and all columns after the third.  ```[1,pin*]``` is the second and all columns with headers starting with "pin".
+Lists of indicies are separated by commas.   ```[1,3]``` represents the second and fourth columns.   ```[1,3:]``` is the second and all columns after the third.  ```[1,pin*]``` is the second column and all columns with headers starting with "pin".
 
 #### Index modifiers: Or
 The Or modifier (```"|"```) tells the indexer to try another index if the first is not found.  For instance, ```[guac|0]``` will select columns with the header "guac", or will return the first column.
@@ -27,9 +27,9 @@ The repeat modifier (```"+"```) causes the indexer to make multiple calls to the
 
 
 
-### Function parameters
+## Function parameters
 
-Parameters are special inputs to functions that modify how the function operates.  They only use the header of a column and discard the row values.  Parameters may be supplied by position (by being at the top of the stack) or by name (by having a header that starts with ```parametername=```).  As an example, to supply a file name to the read function you could add a header-only column to the top of the stack ```"/tmp/my_file_name" read``` or you could specify the parameter by name ```"source=/tmp/my_file_name" read```.  Multiple parameters may be specified as separate columns on the stack (```"tickers=TACO Equity" "fields=PX_LAST" bbg```) or within one column header by delimiting with ```;``` (```"tickers=TACO Equity;fields=PX_LAST" bbg```).
+Parameters are special inputs to functions that modify how the function operates.  They only use the header of a column and discard the number values.  Parameters may be supplied by position (by being at the top of the stack) or by name (by having a header that starts with ```parametername=```).  As an example, to supply a file name to the read function you could add a header-only column to the top of the stack ```"/tmp/my_file_name" read``` or you could specify the parameter by name ```"source=/tmp/my_file_name" read```.  Multiple parameters may be specified as separate columns on the stack (```"tickers=TACO Equity" "fields=PX_LAST" bbg```) or within one column header by delimiting with ```;``` (```"tickers=TACO Equity;fields=PX_LAST" bbg```).
 
 
 ## Function reference
