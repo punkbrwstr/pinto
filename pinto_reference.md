@@ -16,115 +16,145 @@ The indexing operator can also take string arguments to select stack elements by
 
 These functions tell the interpreter to start executing your Pinto code.  The most common is **eval** which evaluates the preceding stack of commands over the date range that you specify as arguments.  In console mode the resulting data is printed as a table.
 
-Function(Parameters) | Outputs for *n* inputs|Description
+Function name | Parameters |Description
 :---:|:---|:---
-**eval(*start date*,*end date*,*periodicity*)**|*n*|Evaluates the preceding commands over the given date range. (defaults: *start date=prior period*,*periodicity=B*,*end date=prior period*)
-**export(*start date*,*end date*,*periodicity*,*filename*)**|*none*|Evaluates the preceding commands over the given date range and exports csv for *filename*. (defaults: *start date=prior period*,*periodicity=B*,*end date=prior period*)
-**def(*name*)**|*none*|Defines the preceding commands as a new command, named *name*. 
-**help(*help type*)**|*none*|Prints help for proceding commands or prints *help type*. 
-**del(*name*)**|*none*|Deletes previously defined command *name*. 
+**eval**|***start:***  Start date of range to evaluate (format: yyyy-mm-dd), ***end:***  End date of range to evaluate (format: yyyy-mm-dd), ***freq:***  Periodicity of range to evaluate {B,W-FRI,BM,BQ,BA} (default: B)|Evaluates the preceding commands over the given date range. 
+**def**|***name:*** Name to assign to your function|Defines stack as a name
+**export**|***filename:***  File name for csv output, ***start:***  Start date of range to evaluate (format: yyyy-mm-dd), ***end:***  End date of range to evaluate (format: yyyy-mm-dd), ***freq:***  Periodicity of range to evaluate {B,W-FRI,BM,BQ,BA} (default: B)|Evaluates the preceding commands over the given date range and exports csv for *filename* 
+**help**|***type:***  Pinto name for which you want help.|Prints help for function ***type*** or prints full help
+**del**|***name:*** Name to delete|Deletes previously defined name 
+**exec**|***filename:***  Path to .pinto file|Executes pinto program defined in *filename*
 
 ### Stack manipulation functions
 
 These commands manipulate stack elements, but do not modify values.
 
-Function(Parameters) | Outputs for *n* inputs|Description
+Function name | Parameters |Description
 :---:|:---|:---
-**label(*label<sub>1</sub>*,*label<sub>z</sub>*)**|**z**|Sets arguments as labels for inputs 
-**copy(*m*)**|*n * m*|Copies stack inputs *m* times (defaults: *m=2*)
-**roll(*m*)**|**n**|Permutes input stack elements *m* times (defaults: *m=1*)
-**clear**|*None*|Removes inputs from stack 
+**label**|***labels:***  Comma delimited headers to apply to columns|Sets the headers of columns 
+**copy**|***times:***  Number of copies of stack inputs to make. (default: 2)|Copies inputs
+**roll**|***times:***  Number of times to permute (default: 1)|inputs
+**clear**|none|Removes inputs from the stack
+**only**|none|Clears stack except for inputs 
+**rev**|none|Reverses order of input stack 
+
 
 ### Data creation functions
 
 These commands generate data values.
 
-Function(Parameters) | Outputs for *n* inputs|Description
+Function name | Parameters |Description
 :---:|:---|:---
-**yhoo(*ticker<sub>1</sub>*,*ticker<sub>z</sub>*)**|*n + z*|Retrieves online price history for each *ticker*. 
-**moon**|*n + 1*|Calculates moon phase for this day. 
+**moon**|none|Phase of the moon
+**range**|***range:***  Range formatted as start(inclusive):stop(exclusive) (default: 0:5)|Creates columns of constant integers 
+**read**|***source:***  URL or file path for csv, ***includes_header:***  Whether or not first row contains headers (default: true)|Imports table from a csv formatted file or URL 
 
 ### Rolling window functions
 
-Function(Parameters) | Outputs for *n* inputs|Description
+
+Function name | Parameters |Description
 :---:|:---|:---
-**chg(*size*,*periodicity*)**|*n*|Calculates change over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**chg_pct(*size*,*periodicity*)**|*n*|Calculates change in percent over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**chg_log(*size*,*periodicity*)**|*n*|Calculates log change over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_mean(*size*,*periodicity*)**|*n*|Calculates mean over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_max(*size*,*periodicity*)**|*n*|Calculates maximum over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_min(*size*,*periodicity*)**|*n*|Calculates minimum over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_sum(*size*,*periodicity*)**|*n*|Calculates sum over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_geomean(*size*,*periodicity*)**|*n*|Calculates geometric mean over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_var(*size*,*periodicity*)**|*n*|Calculates sample variance over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_varp(*size*,*periodicity*)**|*n*|Calculates variance over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_std(*size*,*periodicity*)**|*n*|Calculates sample standard deviation over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_zscorep(*size*,*periodicity*)**|*n*|Calculates z-score over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_zscore(*size*,*periodicity*)**|*n*|Calculates sample z-score over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**r_stdp(*size*,*periodicity*)**|*n*|Calculates standard deviation over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**correl(*size*,*periodicity*)**|*n*|Calculates average correlation over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
+**r_chg**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates change from beginning to end over rolling window 
+**r_chglog**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates log change from beginning to end over rolling window 
+**r_chgpct**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates percent change from beginning to end over rolling window 
+**r_correl**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates correlation over rolling window 
+**r_geomean**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates geometric mean over rolling window 
+**r_lag**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates lag over rolling window 
+**r_max**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates maximum over rolling window 
+**r_mean**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates average over rolling window 
+**r_min**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates minimum over rolling window 
+**r_std**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates sample standard deviation over rolling window 
+**r_stdp**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates population standard deviation over rolling window 
+**r_sum**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates sum over rolling window 
+**r_var**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates sample variance over rolling window 
+**r_varp**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates population variance over rolling window 
+**r_zscore**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates sample z-score over rolling window 
+**r_zscorep**|***size:***  Size of window (default: 1), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ,BA}|Calculates population z-score over rolling window 
 
 ### Cross-sectional functions
 
-Function(Parameters) | Outputs for *n* inputs|Description
+Function name | Parameters |Description
 :---:|:---|:---
-**x_mean**|*1*|Calculates mean across inputs. 
-**x_max**|*1*|Calculates maximum across inputs. 
-**x_min**|*1*|Calculates minimum across inputs. 
-**x_sum**|*1*|Calculates sum across inputs. 
-**x_geomean**|*1*|Calculates geometric mean across inputs. 
-**x_var**|*1*|Calculates sample variance across inputs. 
-**x_varp**|*1*|Calculates variance across inputs. 
-**x_std**|*1*|Calculates sample standard deviation across inputs. 
-**x_zscorep**|*1*|Calculates z-score across inputs. 
-**x_zscore**|*1*|Calculates sample z-score across inputs. 
+**x_geomean**|none|Calculates cross-sectional geometric mean per period for all inputs 
+**x_max**|none|Calculates cross-sectional maximum per period for all inputs
+**x_mean**|none|Calculates cross-sectional mean per period for all inputs
+**x_min**|none|Calculates cross-sectional minimum per period for all inputs
+**x_std**|none|Calculates cross-sectional sample standard deviation per period for all inputs
+**x_stdp**|none|Calculates cross-sectional population standard deviation per period for all inputs
+**x_sum**|none|Calculates cross-sectional sum per period for all inputs
+**x_var**|none|Calculates cross-sectional variance per period for all inputs
+**x_varp**|none|Calculates cross-sectional portfolio variance per period for all inputs
+**x_zscore**|none|Calculates cross-sectional sample z-score per period for all inputs
+**x_zscorep**|none|Calculates cross-sectional population z-score per period for all inputs
 
 ### Expanding window functions
 
-Function(Parameters) | Outputs for *n* inputs|Description
+Function name | Parameters |Description
 :---:|:---|:---
-**e_mean(*size*,*periodicity*)**|*n*|Calculates mean over rolling window starting *size* number of *periodicity* prior for each input. (defaults: *size=1*,*periodicity=B*)
-**e_max(*start_date*,*periodicity*)**|*n*|Calculates maximum over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
-**e_min(*start_date*,*periodicity*)**|*n*|Calculates minimum over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
-**e_sum(*start_date*,*periodicity*)**|*n*|Calculates sum over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
-**e_geomean(*start_date*,*periodicity*)**|*n*|Calculates geometric mean over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
-**e_var(*start_date*,*periodicity*)**|*n*|Calculates sample variance over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
-**e_varp(*start_date*,*periodicity*)**|*n*|Calculates variance over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
-**e_std(*start_date*,*periodicity*)**|*n*|Calculates sample standard deviation over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
-**e_zscorep(*start_date*,*periodicity*)**|*n*|Calculates z-score over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
-**e_zscore(*start_date*,*periodicity*)**|*n*|Calculates sample z-score over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
-**e_stdp(*start_date*,*periodicity*)**|*n*|Calculates standard deviation over an expanding window starting *start_date* over *periodicity*. (defaults: *periodicity=B*,*start_date=1*)
+**e_chg**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates change over an expanding window 
+**e_chglog**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates log change over an expanding window 
+**e_chgpct**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates change in percent over an expanding window 
+**e_geomean**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates geometric mean over an expanding window 
+**e_max**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates maximum over an expanding window 
+**e_mean**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates mean over an expanding window 
+**e_min**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates minimum over an expanding window 
+**e_std**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates sample standard deviation over an expanding window 
+**e_stdp**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates standard deviation over an expanding window 
+**e_sum**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates sum over an expanding window 
+**e_var**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates sample variance over an expanding window 
+**e_varp**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates variance over an expanding window 
+**e_zscore**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates sample z-score over an expanding window 
+**e_zscorep**|***start:***  Start date for expanding window (yyyy-mm-dd), ***freq:***  Periodicity of window {B,W-FRI,BM,BQ-DEC,BA} (default: B)|Calculates z-score over an expanding window 
 
-### Data cleaning commands
+### Data cleaning functions
 
-Function(Parameters) | Outputs for *n* inputs|Description
+Function name | Parameters |Description
 :---:|:---|:---
-**fill**|*n*|Fills missing data with last good obseration. 
-**flb(*periodicity*)**|*n*|Fills missing data with last good obseration, looking back one period of *periodicity* if first element of data is missing. (defaults: *periodicity=BQ-DEC*)
-**join(*date<sub>1</sub>, date<sub>z</sub>*)**|*1*|Fills missing data with last good obseration. 
-**resample(*periodicity*)**|*n*|Changes periodicity of inputs to *periodicity*, rounding down for less frequent periodicities. 
+**fill**|***freq:***  Period of time to look back. (default: BQ-DEC)|Fills missing data with last good obseration, looking back one *freq* to fill first. 
+**flb**|none|Fills missing data with last good obseration. 
+**join**|***dates:***  Cutover dates separated by commas (yyyy-mm-dd)|Joins series a given cutover dates 
+**resample**|***freq:***  New perioditicy|Changes periodicity of inputs to *freq* 
+
+### Header functions
+
+Function name | Parameters |Description
+:---:|:---|:---
+**append**|***suffix:***  Suffix to append|Appends *suffix* header to headers 
+**prepend**|***prefix:***  Header to prepend to others|Prepends *prefix* to headers 
+**format**|***format:***  Format string ("{}" is existing header)|Formats headers according to supplied format string 
 
 ### Binary operators
-
-Function(Parameters) | Outputs for *n* inputs|Description
+Function name | Parameters |Description
 :---:|:---|:---
-**+**|*n - 1*|Binary operator for addition. Applies operation to first input combined with each subsequent input. 
-**-**|*n - 1*|Binary operator for subtraction. Applies operation to first input combined with each subsequent input. 
-**/**|*n - 1*|Binary operator for division. Applies operation to first input combined with each subsequent input. 
-*****|*n - 1*|Binary operator for multiplication. Applies operation to first input combined with each subsequent input. 
-**%**|*n - 1*|Binary operator for modulo. Applies operation to first input combined with each subsequent input. 
-**==**|*n - 1*|Binary operator for equals. Applies operation to first input combined with each subsequent input. 
-**!=**|*n - 1*|Binary operator for not equals. Applies operation to first input combined with each subsequent input. 
-**>**|*n - 1*|Binary operator for greater than. Applies operation to first input combined with each subsequent input. 
-**<**|*n - 1*|Binary operator for less than. Applies operation to first input combined with each subsequent input. 
-**>=**|*n - 1*|Binary operator for greater than or equal to. Applies operation to first input combined with each subsequent input. 
-**<=**|*n - 1*|Binary operator for less than or equal to. Applies operation to first input combined with each subsequent input. 
+**!=**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+**%**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+*****|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+**+**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+**-**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+**/**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+**<**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+**<=**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+**==**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+**>**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
+**>=**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input 
+**^**|***right_count:***  Number of inputs to use as the fixed operand (right hand side operand, e.g. divisor, subtrahend, etc.) (default: 1)|Adds fixed inputs (in order, with recycling) to each subsequent input
 
 ### Unary operators
 
-Function(Parameters) | Outputs for *n* inputs|Description
+Function name | Parameters |Description
 :---:|:---|:---
-**abs**|*n*|Unary operator for absolute value. Applies operation to each input. 
-**neg**|*n*|Unary operator for negation. Applies operation to each input. 
-**inv**|*n*|Unary operator for inverse. Applies operation to each input. 
-**log**|*n*|Unary operator for natural log. Applies operation to each input. 
+**inv**|none|Calculates inverse of inputs. 
+**log**|none|Calculates natural log of inputs. 
+**neg**|none|Calculates additive inverse of inputs. 
+**abs**|none|Calculates absolute value of inputs. 
+**exp**|none|Calculates e^x for inputs. 
+**acgbConvert**|none|Calculates absolute value of inputs. 
+
+
+### Extra functions (requires additional libraries, see wiki)
+
+Function name | Parameters |Description
+:---:|:---|:---
+**bbg**|***tickers:***  Bloomberg ticker codes, ***fields:***  Bloomberg field codes (default: PX_LAST)|Retrieves online price history for each ticker and field combination. 
+**fut**|***code:***  Two-letter Bloomberg contract series code, ***yellow_key:***  Bloomberg yellow key (default: Comdty), ***price_modified:***  Price modifier pinto function (acgbConvert), ***criteria_field:***  Bloomberg field for criteria to determine front contract (default: OPEN_INT), ***price_field:***  Bloomberg price field to compute returns (default: PX_LAST), ***price_field_previous:***  Bloomberg price field for the start of each return period (default: PX_LAST), ***previous_offset:***  Number of periods back start of each return period (default: -1), ***calc_return:***  Whether or not to calculate returns (default: true)|Calculates returns for front contract of given futures contract series. 
+
