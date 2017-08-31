@@ -23,9 +23,11 @@ public class Expanding extends ComposableFunction {
 			.add("start", false, "Start date for expanding window (yyyy-mm-dd)")
 			.add("freq", "B", "Periodicity of window {B,W-FRI,BM,BQ-DEC,BA}");
 
-	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+	public static final FunctionHelp.Builder getHelpBuilder() {
+		return new FunctionHelp.Builder()
 			.parameters(PARAMETERS_BUILDER.build())
 			.description("Copies inputs.");
+	}
 
 	private final Supplier<DoubleCollector> collectorSupplier;
 

@@ -7,8 +7,6 @@ import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.util.Arrays;
 
-import com.jakewharton.fliptables.FlipTable;
-
 import jline.console.ConsoleReader;
 import tech.pinto.tools.LogAppender;
 
@@ -72,7 +70,7 @@ public class Console implements Runnable {
 				} else {
 					try {
 				    	for(Table t : pinto.execute(line.toString())) {
-				    		out.println(FlipTable.of(t.headerToText(), t.seriesToText(nf)));
+				    		out.println(t.getConsoleText(nf));
 				    	}
 					} catch (PintoSyntaxException pse) {
 						System.out.println("Incorrect syntax: " + pse.getMessage());

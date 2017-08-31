@@ -4,11 +4,9 @@
         <title>pinto</title>
         <link rel="stylesheet" href="/stylesheets/style.css">
         <link href="https://fonts.googleapis.com/css?family=Geo|Montserrat|Source+Sans+Pro" rel="stylesheet">
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js"></script>
-  		<script src="https://cdnjs.cloudflare.com/ajax/libs/vega/2.6.5/vega.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/1.3.1/vega-lite.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/2.2.0/vega-embed.js" charset="utf-8"></script>
+        <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet">
+        <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    	<script type="text/javascript" src="javascripts/jquery.console.js"></script>
     </head>
     <body>
     	<header>
@@ -16,42 +14,92 @@
         </header>
         <div id="pintoBody">
         	<h3>What is Pinto?</h3>
-        	<p>Pinto is a programming language for manipulating time series data.  Technically, it is a stack-based or concatenative, functional programming language that uses Reverse Polish notation (operators come after operands, like an HP12c calculator). Expressions written in Pinto define the manipulations necessary to create a table of data. (Pinto programs are called expressions and are almost always one-liners.)  Pinto expressions can be evaluated over any range of dates and for any frequency.</p>
-        	<p>With Pinto, you can encapsulate an Excel spreadsheet, multiple regression equation, or an algorithmic trading system into one line of code!</p>
-		    <h3>Key features</h3>
-		    <ul>
-			    <li>Concise: One line of pinto code can define an entire table of data</li>
-			    <li>Updateable: Recalculate over any date range or periodicity </li>
-			    <li>Extensible: Build on other expressions that define specific data, or reusable transformation functions</li>
-			    <li>Interoperable: Pinto is accessible through an http interface (works great with python/pandas)</li>
-			    <li>Batteries included: Functions for rolling/expanding/cross window statistics, Bloomberg interface, etc.</li>
-			    <li>Efficient: Lazy evaluation, range-based caching for supplier functions</li>
-		    </ul>
-        	<h3>Get Pinto</h3>
-        	<p>The latest version of Pinto, as well as <a href="https://github.com/punkbrwstr/pinto/blob/master/pinto_reference.md">documentation</a> and a <a href="https://github.com/punkbrwstr/pinto/wiki">wiki</a>, are available on <a href="https://github.com/punkbrwstr/pinto">GitHub</a>.</p>
-        	<h3>Try Pinto!</h3>
-        	<div id="pintoWorksheet"></div>
-        	<p>Here are some sample Pinto expressions to try:</p>
-        	<p class="examples">(Hit enter to evaluate the Pinto expressions and show data as a table or graph.)</p>
-        	<ul>
-        		<li>Define a function to read in a file with stock prices: <code>read(https://pinto.tech/files/stocks.csv) def(get_stocks)</code></li>
-        		<li>Isolate two series from the file using label indexing and compute a weekly ratio: <code>get_stocks [TRAN,UTIL] only / eval(2015-10-01,2016-09-30,W-FRI)</code></li>
-        		<li>Compute 20 and 200-day moving averages: <code>get_stocks [DOW] only copy(3) [0] r_mean(20) [1] r_mean(200) eval(2016-01-01,2016-09-30,B)</code></li>
-        		<li>Define a table of stock returns: <code>get_stocks [CMG,LOCO,TACO] only r_chgpct def(my_stocks)</code></li>
-        		<li>Define a function to computer compound returns: <code> 1 + log e_sum exp -1 + def(compound_return)</code></li>
-        		<li>Apply the function to your stocks: <code>my_stocks x_mean compound_return eval(2015-09-30,2016-12-30)</code></li>
-        	</ul>
+        	<p>Pinto is a domain-specific programming language for creating tables of time series data. Technically it is a <a href="https://en.wikipedia.org/wiki/Stack-oriented_programming_language">stack-based</a> <a href="https://en.wikipedia.org/wiki/Functional_programming">functional</a> (a/k/a <a href="https://en.wikipedia.org/wiki/Concatenative_programming_language">concatenative</a>) language that uses <a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation">Reverse Polish</a> (a/k/a postfix) notation. Unlike general-purpose programming languages, Pinto has only one type of data: a column.  A Pinto column has a text header for its first row and number values (double precision floating point) for every subsequent row. Expressions written in Pinto create a table of columns with rows corresponding to a date range that you specify.  Expressions can be evaluated over any range of dates and for any frequency.</p>
+<p>Pinto is the hybrid of Excel, pandas, and an HP12C calculator that you have been looking for!</p>
         </div>
+        <div id="tryPinto">
+        	<h3>Try Pinto!</h3>
+        	<br/>
+        </div>
+        <p>Here are some sample Pinto expressions to try:</p>
+        <p class="examples">(Type Pinto expressions into above terminal window. Tab will complete names.)</p>
+        <ul>
+        		<li>Define a function to read in a file with stock prices: <code>"https://pinto.tech/files/stocks.csv" read "get_stocks" def</code></li>
+        		<li>Isolate two series from the file using label indexing and compute a weekly ratio: <code>get_stocks [TRAN,UTIL] only / "2015-10-01,2016-09-30,W-FRI" eval</code></li>
+        		<li>Compute 20 and 200-day moving averages: <code>get_stocks [DOW] only "3" copy [0] "20" r_mean [1] "200" r_mean "2016-01-01,2016-09-30,B" eval</code></li>
+        		<li>Define a table of stock returns: <code>get_stocks [CMG,LOCO,TACO] only r_chgpct "my_stocks" def</code></li>
+        		<li>Define a function to computer compound returns: <code> 1 + log e_sum exp -1 + "compound_return" def</code></li>
+        		<li>Apply the function to your stocks: <code>my_stocks x_mean compound_return "2015-09-30,2016-12-30" eval</code></li>
+        </ul>
+        <h3>Get Pinto</h3>
+        <p>The latest version of Pinto, as well as <a href="https://github.com/punkbrwstr/pinto/blob/master/pinto_reference.md">documentation</a> and a <a href="https://github.com/punkbrwstr/pinto/wiki">wiki</a>, are available on <a href="https://github.com/punkbrwstr/pinto">GitHub</a>.</p>
+        	
+		<script type="text/javascript">
+        	var console = $('<div class="console1">');
+			$('#tryPinto').append(console);
+         	var controller  = console.console({
+          		promptLabel: 'pinto> ',
+          		welcomeMessage: 'Pinto (build: ${buildNumber})\nFor pinto help type \"help\".',
+          		commandValidate:function(line){
+             		if (line == "") return false;
+             			else return true;
+           		},
+          		commandHandle:function(line, report){
+            		if (line) {
+            		   	$.ajax({
+							type: "GET",
+							url: "/pinto",
+							data: { expression: line,
+									console_output : true },
+							dataType: "json"
+						}).done(function(response) {
+							for(var i = 0; i < response.length; i++) {
+								if(response[i].responseType == "console_output") {
+									report(response[i].output, "jquery-console-message-value");
+								} else if(response[i].responseType == "error") {
+									report(response[i].exception, "jquery-console-message-error");
+								} else {
+									report("", "jquery-console-message-value");
+								}
+							}
+						});
+            		} 
+          		},
+          		cols: 40,
+          		completeIssuer:function(prefix){
+            		$.ajax({
+						type: "GET",
+						url: "/pinto",
+						data: { complete : prefix },
+						dataType: "json",
+					}).done(function(response) {
+						var candidates = response[0].candidates;
+						//if(candidates.length != 1) {
+							controller.showCompletion("",candidates);
+						//} else {
+							//return controller.showCompletion("",[candidates[0].substring(prefix.length)]);
+						//}
+            		});
+         		}
+         	});
+         </script>
+         <style type="text/css" media="screen">
+      		div.console1 { 
+      			word-wrap: break-word; 
+      			font-size: 14px;
+      			font-family: 'Inconsolata', monospace;
+      			color:#fff;
+      			white-space: pre
+      		}
+      		div.console1 div.jquery-console-focus span.jquery-console-cursor { background:#fefefe; color:#333; font-weight:bold }
+      		div.console1 div.jquery-console-inner { width:700px; height:300px; background:#333; padding:0.5em; overflow:auto }
+      		div.console1 div.jquery-console-message-error { color:red }
+      		div.console1 span.jquery-console-prompt-label { font-weight:bold }
+      	</style>
         
     	<footer>
     		<p>Pinto was created by <a href="mailto:magnumpi@gmail.com">Peter Graf</a><p>
        		<p><h4 id="buildNumber">(build: ${buildNumber})</h4></p>
     	</footer>
     </body>
-    <script src="javascripts/pinto.js"></script>
-    <script type="text/javascript">
-       	$(document).ready(function() {
-			addCell(false);
-		});
-    </script>
 </html>

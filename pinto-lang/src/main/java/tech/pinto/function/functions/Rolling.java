@@ -24,9 +24,11 @@ public class Rolling extends ComposableFunction {
 	private static final Parameters.Builder PARAMETERS_BUILDER = new Parameters.Builder()
 			.add("size", "1", "Size of window")
 			.add("freq", false, "Periodicity of window {B,W-FRI,BM,BQ,BA}");
-	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+	public static final FunctionHelp.Builder getHelpBuilder() {
+		return new FunctionHelp.Builder()
 			.description("Calculates {0} over rolling window")
 			.parameters(PARAMETERS_BUILDER.build());
+	}
 	
 
 	private final Supplier<DoubleCollector> collectorSupplier;

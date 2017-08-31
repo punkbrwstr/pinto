@@ -19,8 +19,10 @@ import tech.pinto.function.FunctionHelp;
 
 
 public class Cross extends ComposableFunction {
-	public static final FunctionHelp.Builder HELP_BUILDER = new FunctionHelp.Builder()
+	public static final FunctionHelp.Builder getHelpBuilder() {
+		return new FunctionHelp.Builder()
 			.description("Calculates cross-sectional {0} per period for all inputs.");
+	}
 	
 	private final Supplier<DoubleCollector> collectorSupplier;
 	

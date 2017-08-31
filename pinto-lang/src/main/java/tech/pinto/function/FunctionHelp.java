@@ -21,28 +21,30 @@ public class FunctionHelp {
 	
 	public String toTableRowString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("**").append(name);
-		sb.append("**|*").append(outputs).append("*|").append(description).append(" ");
+		sb.append("**").append(name).append("**|");
 		if(parameters.isPresent()) {
-			sb.append(parameters.get().indexString());
+			//sb.append(parameters.get().indexString());
 			for(int i = 0; i < parameters.get().getNames().length; i++) {
-				sb.append(parameters.get().getNames()[i]);
+				sb.append("*").append(parameters.get().getNames()[i]).append("*  ");
 				if(parameters.get().getDescriptions()[i] != null ||
 						parameters.get().getDefaults()[i] != null) {
-					sb.append(" (");
+					//sb.append(" (");
 					if(parameters.get().getDescriptions()[i] != null) {
 							sb.append(parameters.get().getDescriptions()[i]);
 					}
 					if(parameters.get().getDefaults()[i] != null) {
-							sb.append(" default: ").append(parameters.get().getDefaults()[i]);
+							sb.append(" (default: ").append(parameters.get().getDefaults()[i]).append(")");
 					}
-					sb.append(")");
+					//sb.append(")");
 				}
 				if(i < parameters.get().getNames().length -1) {
 					sb.append(", ");
 				}
 			}
+		} else {
+			sb.append("none");
 		}
+		sb.append("|").append(description).append(" ");
 		return sb.toString();
 	}
 

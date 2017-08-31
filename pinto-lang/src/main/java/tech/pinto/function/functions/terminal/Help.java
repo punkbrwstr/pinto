@@ -44,10 +44,10 @@ public class Help extends TerminalFunction {
 			}
 		} else {
 			sb.append("Pinto help").append(crlf);
-			sb.append("Built-in commands:").append(crlf);
+			sb.append("Function names:").append(crlf);
 			sb.append(namespace.getNames().stream().collect(Collectors.joining(", "))).append(crlf);
-			sb.append("For extended description of functions type: help(full)").append(crlf);
-			sb.append("For help with a specific function type: help(<function>)").append(crlf);
+			sb.append("For extended description of functions type: \"full\" help").append(crlf);
+			sb.append("For help with a specific function type: \"function name\" help").append(crlf);
 			
 		}
 		return createTextColumn(sb.toString());

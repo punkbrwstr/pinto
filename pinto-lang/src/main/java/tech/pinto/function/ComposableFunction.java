@@ -65,7 +65,7 @@ public class ComposableFunction implements Cloneable {
 	}
 
 	final public String toString() {
-    	return join(parameters.toString(),name);
+		return parameters.isPresent() ? join(parameters.get().toString(),name) : name;
     }
 
     public Set<String> getDependencies() {

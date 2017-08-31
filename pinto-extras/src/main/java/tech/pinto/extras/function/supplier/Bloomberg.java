@@ -7,8 +7,6 @@ import java.util.Optional;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
-import com.google.common.base.Joiner;
-
 import tech.pinto.Indexer;
 import tech.pinto.Parameters;
 import tech.pinto.extras.BloombergClient;

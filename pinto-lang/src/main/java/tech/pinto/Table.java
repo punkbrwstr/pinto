@@ -15,6 +15,8 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.jakewharton.fliptables.FlipTable;
+
 import tech.pinto.time.PeriodicRange;
 
 public class Table {
@@ -102,6 +104,21 @@ public class Table {
 			return table;
 		}
 	}
+	
+	@Override
+	public String toString() {
+		return getConsoleText(NumberFormat.getInstance());
+		
+	}
+	
+	public String getConsoleText(NumberFormat nf) {
+		if(range.isPresent()) {
+			return FlipTable.of(headerToText(), seriesToText(nf));
+		} else {
+			return getHeaders().stream().collect(Collectors.joining("\\t"));
+		}
+	}
+	
 
 	private static <T> Stream<T> streamInReverse(LinkedList<T> input) {
 		Iterator<T> descendingIterator = input.descendingIterator();

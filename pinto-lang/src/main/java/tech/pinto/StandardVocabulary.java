@@ -66,89 +66,89 @@ public class StandardVocabulary extends Vocabulary {
                 			 new FunctionHelp.Builder().description("Phase of the moon.").outputs("n + 1")))
             /* rolling window commands */
                 .put("r_lag", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.first,false),
-	            		Rolling.HELP_BUILDER.description("Lags data")))
+	            		Rolling.getHelpBuilder().formatDescription("lag")))
 	            .put("r_chg", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.change,false),
-	            		Rolling.HELP_BUILDER.formatDescription("change from beginning to end")))
+	            		Rolling.getHelpBuilder().formatDescription("change from beginning to end")))
 	            .put("r_chgpct", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.changepct,false),
-	            		Rolling.HELP_BUILDER.formatDescription("percent change from beginning to end")))
+	            		Rolling.getHelpBuilder().formatDescription("percent change from beginning to end")))
 	            .put("r_chglog", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.changelog,false),
-	            		Rolling.HELP_BUILDER.formatDescription("log change from beginning to end")))
+	            		Rolling.getHelpBuilder().formatDescription("log change from beginning to end")))
 	            .put("r_mean", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.average, true),
-	            		Rolling.HELP_BUILDER.formatDescription("average")))
+	            		Rolling.getHelpBuilder().formatDescription("average")))
 	            .put("r_max", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.max, true),
-	            		Rolling.HELP_BUILDER.formatDescription("maximum")))
+	            		Rolling.getHelpBuilder().formatDescription("maximum")))
 	            .put("r_min", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.min, true),
-	            		Rolling.HELP_BUILDER.formatDescription("minimum")))
+	            		Rolling.getHelpBuilder().formatDescription("minimum")))
 	            .put("r_sum", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.sum, true),
-	            		Rolling.HELP_BUILDER.formatDescription("sum")))
+	            		Rolling.getHelpBuilder().formatDescription("sum")))
 	            .put("r_geomean", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.geomean, true),
-	            		Rolling.HELP_BUILDER.formatDescription("geometric mean")))
+	            		Rolling.getHelpBuilder().formatDescription("geometric mean")))
 	            .put("r_var", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.var, true),
-	            		Rolling.HELP_BUILDER.formatDescription("sample variance")))
+	            		Rolling.getHelpBuilder().formatDescription("sample variance")))
 	            .put("r_varp", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.varp, true),
-	            		Rolling.HELP_BUILDER.formatDescription("population variance")))
+	            		Rolling.getHelpBuilder().formatDescription("population variance")))
 	            .put("r_std", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.stdev, true),
-	            		Rolling.HELP_BUILDER.formatDescription("sample standard deviation")))
+	            		Rolling.getHelpBuilder().formatDescription("sample standard deviation")))
 	            .put("r_stdp", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.stdevp, true),
-	            		Rolling.HELP_BUILDER.formatDescription("population standard deviation")))
+	            		Rolling.getHelpBuilder().formatDescription("population standard deviation")))
 	            .put("r_zscore", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.zscore, true),
-	            		Rolling.HELP_BUILDER.formatDescription("sample z-score")))
+	            		Rolling.getHelpBuilder().formatDescription("sample z-score")))
 	            .put("r_zscorep", new Name((n,p,s,f,i) -> new Rolling(n,f,i,DoubleCollectors.zscorep, true),
-	            		Rolling.HELP_BUILDER.formatDescription("population z-score")))
+	            		Rolling.getHelpBuilder().formatDescription("population z-score")))
 	            .put("r_correl", new Name((n,p,s,f,i) -> new RollingCorrelation(n,f,i),
-	            		Rolling.HELP_BUILDER.formatDescription("correlation")))
+	            		Rolling.getHelpBuilder().formatDescription("correlation")))
             /* expanding commands */
 	            .put("e_chg", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.change),
-	            		Expanding.HELP_BUILDER.description("Calculates change over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates change over an expanding window")))
 	            .put("e_chgpct", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.changepct),
-	            		Expanding.HELP_BUILDER.description("Calculates change in percent over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates change in percent over an expanding window")))
 	            .put("e_chglog", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.changelog),
-	            		Expanding.HELP_BUILDER.description("Calculates log change over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates log change over an expanding window")))
 	            .put("e_mean", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.average),
-	            		Expanding.HELP_BUILDER.description("Calculates mean over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates mean over an expanding window")))
 	            .put("e_max", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.max),
-	            		Expanding.HELP_BUILDER.description("Calculates maximum over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates maximum over an expanding window")))
 	            .put("e_min", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.min),
-	            		Expanding.HELP_BUILDER.description("Calculates minimum over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates minimum over an expanding window")))
 	            .put("e_sum", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.sum),
-	            		Expanding.HELP_BUILDER.description("Calculates sum over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates sum over an expanding window")))
 	            .put("e_geomean", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.geomean),
-	            		Expanding.HELP_BUILDER.description("Calculates geometric mean over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates geometric mean over an expanding window")))
 	            .put("e_var", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.var),
-	            		Expanding.HELP_BUILDER.description("Calculates sample variance over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates sample variance over an expanding window")))
 	            .put("e_varp", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.varp),
-	            		Expanding.HELP_BUILDER.description("Calculates variance over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates variance over an expanding window")))
 	            .put("e_std", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.stdev),
-	            		Expanding.HELP_BUILDER.description("Calculates sample standard deviation over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates sample standard deviation over an expanding window")))
 	            .put("e_stdp", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.stdevp),
-	            		Expanding.HELP_BUILDER.description("Calculates standard deviation over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates standard deviation over an expanding window")))
 	            .put("e_zscore", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.zscore),
-	            		Expanding.HELP_BUILDER.description("Calculates sample z-score over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates sample z-score over an expanding window")))
 	            .put("e_zscorep", new Name((n,p,s,f,i) -> new Expanding(n,f,i,DoubleCollectors.zscorep),
-	            		Expanding.HELP_BUILDER.description("Calculates z-score over an expanding window")))
+	            		Expanding.getHelpBuilder().description("Calculates z-score over an expanding window")))
             /* cross commands */
 	            .put("x_mean", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.average),
-	            		Cross.HELP_BUILDER.formatDescription("mean")))
+	            		Cross.getHelpBuilder().formatDescription("mean")))
 	            .put("x_max", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.max),
-	            		Cross.HELP_BUILDER.formatDescription("maximum")))
+	            		Cross.getHelpBuilder().formatDescription("maximum")))
 	            .put("x_min", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.min),
-	            		Cross.HELP_BUILDER.formatDescription("minimum")))
+	            		Cross.getHelpBuilder().formatDescription("minimum")))
 	            .put("x_sum", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.sum),
-	            		Cross.HELP_BUILDER.formatDescription("sum")))
+	            		Cross.getHelpBuilder().formatDescription("sum")))
 	            .put("x_geomean", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.geomean),
-	            		Cross.HELP_BUILDER.formatDescription("geometric mean")))
+	            		Cross.getHelpBuilder().formatDescription("geometric mean")))
 	            .put("x_var", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.var),
-	            		Cross.HELP_BUILDER.formatDescription("variance")))
+	            		Cross.getHelpBuilder().formatDescription("variance")))
 	            .put("x_varp", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.varp),
-	            		Cross.HELP_BUILDER.formatDescription("portfolio variance")))
+	            		Cross.getHelpBuilder().formatDescription("portfolio variance")))
 	            .put("x_std", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.stdev),
-	            		Cross.HELP_BUILDER.formatDescription("sample standard deviation")))
+	            		Cross.getHelpBuilder().formatDescription("sample standard deviation")))
 	            .put("x_stdp", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.stdevp),
-	            		Cross.HELP_BUILDER.formatDescription("population standard deviation")))
+	            		Cross.getHelpBuilder().formatDescription("population standard deviation")))
 	            .put("x_zscore", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.zscore),
-	            		Cross.HELP_BUILDER.formatDescription("sample z-score")))
+	            		Cross.getHelpBuilder().formatDescription("sample z-score")))
 	            .put("x_zscorep", new Name((n,p,s,f,i) -> new Cross(n,f,i,DoubleCollectors.zscorep),
-	            		Cross.HELP_BUILDER.formatDescription("population z-score")))
+	            		Cross.getHelpBuilder().formatDescription("population z-score")))
            /* other commands */
 	            .put("fill", new Name((n,p,s,f,i) -> new Fill(n,f,i,false),Fill.FILL_HELP_BUILDER))
 	            .put("flb", new Name((n,p,s,f,i) -> new Fill(n,f,i,true),Fill.LOOKBACK_HELP_BUILDER))

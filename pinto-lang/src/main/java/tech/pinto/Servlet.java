@@ -1,10 +1,8 @@
 package tech.pinto;
 
 import java.io.IOException;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -39,49 +37,67 @@ public class Servlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		response.setContentType("application/json");
-		String statement = request.getParameter("statement");
+		response.setCharacterEncoding("UTF-8");
+		String expression = request.getParameter("expression");
+		String complete = request.getParameter("complete");
+		List<Map<String, Object>> responses = new ArrayList<>();
 		try {
-			if (statement == null) {
-				writeResponse(response, new ImmutableMap.Builder<String, Object>().put("responseType", "error")
-						.put("exception", "empty statement").build());
-				return;
+			if (expression == null && complete == null) {
+				throw new Exception("empty request");
 			}
-			boolean numbersAsString = request.getParameterMap().containsKey("numbers_as_string");
-			boolean omitDates = request.getParameterMap().containsKey("omit_dates");
 			HttpSession session = request.getSession();
 			if (session.getAttribute("pinto") == null) {
 				session.setAttribute("pinto", pintoSupplier.get());
 			}
 			Pinto pinto = (Pinto) session.getAttribute("pinto");
-			List<Map<String,Object>> responses = new ArrayList<>();
-			for (Table t : pinto.execute(statement)) {
-				ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
-				builder.put("header",t.getHeaders());
-				if (t.getRange().isPresent()) {
-					builder.put("responseType", "header_and_series");
-					builder.put("date_range", t.getRange().get().asStringMap());
-					if (!omitDates) {
-						builder.put("index", t.getRange().get().dates().stream().map(LocalDate::toString).collect(toList()));
-					}
-					builder.put("series", !numbersAsString ? t.toColumnMajorArray().get() :
-							Stream.of(t.toColumnMajorArray().get()).map(DoubleStream::of)
-								.map(ds -> ds.mapToObj(Double::toString).collect(toList())).collect(toList()));
+			if (expression != null) {
+				boolean numbersAsString = request.getParameterMap().containsKey("numbers_as_string");
+				boolean omitDates = request.getParameterMap().containsKey("omit_dates");
+				boolean consoleOutput = request.getParameterMap().containsKey("console_output");
+				List<Table> tables = pinto.execute(expression);
+				if (tables.size() == 0) {
+					responses.add(new ImmutableMap.Builder<String, Object>().put("responseType", "empty").build());
 				} else {
-					builder.put("responseType", "header_only");
+					for (Table t : tables) {
+						ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
+						if (!consoleOutput) {
+							builder.put("header", t.getHeaders());
+							if (t.getRange().isPresent()) {
+								builder.put("responseType", "header_and_series");
+								builder.put("date_range", t.getRange().get().asStringMap());
+								if (!omitDates) {
+									builder.put("index", t.getRange().get().dates().stream().map(LocalDate::toString)
+											.collect(toList()));
+								}
+								builder.put("series",
+										!numbersAsString ? t.toColumnMajorArray().get()
+												: Stream.of(t.toColumnMajorArray().get()).map(DoubleStream::of)
+														.map(ds -> ds.mapToObj(Double::toString).collect(toList()))
+														.collect(toList()));
+							} else {
+								builder.put("responseType", "header_only");
+							}
+						} else {
+							builder.put("responseType", "console_output");
+							builder.put("output", "<code>" + t.toString().replaceAll(" ", "&nbsp;") + "</code>");
+						}
+						responses.add(builder.build());
+					}
 				}
+			} else if(complete != null) {
+				List<CharSequence> candidates = new ArrayList<>();
+				ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
+				builder.put("responseType", "completion");
+				pinto.getNamespace().complete(complete, 0, candidates);
+				builder.put("candidates", candidates);
 				responses.add(builder.build());
 			}
-			writeResponse(response, responses);
 		} catch (Throwable t) {
 			t.printStackTrace();
-			writeResponse(response, Arrays.asList(new ImmutableMap.Builder<String, Object>().put("responseType", "error")
-					.put("exception", t).build()));
+			responses.add(new ImmutableMap.Builder<String, Object>()
+					.put("responseType", "error").put("exception", t.getMessage()).build());
 		}
+		response.getOutputStream().print(gson.toJson(responses));
 	}
-
-	protected void writeResponse(HttpServletResponse response, Object o) throws IOException {
-		response.getOutputStream().print(gson.toJson(o));
-	}
-
 
 }
