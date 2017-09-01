@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
+import java.util.StringTokenizer;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -23,6 +24,8 @@ import static java.util.stream.Collectors.toList;
 
 public class Servlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
+
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Servlet.class);
 
 	private final Gson gson;
 	private final Supplier<Pinto> pintoSupplier;
@@ -51,6 +54,7 @@ public class Servlet extends HttpServlet {
 			}
 			Pinto pinto = (Pinto) session.getAttribute("pinto");
 			if (expression != null) {
+                log.info("({}) expression req: \"{}\"",getClientIpAddress(request),expression);
 				boolean numbersAsString = request.getParameterMap().containsKey("numbers_as_string");
 				boolean omitDates = request.getParameterMap().containsKey("omit_dates");
 				boolean consoleOutput = request.getParameterMap().containsKey("console_output");
@@ -93,11 +97,25 @@ public class Servlet extends HttpServlet {
 				responses.add(builder.build());
 			}
 		} catch (Throwable t) {
-			t.printStackTrace();
+			//t.printStackTrace();
+            if(t instanceof PintoSyntaxException || t instanceof IllegalArgumentException) {
+                log.error("({}) syntax exception: {}",getClientIpAddress(request),t.getMessage());
+            } else {
+                log.error("({}) other exception",getClientIpAddress(request),t);
+            }
 			responses.add(new ImmutableMap.Builder<String, Object>()
 					.put("responseType", "error").put("exception", t.getMessage()).build());
 		}
 		response.getOutputStream().print(gson.toJson(responses));
 	}
+
+    public static String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedForHeader = request.getHeader("X-Forwarded-For");
+        if (xForwardedForHeader == null) {
+            return request.getRemoteAddr();
+        } else {
+            return new StringTokenizer(xForwardedForHeader, ",").nextToken().trim();
+        }
+    }
 
 }
