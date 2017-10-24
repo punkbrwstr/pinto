@@ -259,7 +259,7 @@ public class Indexer implements Cloneable {
 
 		@Override
 		public int compareTo(StackOperation o) {
-			return new Integer(ordinal).compareTo(new Integer(o.getOrdinal()));
+			return Integer.valueOf(ordinal).compareTo(Integer.valueOf(o.getOrdinal()));
 		}
 		
 	}

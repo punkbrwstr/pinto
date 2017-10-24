@@ -131,7 +131,7 @@ public class BloombergClient {
 			final List<String> fieldCodes = fields;
 			final List<String> securityCodeFieldCode = securityCodes.stream()
 						.flatMap(s -> fieldCodes.stream().map(c -> s + ":" + c)).collect(Collectors.toList());
-			final Map<String,Integer> rowMap = IntStream.range(0,securityCodeFieldCode.size()).mapToObj(Integer::new)
+			final Map<String,Integer> rowMap = IntStream.range(0,securityCodeFieldCode.size()).mapToObj(Integer::valueOf)
 						.collect(Collectors.toMap((i) -> securityCodeFieldCode.get(i), Function.identity()));
 			final double[][] data = new double[securityCodeFieldCode.size()][(int) range.size()];
 			Arrays.stream(data).forEach(d -> Arrays.fill(d, Double.NaN));
