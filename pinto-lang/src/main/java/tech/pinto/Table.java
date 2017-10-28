@@ -1,12 +1,17 @@
 package tech.pinto;
 
+import static java.util.stream.Collectors.toList;
+
 import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.PrimitiveIterator.OfDouble;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,6 +20,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.google.common.collect.ImmutableMap;
 import com.jakewharton.fliptables.FlipTable;
 
 import tech.pinto.time.PeriodicRange;
@@ -51,6 +57,50 @@ public class Table {
 
 	public DoubleStream getSeries(int i) {
 		return range.isPresent() ? columns.get(i).getCells(range.get()) : DoubleStream.empty();
+	}
+
+	public String toCsv() {
+		NumberFormat nf = NumberFormat.getInstance();
+		nf.setGroupingUsed(false);
+		return toCsv(DateTimeFormatter.ISO_LOCAL_DATE,nf);
+	}
+
+	public String toCsv(NumberFormat nf) {
+		return toCsv(DateTimeFormatter.ISO_LOCAL_DATE,nf);
+	}
+
+	public String toCsv(DateTimeFormatter dtf, NumberFormat nf) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(streamInReverse(columns).map(Column::getHeader).collect(Collectors.joining(",","Date,","\n")));
+		if(range.isPresent()) {
+			List<LocalDate> d = range.get().dates();
+			List<OfDouble> s = streamInReverse(columns).map(c -> c.getCells(range.get()))
+					.map(DoubleStream::iterator).collect(Collectors.toList());
+			for(int row = 0; row < range.get().size(); row++) {
+				sb.append(d.get(row).format(dtf)).append(",");
+				for (int col = columns.size() - 1; col > -1; col--) {
+					sb.append(nf.format(s.get(col).nextDouble()));
+					sb.append(col > 0 ? "," : "\n");
+				}
+			}
+		}
+		return sb.toString();
+	}
+	
+	public Map<String,Object> toMap(boolean omitDates, boolean numbersAsStrings) {
+		ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
+		builder.put("header", getHeaders());
+		if (range.isPresent()) {
+			builder.put("date_range", getRange().get().asStringMap());
+			if (!omitDates) {
+				builder.put("index", getRange().get().dates().stream().map(LocalDate::toString)
+						.collect(toList()));
+			}
+			builder.put("series", !numbersAsStrings ? toColumnMajorArray().get() :
+					Stream.of(toColumnMajorArray().get()).map(DoubleStream::of)
+						.map(ds -> ds.mapToObj(Double::toString).collect(toList())).collect(toList()));
+		}
+		return builder.build();
 	}
 
 	public Optional<double[][]> toColumnMajorArray() {

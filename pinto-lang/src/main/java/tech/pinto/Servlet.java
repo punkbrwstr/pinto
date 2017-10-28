@@ -1,13 +1,10 @@
 package tech.pinto;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
 import java.util.StringTokenizer;
 
 import javax.servlet.ServletException;
@@ -19,8 +16,6 @@ import javax.servlet.http.HttpSession;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
-import static java.util.stream.Collectors.toList;
 
 public class Servlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
@@ -39,77 +34,93 @@ public class Servlet extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		response.setContentType("application/json");
-		response.setCharacterEncoding("UTF-8");
-		String expression = request.getParameter("expression");
-		String complete = request.getParameter("complete");
-		List<Map<String, Object>> responses = new ArrayList<>();
-		try {
-			if (expression == null && complete == null) {
-				throw new Exception("empty request");
-			}
-			HttpSession session = request.getSession();
-			if (session.getAttribute("pinto") == null) {
-				session.setAttribute("pinto", pintoSupplier.get());
-			}
-			Pinto pinto = (Pinto) session.getAttribute("pinto");
-			if (expression != null) {
-                log.info("({}) expression req: \"{}\"",getClientIpAddress(request),expression);
-				boolean numbersAsString = request.getParameterMap().containsKey("numbers_as_string");
-				boolean omitDates = request.getParameterMap().containsKey("omit_dates");
-				boolean consoleOutput = request.getParameterMap().containsKey("console_output");
-				List<Table> tables = pinto.execute(expression);
-				if (tables.size() == 0) {
-					responses.add(new ImmutableMap.Builder<String, Object>().put("responseType", "empty").build());
-				} else {
-					for (Table t : tables) {
-						ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
-						if (!consoleOutput) {
-							builder.put("header", t.getHeaders());
-							if (t.getRange().isPresent()) {
-								builder.put("responseType", "header_and_series");
-								builder.put("date_range", t.getRange().get().asStringMap());
-								if (!omitDates) {
-									builder.put("index", t.getRange().get().dates().stream().map(LocalDate::toString)
-											.collect(toList()));
-								}
-								builder.put("series",
-										!numbersAsString ? t.toColumnMajorArray().get()
-												: Stream.of(t.toColumnMajorArray().get()).map(DoubleStream::of)
-														.map(ds -> ds.mapToObj(Double::toString).collect(toList()))
-														.collect(toList()));
-							} else {
-								builder.put("responseType", "header_only");
-							}
-						} else {
-							builder.put("responseType", "console_output");
-							builder.put("output", "<code>" + t.toString().replaceAll(" ", "&nbsp;") + "</code>");
-						}
-						responses.add(builder.build());
-					}
-				}
-			} else if(complete != null) {
-				List<CharSequence> candidates = new ArrayList<>();
-				ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
-				builder.put("responseType", "completion");
-				pinto.getNamespace().complete(complete, 0, candidates);
-				builder.put("candidates", candidates);
-				responses.add(builder.build());
-			}
-		} catch (Throwable t) {
-			//t.printStackTrace();
-            if(t instanceof PintoSyntaxException || t instanceof IllegalArgumentException) {
-                log.error("({}) syntax exception: {}",getClientIpAddress(request),t.getMessage());
-            } else {
-                log.error("({}) other exception",getClientIpAddress(request),t);
-            }
-			responses.add(new ImmutableMap.Builder<String, Object>()
-					.put("responseType", "error").put("exception", t.getMessage()).build());
+		String path = request.getPathInfo();
+		HttpSession session = request.getSession();
+		if (session.getAttribute("pinto") == null) {
+			session.setAttribute("pinto", pintoSupplier.get());
 		}
-		response.getOutputStream().print(gson.toJson(responses));
+		Pinto pinto = (Pinto) session.getAttribute("pinto");
+		if(path == null) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		} else if(path.contains("csv")) {
+			getCSV(pinto, request, response);
+		} else if(path.contains("console")) {
+			getConsole(pinto, request, response);
+		} else if(path.contains("complete")) {
+			getCompletion(pinto, request, response);
+		}
+	}
+	
+	private void getCSV(Pinto pinto, HttpServletRequest request, HttpServletResponse response) throws IOException {
+		try {
+			response.setContentType("text/csv");
+			response.setCharacterEncoding("UTF-8");
+			if(!request.getParameterMap().containsKey("p")) {
+				throw new Exception("Empty request.");
+			}
+			List<Table> l = pinto.execute(request.getParameter("p"));
+			if(l.size() > 0) {
+				response.getOutputStream().print(l.get(0).toCsv());
+			}
+		} catch (Exception e) {
+			logError(e, request);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+		}
+		
 	}
 
-    public static String getClientIpAddress(HttpServletRequest request) {
+	private void getConsole(Pinto pinto, HttpServletRequest request, HttpServletResponse response) throws IOException {
+		try {
+			if(!request.getParameterMap().containsKey("p")) {
+				throw new Exception("Empty request.");
+			}
+			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+			List<Map<String,Object>> tables = new ArrayList<>();
+			for(Table t : pinto.execute(request.getParameter("p"))) {
+				ImmutableMap.Builder<String,Object> b = new ImmutableMap.Builder<String, Object>();
+				b.put("output","<code>" + t.toString().replaceAll(" ", "&nbsp;") + "</code>");
+				tables.add(b.build());
+			}
+			response.getOutputStream().print(gson.toJson(tables));
+		} catch(Exception e) {
+			sendJsonError(e, request, response);
+		}
+	}
+
+	private void getCompletion(Pinto pinto, HttpServletRequest request, HttpServletResponse response) throws IOException {
+		try {
+			if(!request.getParameterMap().containsKey("p")) {
+				throw new Exception("Empty request.");
+			}
+			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+			List<CharSequence> candidates = new ArrayList<>();
+			pinto.getNamespace().complete(request.getParameter("p"), 0, candidates);
+			response.getOutputStream().print(gson.toJson(new ImmutableMap.Builder<String, Object>()
+					.put("candidates", candidates).build()));
+		} catch(Exception e) {
+			sendJsonError(e, request, response);
+		}
+	}
+	
+	private void sendJsonError(Throwable t, HttpServletRequest request, HttpServletResponse response) throws IOException {
+		logError(t,request);
+		response.getOutputStream().print(gson.toJson(
+				new ImmutableMap.Builder<String, Object>()
+					.put("error", t.getMessage()).build()));
+	}
+	
+	private void logError(Throwable t, HttpServletRequest request) {
+		t.printStackTrace();
+        if(t instanceof PintoSyntaxException || t instanceof IllegalArgumentException) {
+            log.error("({}) syntax exception: {}",getClientIpAddress(request),t.getMessage());
+        } else {
+            log.error("({}) other exception",getClientIpAddress(request),t);
+        }	
+	}
+
+    private static String getClientIpAddress(HttpServletRequest request) {
         String xForwardedForHeader = request.getHeader("X-Forwarded-For");
         if (xForwardedForHeader == null) {
             return request.getRemoteAddr();

@@ -123,7 +123,7 @@ public class Parameters {
 		}
 	}
 	
-	public static class Builder {
+	public static class Builder implements Cloneable {
 		List<String> names = new ArrayList<>();
 		List<String> defaults = new ArrayList<>();
 		List<String> descriptions = new ArrayList<>();
@@ -134,6 +134,14 @@ public class Parameters {
 			defaults.add(null);
 			descriptions.add(description);
 			this.required.add(required);
+			return this;
+		}
+
+		public Builder addFirst(String name, boolean required, String description) {
+			names.add(0, name);
+			defaults.add(0, null);
+			descriptions.add(0, description);
+			this.required.add(0, required);
 			return this;
 		}
 
@@ -157,5 +165,16 @@ public class Parameters {
 			return new Parameters(names.toArray(new String[] {}), required.toArray(new Boolean[] {}),
 									defaults.toArray(new String[] {}), descriptions.toArray(new String[] {}));
 		}
+
+		@Override
+		public Object clone() {
+			try {
+				return super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new RuntimeException();
+			}
+		}
+		
+		
 	}
 }

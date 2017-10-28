@@ -73,7 +73,7 @@ public class Main {
         HashSessionManager manager = new HashSessionManager();
         SessionHandler sessions = new SessionHandler(manager);
         sessions.setHandler(context);
-        context.addServlet(new ServletHolder(new Servlet(this::getPinto)),"/pinto");
+        context.addServlet(new ServletHolder(new Servlet(this::getPinto)),"/pinto/*");
         ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
         context.addServlet(holderPwd,"/*");
         server.setHandler(sessions);

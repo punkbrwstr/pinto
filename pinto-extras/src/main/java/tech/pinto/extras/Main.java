@@ -16,8 +16,8 @@ import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
-import tech.pinto.extras.function.supplier.Bloomberg;
-import tech.pinto.extras.function.supplier.Futures;
+import tech.pinto.extras.functions.Bloomberg;
+import tech.pinto.extras.functions.Futures;
 
 public class Main extends tech.pinto.Main {
 	

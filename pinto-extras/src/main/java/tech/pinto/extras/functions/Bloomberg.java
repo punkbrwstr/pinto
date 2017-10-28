@@ -1,4 +1,4 @@
-package tech.pinto.extras.function.supplier;
+package tech.pinto.extras.functions;
 
 import java.util.ArrayList;
 

@@ -48,20 +48,19 @@
             		if (line) {
             		   	$.ajax({
 							type: "GET",
-							url: "/pinto",
-							data: { expression: line,
-									console_output : true },
+							url: "/pinto/console",
+							data: { p: line },
 							dataType: "json"
 						}).done(function(response) {
-							for(var i = 0; i < response.length; i++) {
-								if(response[i].responseType == "console_output") {
+							if("error" in response) {
+								report(response.error, "jquery-console-message-error");
+							} else if(response.length == 0) {
+								report("", "jquery-console-message-value");
+							} else {
+								for(var i = 0; i < response.length; i++) {
 									report(response[i].output, "jquery-console-message-value");
-								} else if(response[i].responseType == "error") {
-									report(response[i].exception, "jquery-console-message-error");
-								} else {
-									report("", "jquery-console-message-value");
 								}
-							}
+							} 
 						});
             		} 
           		},
@@ -69,16 +68,11 @@
           		completeIssuer:function(prefix){
             		$.ajax({
 						type: "GET",
-						url: "/pinto",
-						data: { complete : prefix },
+						url: "/pinto/complete",
+						data: { p : prefix },
 						dataType: "json",
 					}).done(function(response) {
-						var candidates = response[0].candidates;
-						//if(candidates.length != 1) {
-							controller.showCompletion("",candidates);
-						//} else {
-							//return controller.showCompletion("",[candidates[0].substring(prefix.length)]);
-						//}
+						controller.showCompletion("",response.candidates);
             		});
          		}
          	});
