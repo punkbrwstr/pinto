@@ -86,6 +86,8 @@ public class Table {
 		}
 		return sb.toString();
 	}
+
+
 	
 	public Map<String,Object> toMap(boolean omitDates, boolean numbersAsStrings) {
 		ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
