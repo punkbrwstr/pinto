@@ -32,7 +32,7 @@ public class IndexTester {
 
 	@Test
 	public void testWildcards() throws Exception {
-		Table t = pinto.execute("1 2 3 \"hotdiggitydog,burger,hotdog\" label [hot*dog] only eval").get(0);
+		Table t = pinto.eval("1 2 3 {hotdiggitydog,burger,hotdog} [hot*dog] only eval").get(0);
 		assertEquals("wildcard label", 2, t.getColumnCount());
 	}
 
@@ -50,19 +50,19 @@ public class IndexTester {
 
 	@Test
 	public void testLabels() throws Exception {
-		Table ts = pinto.execute("1 2 3 \"a,b,c\" label [c] eval").get(0);
+		Table ts = pinto.eval("1 2 3 {a,b,c} label [c] eval").get(0);
 		assertEquals("label index (simple) value", 3.0, first(0,ts), 0.1);
-		ts = pinto.execute("1 2 3 \"a,b,c\" label [b,b] neg eval").get(0);
+		ts = pinto.eval("1 2 3 {a,b,c} label [b,b] neg eval").get(0);
 		assertEquals("repeated label index", sumRow(0,ts),0.0,0.1);
-		ts = pinto.execute("1 2 3 \"b,b,a\" label [b] neg eval").get(0);
+		ts = pinto.eval("1 2 3 {b,b,a} label [b] neg eval").get(0);
 		assertEquals("label index (repeated label) value", sumRow(0,ts),0.0,0.1);
 		
 	}
 
 	@Test
 	public void testCopyAndRepeat() throws Exception {
-		pinto.execute("[&0] 1 + \"function_that_copies\" def");
-		Table t = pinto.execute("98 99 [0+] function_that_copies eval").get(0);
+		pinto.eval("[&0] 1 + \"function_that_copies\" def");
+		Table t = pinto.eval("98 99 [0+] function_that_copies eval").get(0);
 		assertEquals("Repeat a defined that copies", t.getColumnCount(),4);
 		assertEquals("Repeat a defined that copies", first(1,t),99, 0.1);
 	}
@@ -74,11 +74,11 @@ public class IndexTester {
 	}
 	
 	private double first(int column, Table t) {
-		return t.getSeries(column).limit(1).sum();
+		return t.getSeries(column, false).limit(1).sum();
 	}
 	
 	private boolean compareRow(String pintoExpression, double... results) throws Exception {
-		return compareRow(results,pinto.execute(pintoExpression).get(0));
+		return compareRow(results,pinto.eval(pintoExpression).get(0));
 	}
 
 	private boolean compareRow(double[] target, Table t) {

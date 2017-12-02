@@ -11,7 +11,11 @@ public class Periodicities {
 	public static final Map<String,Supplier<Periodicity<?>>> map = 
 			new ImmutableMap.Builder<String,Supplier<Periodicity<?>>>()
 			.put("B",() -> new BusinessDaily())
-			.put("W-FRI",() -> new FridayWeekly())
+			.put("W-MON",() -> new WeeklyEndingMondays())
+			.put("W-TUE",() -> new WeeklyEndingTuesdays())
+			.put("W-WED",() -> new WeeklyEndingWednesdays())
+			.put("W-THU",() -> new WeeklyEndingThursdays())
+			.put("W-FRI",() -> new WeeklyEndingFridays())
 			.put("BM",() -> new BusinessMonthly())
 			.put("BQ-DEC",() -> new BusinessQuarterly())
 			.put("BA-DEC",() -> new BusinessYearly())

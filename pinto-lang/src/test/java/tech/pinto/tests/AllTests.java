@@ -23,9 +23,6 @@ import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
-import tech.pinto.function.CachedFunction;
-import tech.pinto.function.ComposableFunction;
-import tech.pinto.function.FunctionHelp;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
@@ -67,36 +64,36 @@ public class AllTests {
 	public static class TestVocabulary extends StandardVocabulary {
 		
 		public TestVocabulary() {
-			names.put("counter", new tech.pinto.Name((n,p,s,f,i) -> new CallCounter(n,f,i), new FunctionHelp.Builder()));
+//			names.put("counter", new tech.pinto.Name((n,p,s,f,i) -> new CallCounter(n,f,i), new FunctionHelp.Builder()));
 		}
 
 	}
 	
-	public static class CallCounter extends CachedFunction {
-		
-		private static AtomicInteger count = new AtomicInteger();
-
-		public CallCounter(String name, ComposableFunction previousFunction, Indexer indexer) {
-			super(name, previousFunction, indexer);
-		}
-
-		@Override
-		protected <P extends Period> List<DoubleStream> getUncachedSeries(PeriodicRange<P> range) {
-			double d = count.getAndIncrement();
-			return Arrays.asList( DoubleStream.iterate(d, r -> d ).limit(range.size()));
-		}
-
-		@Override
-		protected int columns() {
-			return 1;
-		}
-
-		@Override
-		protected List<String> getUncachedText() {
-			return Arrays.asList("counter");
-		}
-
-	}
+//	public static class CallCounter extends CachedFunction {
+//		
+//		private static AtomicInteger count = new AtomicInteger();
+//
+//		public CallCounter(String name, Function previousFunction, Indexer indexer) {
+//			super(name, previousFunction, indexer);
+//		}
+//
+//		@Override
+//		protected <P extends Period> List<DoubleStream> getUncachedSeries(PeriodicRange<P> range) {
+//			double d = count.getAndIncrement();
+//			return Arrays.asList( DoubleStream.iterate(d, r -> d ).limit(range.size()));
+//		}
+//
+//		@Override
+//		protected int columns() {
+//			return 1;
+//		}
+//
+//		@Override
+//		protected List<String> getUncachedText() {
+//			return Arrays.asList("counter");
+//		}
+//
+//	}
 
 
 

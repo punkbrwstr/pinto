@@ -1,6 +1,8 @@
 package tech.pinto;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +50,8 @@ public class Servlet extends HttpServlet {
 			getConsole(pinto, request, response);
 		} else if(path.contains("complete")) {
 			getCompletion(pinto, request, response);
+		} else if(path.contains("sas")) {
+			getSas(pinto, request, response);
 		}
 	}
 	
@@ -58,13 +62,44 @@ public class Servlet extends HttpServlet {
 			if(!request.getParameterMap().containsKey("p")) {
 				throw new Exception("Empty request.");
 			}
-			List<Table> l = pinto.execute(request.getParameter("p"));
+			List<Table> l = pinto.eval(request.getParameter("p"));
 			if(l.size() > 0) {
-				response.getOutputStream().print(l.get(0).toCsv());
+				if(!l.get(l.size() - 1).getStatus().isPresent()) {
+					response.getOutputStream().print(l.get(l.size()-1).toCsv());
+				} else {
+					response.getOutputStream().print(l.get(l.size()-1).getStatus().orElse(""));
+				}
 			}
 		} catch (Exception e) {
 			logError(e, request);
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+		}
+		
+	}
+	
+	private void getSas(Pinto pinto, HttpServletRequest request, HttpServletResponse response) throws IOException {
+		try {
+			response.setContentType("text/csv");
+			response.setCharacterEncoding("UTF-8");
+			if(!request.getParameterMap().containsKey("p")) {
+				throw new Exception("Empty request.");
+			}
+			DecimalFormatSymbols dfs = new DecimalFormatSymbols();
+			dfs.setNaN(".");
+			DecimalFormat nf = new DecimalFormat();
+			nf.setDecimalFormatSymbols(dfs);
+			nf.setGroupingUsed(false);
+			List<Table> l = pinto.eval(request.getParameter("p"));
+			if(l.size() > 0) {
+				if(!l.get(l.size() - 1).getStatus().isPresent()) {
+					response.getOutputStream().print(l.get(l.size()-1).toCsv(nf));
+				} else {
+					response.getOutputStream().print("output\n" + l.get(l.size()-1).getStatus().orElse("") + "\n");
+				}
+			}
+		} catch (Exception e) {
+			logError(e, request);
+			response.getOutputStream().print("error\n" + e.getMessage() + "\n");
 		}
 		
 	}
@@ -77,9 +112,13 @@ public class Servlet extends HttpServlet {
 			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
 			List<Map<String,Object>> tables = new ArrayList<>();
-			for(Table t : pinto.execute(request.getParameter("p"))) {
+			for(Table t : pinto.eval(request.getParameter("p"))) {
 				ImmutableMap.Builder<String,Object> b = new ImmutableMap.Builder<String, Object>();
-				b.put("output","<code>" + t.toString().replaceAll(" ", "&nbsp;") + "</code>");
+				if(!t.getStatus().isPresent()) {
+					b.put("output","<code>" + t.toString().replaceAll(" ", "&nbsp;") + "</code>");
+				} else {
+					b.put("output","<code>" + t.getStatus().orElse("").replaceAll(" ", "&nbsp;") + "</code>");
+				}
 				tables.add(b.build());
 			}
 			response.getOutputStream().print(gson.toJson(tables));

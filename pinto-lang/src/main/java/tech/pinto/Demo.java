@@ -24,10 +24,6 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import jline.TerminalFactory;
-import tech.pinto.function.FunctionHelp;
-import tech.pinto.function.TerminalFunction;
-import tech.pinto.function.functions.HeaderLiteral;
-import tech.pinto.function.functions.ImportCSV;
 import tech.pinto.tools.LogAppender;
 
 public class Demo {
@@ -105,31 +101,13 @@ public class Demo {
 	public static class DemoVocabulary extends StandardVocabulary {
 		
 		public DemoVocabulary() {
-			names.put("exec", new Name((n,p,s,f,i) -> new DummyFunction(n),
-					new FunctionHelp.Builder().description("Not implemented in demo mode")));
-			names.put("export", new Name((n,p,s,f,i) -> new DummyFunction(n), new FunctionHelp.Builder()
-					.description("Not implemented in demo mode")));
-            names.put("read", new Name((n,p,s,f,i) -> {
-            	return new ImportCSV(n,new HeaderLiteral(f, i, "https://pinto.tech/files/stocks.csv;true"),i);}, ImportCSV.HELP_BUILDER
-            	));
+			names.remove("exec");
+			names.remove("exec");
+			names.remove("exec");
 		}
 		
 	}
 	
-	public static class DummyFunction extends TerminalFunction {
-
-		public DummyFunction(String name) {
-			super(name, null, null, null);
-			throw new UnsupportedOperationException("Demo does not support " + name + " function.");
-		}
-
-		@Override
-		public Table getTable() throws PintoSyntaxException {
-			return null;
-		}
-
-	}
-
 	@Module
 	public static class DemoModule {
 		@Provides

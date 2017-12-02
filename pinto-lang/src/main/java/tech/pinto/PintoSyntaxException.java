@@ -1,6 +1,6 @@
 package tech.pinto;
 
-public class PintoSyntaxException extends Exception {
+public class PintoSyntaxException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
 
 	public PintoSyntaxException() {

@@ -10,7 +10,9 @@ import org.junit.rules.ExpectedException;
 import tech.pinto.time.BusinessDay;
 import tech.pinto.time.BusinessMonth;
 import tech.pinto.time.BusinessQuarter;
-import tech.pinto.time.FridayWeek;
+import tech.pinto.time.WeekEndingFriday;
+import tech.pinto.time.WeekEndingMonday;
+import tech.pinto.time.WeekEndingTuesday;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 
@@ -24,6 +26,10 @@ public class DateTester {
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
+	
+	private LocalDate d(String s) {
+		return LocalDate.parse(s);
+	}
 
 	/**
 	 *   
@@ -140,10 +146,40 @@ public class DateTester {
 	}
 
 	@Test
-	public void testFridayWeekly() {
-		log.info("START testBusinessDaily");
+	public void testMondayWeekly() {
+		log.info("START testMondayWeekly");
 
-		Periodicity<FridayWeek> p = Periodicities.get("W-FRI");
+		Periodicity<WeekEndingMonday> p = Periodicities.get("W-MON");
+		assertEquals("MondayWeekly from/to localdate (1)",
+				d("2014-07-07"), p.from(d("2014-07-07")).endDate());
+		assertEquals("MondayWeekly from/to localdate (2)",
+				d("2014-07-14"), p.from(d("2014-07-08")).endDate());
+		assertEquals("MondayWeekly from/to localdate (3)",
+				d("2014-07-07"), p.from(d("2014-07-06")).endDate());
+		assertEquals("MondayWeekly next",
+				d("2014-07-14"), p.from(d("2014-07-07")).next().endDate());
+	}
+	
+	@Test
+	public void testTuesdayWeekly() {
+		log.info("START testMondayWeekly");
+
+		Periodicity<WeekEndingTuesday> p = Periodicities.get("W-TUE");
+		assertEquals("MondayWeekly from/to localdate (1)",
+				d("2014-07-08"), p.from(d("2014-07-07")).endDate());
+		assertEquals("MondayWeekly from/to localdate (2)",
+				d("2014-07-15"), p.from(d("2014-07-09")).endDate());
+		assertEquals("MondayWeekly from/to localdate (3)",
+				d("2014-07-08"), p.from(d("2014-07-06")).endDate());
+		assertEquals("MondayWeekly next",
+				d("2014-07-15"), p.from(d("2014-07-07")).next().endDate());
+	}
+	
+	@Test
+	public void testFridayWeekly() {
+		log.info("START testWeeklyFriday");
+
+		Periodicity<WeekEndingFriday> p = Periodicities.get("W-FRI");
 		assertEquals("FridayWeekly from/to localdate (1)",
 				LocalDate.of(2014, JULY, 4), p.from(LocalDate.of(2014, JULY, 4)).endDate());
 		assertEquals("FridayWeekly from/to localdate (2)",

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.util.Arrays;
+import java.util.List;
 
 import jline.console.ConsoleReader;
 import tech.pinto.tools.LogAppender;
@@ -69,11 +70,16 @@ public class Console implements Runnable {
 					}
 				} else {
 					try {
-				    	for(Table t : pinto.execute(line.toString())) {
-				    		out.println(t.getConsoleText(nf));
-				    	}
+						List<Table> l = pinto.eval(line.toString()); 
+						if(l.size() == 0) {
+				    		out.println("");
+						} else {
+							for(Table t : l) {
+								out.println(t.getStatus().isPresent() ? t.getStatus().get() : t.getConsoleText(nf));
+							}
+						}
 					} catch (PintoSyntaxException pse) {
-						System.out.println("Incorrect syntax: " + pse.getMessage());
+						System.out.println("Incorrect syntax: " + pse.getLocalizedMessage());
 						pse.printStackTrace();
 					} catch (Throwable e) {
 						System.out.println("Evaluation error: " + e.getMessage());

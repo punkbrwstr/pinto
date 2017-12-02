@@ -160,6 +160,9 @@ public class BloombergClient {
 					request.set("returnEids", true);
 					request.set("nonTradingDayFillOption", "NON_TRADING_WEEKDAYS");
 					request.set("nonTradingDayFillMethod", "NIL_VALUE");
+					if(Arrays.asList("W-MON", "W-TUE", "W-WED", "W-THU").contains(range.periodicity().code())) {
+						request.set("periodicityAdjustment", "ACTUAL");
+					}
 					//request.set("nonTradingDayFillMethod", fillPrevious ? "PREVIOUS_VALUE" : "NIL_VALUE");
 					jobs.put(jobNumber, new Job(l -> {
 						for (Element securityData : l) {

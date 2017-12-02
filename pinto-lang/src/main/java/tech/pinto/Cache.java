@@ -1,15 +1,18 @@
-package tech.pinto.function;
+package tech.pinto;
 
 import java.time.LocalDate;
+
+
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
@@ -17,54 +20,21 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
 
-import tech.pinto.Indexer;
-import tech.pinto.Column;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicity;
 
-abstract public class CachedFunction extends ComposableFunction {
+public class Cache {
 	
-	public static final long CURRENT_DATA_TIMEOUT = 60 * 1000l;
+	private static final long CURRENT_DATA_TIMEOUT = 60 * 1000l;
 	
-	public static HashMap<String, RangeMap<Long, CachedSeriesList>> seriesCache = new HashMap<>();
-	public static HashMap<String, List<String>> textCache = new HashMap<>();
+	private static HashMap<String, RangeMap<Long, CachedSeriesList>> seriesCache = new HashMap<>();
 
-	public CachedFunction(String name, ComposableFunction previousFunction, Indexer indexer) {
-		super(name, previousFunction, indexer);
-	}
-
-	abstract protected <P extends Period> List<DoubleStream> getUncachedSeries(PeriodicRange<P> range);
-
-	abstract protected List<String> getUncachedText();
-
-	abstract protected int columns();
-
-	@Override
-	protected void apply(LinkedList<Column> stack) {
-		for (int i = 0; i < columns(); i++) {
-			final int index = i;
-			stack.addFirst(new Column(inputs -> getCachedText().get(index),
-					inputs -> range -> this.getCachedValues(range).get(index)));
-		}
-	}
-
-	private String getKey() {
-		return toString();
-	}
-
-	private List<String> getCachedText() {
-		synchronized (textCache) {
-			if (!textCache.containsKey(getKey())) {
-				textCache.put(getKey(), getUncachedText());
-			}
-			return textCache.get(getKey());
-		}
-	}
-
-	private <P extends Period> List<DoubleStream> getCachedValues(PeriodicRange<P> range) {
-		Periodicity<P> freq = range.periodicity();
-		String wholeKey = getKey() + ":" + range.periodicity().code();
+	public static List<DoubleStream> getCachedValues(String key, PeriodicRange<?> range,
+			Function<PeriodicRange<?>, List<DoubleStream>> function) {
+		@SuppressWarnings("unchecked")
+		Periodicity<Period> freq = (Periodicity<Period>) range.periodicity();
+		String wholeKey = key + ":" + range.periodicity().code();
 		RangeMap<Long, CachedSeriesList> cache = null;
 		synchronized (seriesCache) {
 			if (range.clearCache() || !seriesCache.containsKey(wholeKey)) {
@@ -94,13 +64,13 @@ abstract public class CachedFunction extends ComposableFunction {
 					long thisChunkEnd = e.getValue().getRange().end().longValue();
 					chunkStart = Long.min(chunkStart, thisChunkStart);
 					if (current < thisChunkStart) {
-						concat(chunkData, getUncachedSeries(freq.range(current, thisChunkStart - 1, false)));
+						concat(chunkData, function.apply(freq.range(current, thisChunkStart - 1, false)));
 					}
 					concat(chunkData, e.getValue().getSeries());
 					current = thisChunkEnd + 1;
 				}
 				if (current <= requestedRange.upperEndpoint()) {
-					concat(chunkData, getUncachedSeries(freq.range(current, requestedRange.upperEndpoint(), false)));
+					concat(chunkData, function.apply(freq.range(current, requestedRange.upperEndpoint(), false)));
 					current = requestedRange.upperEndpoint() + 1;
 				}
 				toRemove.stream().forEach(cache::remove);
