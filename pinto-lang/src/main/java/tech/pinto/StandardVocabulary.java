@@ -415,7 +415,7 @@ public class StandardVocabulary extends Vocabulary {
 
 
 /* unary operators */
-    	names.put("abs", makeOperator("abs", Math::abs));
+    	names.put("abs", makeOperator("abs", (DoubleUnaryOperator) Math::abs));
     	names.put("sin", makeOperator("sin", Math::sin));
     	names.put("cos", makeOperator("cos", Math::cos));
     	names.put("tan", makeOperator("tan", Math::tan));
@@ -423,7 +423,7 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("log", makeOperator("log", Math::log));
     	names.put("log10", makeOperator("log10", Math::log10));
     	names.put("exp", makeOperator("exp", Math::exp));
-    	names.put("signum", makeOperator("signum", Math::signum));
+    	names.put("signum", makeOperator("signum", (DoubleUnaryOperator)Math::signum));
     	names.put("asin", makeOperator("asin", Math::asin));
     	names.put("acos", makeOperator("acos", Math::acos));
     	names.put("atan", makeOperator("atan", Math::atan));
@@ -433,14 +433,14 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("ceil", makeOperator("ceil", Math::ceil));
     	names.put("floor", makeOperator("floor", Math::floor));
     	names.put("rint", makeOperator("rint", Math::rint));
-    	names.put("ulp", makeOperator("ulp", Math::ulp));
+    	names.put("ulp", makeOperator("ulp", (DoubleUnaryOperator)Math::ulp));
     	names.put("sinh", makeOperator("sinh", Math::sinh));
     	names.put("cosh", makeOperator("cosh", Math::cosh));
     	names.put("tanh", makeOperator("tanh", Math::tanh));
     	names.put("expm1", makeOperator("expm1", Math::expm1));
     	names.put("log1p", makeOperator("log1p", Math::log1p));
-    	names.put("nextUp", makeOperator("nextUp", Math::nextUp));
-    	names.put("nextDown", makeOperator("nextDown", Math::nextDown));
+    	names.put("nextUp", makeOperator("nextUp", (DoubleUnaryOperator)Math::nextUp));
+    	names.put("nextDown", makeOperator("nextDown", (DoubleUnaryOperator)Math::nextDown));
     	names.put("neg", makeOperator("neg", x -> x * -1.0d));
     	names.put("inv", makeOperator("inv", x -> 1.0 / x));
     	names.put("acgbPrice", makeOperator("acgbPrice", quote -> {
