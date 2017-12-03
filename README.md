@@ -1,20 +1,13 @@
 # Pinto
 
-Pinto is a domain-specific programming language for creating tables of time series data. Technically it is a [stack-based](https://en.wikipedia.org/wiki/Stack-oriented_programming_language) [functional](https://en.wikipedia.org/wiki/Functional_programming) (a/k/a [concatenative](https://en.wikipedia.org/wiki/Concatenative_programming_language)) language that uses [Reverse Polish](https://en.wikipedia.org/wiki/Reverse_Polish_notation) (a/k/a postfix) notation. Unlike general-purpose programming languages, Pinto has only one type of data: a column.  A Pinto column has a text header for its first row and number values (double precision floating point) for every subsequent row. Expressions written in Pinto create a table of columns with rows corresponding to a date range that you specify.  Expressions can be evaluated over any range of dates and for any frequency.
+Pinto is a domain-specific programming language for manipulating time series. Technically it is a [concatenative](https://en.wikipedia.org/wiki/Concatenative_programming_language) language that uses [postfix](https://en.wikipedia.org/wiki/Reverse_Polish_notation) notation. That means that Pinto programs are comprised of a sequence of funcations, written left-to-right, where each function's inputs are the outputs of the previous function (to its left).  These inputs and outputs are in the form of a table with columns representing specific time series definitions and a varying number of rows that correspond to a requested date range.  The rows may contain different types of data with values that vary over time or are constant.  Each column also has a text header to identify it. The table is set up as a [stack](https://en.wikipedia.org/wiki/Stack_(abstract_data_type)), with  new columns added to the right and functions operating on the rightmost column first.
 
-Pinto is the hybrid of Excel, pandas, and an HP12C calculator that you have been looking for!
 
 ## How does it work?
-
-Every element of a Pinto expression is a function.  These functions take columns as inputs (zero or more) and return columns as outputs (also could be zero or more).  The input and output columns are stored in a [stack](https://en.wikipedia.org/wiki/Stack_(abstract_data_type))*, an ordered collection that operates on last-in-first-out basis.  When evaluated, expressions return a table comprised of the columns that are in the stack after all of the functions are applied.
 
 Here's a simple example of a Pinto expression broken down into numbered steps:
 
 ![Alt text](https://pinto.tech/files/diag.png "2 3 +")
-
-A more advanced example computes a moving average for a stock prcie:
-
-![Alt text](https://pinto.tech/files/diag2.png "CMG 200 r_mean")
 
 For language details see the [Pinto Language Reference](./pinto_reference.md).
 
@@ -27,8 +20,8 @@ Try Pinto live [online](http://pinto.tech/)
 
  - Concise: One line of pinto code can define an entire table of data
  - Updateable: Automatically update tables over any date range or periodicity 
- - Extensible: Build reusable functions that define specific data or reusable transformations
- - Interoperable: Pinto is accessible through an http interface (works great with python/pandas)
+ - Extensible: Build reusable functions that define specific data or transformations
+ - Interoperable: Pinto is accessible through an http interface (works great with python or SAS)
  - Batteries included: Functions for rolling/expanding/cross window statistics, Bloomberg interface, etc.
  - Efficient: Lazy evaluation, range-based caching for supplier ([nullary](https://en.wikipedia.org/wiki/Arity)) functions
 
@@ -52,10 +45,6 @@ cd pinto
 mvn -pl pinto-lang compile
 mvn exec:java@REPL -pl pinto-lang
 ```
-
-## *There is no spoon
-
-(There never is any data on the stack it only used to compose the functions)
 
 ## License
 
