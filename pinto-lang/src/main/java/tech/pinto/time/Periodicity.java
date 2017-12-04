@@ -19,12 +19,12 @@ public abstract class Periodicity<P extends Period> extends DiscreteDomain<P> {
 
 	@Override
 	public P next(P arg0) {
-		return offset(arg0,1);
+		return offset(1,arg0);
 	}
 
 	@Override
 	public P previous(P arg0) {
-		return offset(arg0,-1);
+		return offset(-1,arg0);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public abstract class Periodicity<P extends Period> extends DiscreteDomain<P> {
 		return p.endDate().isBefore(date) ? next(p) : p;
 	}
 	
-	public P offset(P start, long count) {
+	public P offset(long count, P start) {
 		return get(start.longValue() + count);
 	}
 

@@ -52,8 +52,8 @@ public final class PeriodicRange<P extends Period> {
 	}
 	
 	public PeriodicRange<P> expand(long offset) {
-		P start = periodicity.offset(start(), Math.min(offset, 0));
-		P end = periodicity.offset(end(), Math.max(offset, 0));
+		P start = periodicity.offset(Math.min(offset, 0), start());
+		P end = periodicity.offset(Math.max(offset, 0), end());
 		return periodicity.range(start, end, clearCache);
 	}
 

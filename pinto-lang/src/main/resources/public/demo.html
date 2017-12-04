@@ -14,8 +14,7 @@
         </header>
         <div id="pintoBody">
         	<h3>What is Pinto?</h3>
-        	<p>Pinto is a domain-specific programming language for creating tables of time series data. Technically it is a <a href="https://en.wikipedia.org/wiki/Stack-oriented_programming_language">stack-based</a> <a href="https://en.wikipedia.org/wiki/Functional_programming">functional</a> (a/k/a <a href="https://en.wikipedia.org/wiki/Concatenative_programming_language">concatenative</a>) language that uses <a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation">Reverse Polish</a> (a/k/a postfix) notation. Unlike general-purpose programming languages, Pinto has only one type of data: a column.  A Pinto column has a text header for its first row and number values (double precision floating point) for every subsequent row. Expressions written in Pinto create a table of columns with rows corresponding to a date range that you specify.  Expressions can be evaluated over any range of dates and for any frequency.</p>
-<p>Pinto is the hybrid of Excel, pandas, and an HP12C calculator that you have been looking for!</p>
+        	<p>Pinto is a domain-specific programming language for manipulating time series. Technically it is a <a href="https://en.wikipedia.org/wiki/Concatenative_programming_language" rel="nofollow">concatenative</a> language that uses <a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation" rel="nofollow">postfix</a> notation. That means that Pinto programs are comprised of a sequence of functions, written left-to-right, where each function's inputs are the outputs of the previous function (to its left).  These inputs and outputs are in the form of a table with columns representing specific time series definitions and a varying number of rows that correspond to a requested date range.  The rows may contain different types of data with values that vary over time or are constant.  Each column also has a text header to identify it. The table is set up as a <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)" rel="nofollow">stack</a>, with  new columns added to the right and functions operating on the rightmost column first.</p>
         </div>
         <div id="tryPinto">
         	<h3>Try Pinto!</h3>
@@ -24,12 +23,12 @@
         <p>Here are some sample Pinto expressions to try:</p>
         <p class="examples">(Type Pinto expressions into above terminal window. Tab will complete names.)</p>
         <ul>
-        		<li>Define a function to read in a file with stock prices: <code>"https://pinto.tech/files/stocks.csv" read "get_stocks" def</code></li>
-        		<li>Select two columns using label indexing and compute their ratio: <code>get_stocks [TRAN,UTIL] only / "2015-10-01;2015-10-30;W-FRI" eval</code></li>
-        		<li>Compute 20 and 200-day moving averages: <code>get_stocks [DOW] only "20" [0,-1&amp;] r_mean "200" [0,-1&amp;] r_mean "2016-01-01;2016-01-05;B" eval</code></li>
-        		<li>Define a table of returns of your favorite stocks: <code>get_stocks [CMG,LOCO,TACO] only r_chgpct "my_stocks" def</code></li>
-        		<li>Define a function to compute compound returns: <code> 1 + log e_sum exp -1 + "compound_return" def</code></li>
-        		<li>Apply the function to your stocks: <code>my_stocks x_mean compound_return "2015-09-30;2015-10-31" eval</code></li>
+        		<li>Define a function to read in a file with stock prices: <code>:get_stocks {source: "https://pinto.tech/files/stocks.csv"} read def</code></li>
+        		<li>Select two columns using label indexing and compute their ratio: <code>get_stocks [TRAN,UTIL] only / {start: "2015-10-01", end:"2015-10-30", freq: "W-FRI"} eval</code></li>
+        		<li>Compute 20 and 200-day moving averages: <code>get_stocks [DOW] only {size:20} [0,-1&amp;] rolling {size:200} [0,-1&amp;] rolling [:2] average {start:"2016-01-01", end: "2016-01-05", freq:"B"} eval</code></li>
+        		<li>Define a table of returns of your favorite stocks: <code>:my_stocks_returns get_stocks [CMG,LOCO,TACO] only rolling changepct def</code></li>
+        		<li>Define a function to compute compound returns: <code>:compound_return 1 + log expanding sum exp -1 + def</code></li>
+        		<li>Apply the function to your stocks: <code>my_stocks_returns cross average compound_return {start:"2015-09-30", end:"2015-10-31"} eval</code></li>
         </ul>
         <h3>Get Pinto</h3>
         <p>The latest version of Pinto, as well as <a href="https://github.com/punkbrwstr/pinto/blob/master/pinto_reference.md">documentation</a> are available on <a href="https://github.com/punkbrwstr/pinto">GitHub</a>.</p>

@@ -224,7 +224,7 @@ public class StandardVocabulary extends Vocabulary {
     		} catch (IOException e) {
     			throw new PintoSyntaxException("Unable to import file \"" + source + "\".", e);
     		}	
-    	}),"[source,includes_header=true]", "Reads CSV formatted table from file or URL specified as *source*."));
+    	}),"[source,includes_header=\"true\"]", "Reads CSV formatted table from file or URL specified as *source*."));
 
 
 /* data cleanup */
@@ -331,7 +331,7 @@ public class StandardVocabulary extends Vocabulary {
     		s.replaceAll(c -> {
     			return new Column.OfDoubleArrays(inputs -> inputs[0].getHeader() + " rolling", inputs -> range -> {
     				Stream.Builder<DoubleStream> b = Stream.builder();
-    				Period expandedWindowStart = wf.offset(wf.from(range.start().endDate()), -1 * (size - 1));
+    				Period expandedWindowStart = wf.offset(-1 * (size - 1), wf.from(range.start().endDate()));
     				Period windowEnd = wf.from(range.end().endDate());
     				PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
     				inputs[0].setRange(expandedWindow);

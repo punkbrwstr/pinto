@@ -21,12 +21,13 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?,?>>>{
 			if(raw.charAt(i) == '"') {
 				foundQuote = !foundQuote;
 			}
-			if(raw.charAt(i) == ':') {
+			if(raw.charAt(i) == ':' && ! foundQuote) {
 				if(foundColon) {
 					throw new PintoSyntaxException("Repeated \":\" in header literal");
-				} else if(foundQuote) {
-					throw new PintoSyntaxException("Double-quote found in header literal");
 				}
+//				else if(foundQuote) {
+//					throw new PintoSyntaxException("Double-quote found in header literal");
+//				}
 				as[0] = raw.substring(start, i);
 				start = i+1;
 				foundColon = true;

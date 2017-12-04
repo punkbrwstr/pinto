@@ -119,7 +119,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>23.2-jre</version>
+      <version>23.5-jre</version>
     </dependency>
     <dependency>
       <groupId>jline</groupId>
