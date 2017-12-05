@@ -23,12 +23,18 @@
         <p>Here are some sample Pinto expressions to try:</p>
         <p class="examples">(Type Pinto expressions into above terminal window. Tab will complete names.)</p>
         <ul>
-        		<li>Define a function to read in a file with stock prices: <code>:get_stocks {source: "https://pinto.tech/files/stocks.csv"} read def</code></li>
-        		<li>Select two columns using label indexing and compute their ratio: <code>get_stocks [TRAN,UTIL] only / {start: "2015-10-01", end:"2015-10-30", freq: "W-FRI"} eval</code></li>
-        		<li>Compute 20 and 200-day moving averages: <code>get_stocks [DOW] only {size:20} [0,-1&amp;] rolling {size:200} [0,-1&amp;] rolling [:2] average {start:"2016-01-01", end: "2016-01-05", freq:"B"} eval</code></li>
-        		<li>Define a table of returns of your favorite stocks: <code>:my_stocks_returns get_stocks [CMG,LOCO,TACO] only rolling changepct def</code></li>
-        		<li>Define a function to compute compound returns: <code>:compound_return 1 + log expanding sum exp -1 + def</code></li>
-        		<li>Apply the function to your stocks: <code>my_stocks_returns cross average compound_return {start:"2015-09-30", end:"2015-10-31"} eval</code></li>
+            <li>Define a function to read in a file with stock prices
+                <p><pre><code>:get_stocks {source: "https://pinto.tech/files/stocks.csv"} read def</code></pre></p></li>
+            <li>Select two columns using label indexing and compute their ratio
+                <p><pre><code>get_stocks [TRAN,UTIL] only / {start: "2015-10-01", end:"2015-10-30", freq: "W-FRI"} eval</code></pre></p></li>
+       		<li>Compute 20 and 200-day moving averages
+                <p><pre><code>get_stocks [DOW] only {size:20} [0,-1&amp;] rolling {size:200} [0,-1&amp;] rolling [:2] average {start:"2016-01-01", end: "2016-01-05", freq:"B"} eval</code></pre></p></li>
+       		<li>Define a table of returns of your favorite stocks
+                <p><pre><code>:my_stocks_returns get_stocks [CMG,LOCO,TACO] only rolling changepct def</code></pre></p></li>
+       		<li>Define a function to compute compound returns
+                <p><pre><code>:compound_return 1 + log expanding sum exp -1 + def</code></pre></p></li>
+       		<li>Apply the function to your stocks
+                <p><pre><code>my_stocks_returns cross average compound_return {start:"2015-09-30", end:"2015-10-31"} eval</code></pre></p></li>
         </ul>
         <h3>Get Pinto</h3>
         <p>The latest version of Pinto, as well as <a href="https://github.com/punkbrwstr/pinto/blob/master/pinto_reference.md">documentation</a> are available on <a href="https://github.com/punkbrwstr/pinto">GitHub</a>.</p>
