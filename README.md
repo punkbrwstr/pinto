@@ -36,7 +36,7 @@ The Pinto interpreter is built in Java using Maven. It requires:
 
 ## How to get up and running locally
 
-If you have the requirements, it's easy to get up and running with the Rinto console:
+If you have the requirements, it's easy to get up and running with the Pinto console:
 
 
 ```
