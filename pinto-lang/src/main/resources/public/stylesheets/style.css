@@ -69,7 +69,7 @@ footer {
 }
 
 table.pintoDataTable {
-    width: 750px;
+    width: 80%;
     height: 400px;
     overflow: auto;
     display: block;

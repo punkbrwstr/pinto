@@ -112,7 +112,10 @@ public class ExtraVocabulary extends StandardVocabulary {
 			h.i(2).l("},");
 			h.i(2).l("axis: {");
 			h.i(3).l("x: {");
-			h.i(4).l("type: 'timeseries'");
+			h.i(4).l("type: 'timeseries',");
+			h.i(4).l("tick: {\r\n" + 
+					"                format: '%Y-%m-%d'\r\n" + 
+					"            }");
 			h.i(3).l("},");
 			h.i(3).l("y: {");
 			h.i(4).l("format: d3.format(\".0%\")");
