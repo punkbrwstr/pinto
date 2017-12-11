@@ -91,7 +91,17 @@ public class StandardVocabulary extends Vocabulary {
     			sb.append(crlf).append("For help with a specific function type \":function help\"").append(crlf);
     		}
    			t.setStatus(sb.toString());
-    	}, "[x]", "Deletes name specified by the preceding name literal.", true));
+    	}, "[x]", "Prints help for the preceding name literal or all names if one has not been specified.", true));
+    	names.put("list", new Name("help", p -> t -> {
+    		StringBuilder sb = new StringBuilder();
+    		String crlf = System.getProperty("line.separator");
+            p.getNamespace().getNames().stream().map(s -> p.getNamespace().getName(s))
+                .forEach(name -> {
+                    sb.append(name.toString()).append("|").append(name.getIndexString()).append("|")
+                        .append(name.getDescription()).append(crlf);
+            });
+   			t.setStatus(sb.toString());
+    	}, "[x]", "Shows description for all names.", true));
     	names.put("eval", new Name("eval", p -> toTableConsumer(s -> {
     		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		LocalDate start = startString.equals("today") ? LocalDate.now() : LocalDate.parse(startString);
@@ -126,7 +136,7 @@ public class StandardVocabulary extends Vocabulary {
 				}
 			}
 			t.setStatus("Successfully executed");
-    	},"[filename]", "Executes pinto expression contained in the specifed file *filename*.", true));
+    	},"[filename]", "Executes pinto expressions contained in the specifed file *filename*.", true));
     	names.put("write", new Name("write", p -> t -> {
     		LinkedList<Column<?,?>> s = t.peekStack();
     		String filename = ((Column.OfConstantStrings)s.removeFirst()).getValue();
@@ -173,12 +183,15 @@ public class StandardVocabulary extends Vocabulary {
     				return new tech.pinto.tools.MoonPhase(d).getPhase();
     			});
     		}));
-    	}),"[:]","Creates a double column with values corresponding the phase of the moon."));
+    	}),"[x]","Creates a double column with values corresponding the phase of the moon."));
     	names.put("range", new Name("range", toTableConsumer(s -> {
     		int n = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
     		IntStream.range(1,n+1).mapToDouble(i -> (double)i).mapToObj(
     				value -> new Column.OfConstantDoubles(value)).forEach(s::addFirst);
     	}),"[n=3]", "Creates double columns corresponding to the first *n* positive integers."));
+    	names.put("pi", new Name("pi", toTableConsumer(s -> {
+    				s.addFirst(new Column.OfConstantDoubles(Math.PI));
+    	}),"[x]", "Creates a constant double column with the value pi."));
     	names.put("read", new Name("read", toTableConsumer(s -> {
     		String source = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		boolean includesHeader = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
@@ -322,7 +335,7 @@ public class StandardVocabulary extends Vocabulary {
     			return c;
     		});
 
-    	}),"[format,:]", "Formats headers"));
+    	}),"[format,:]", "Formats headers, setting new value to *format* and substituting and occurences of \"{}\" with previous header value."));
     	
 /* array creation */
     	names.put("rolling", new Name("rolling", toTableConsumer(s-> {

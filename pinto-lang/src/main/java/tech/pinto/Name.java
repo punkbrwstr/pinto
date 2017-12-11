@@ -100,4 +100,9 @@ public class Name implements Function<Pinto,Consumer<Table>> {
 		};
 	}
 
+	@Override
+	public String toString() {
+        return name;
+    }
+
 }

@@ -13,8 +13,6 @@ import tech.pinto.Table;
 
 import static org.junit.Assert.*;
 
-import java.util.Arrays;
-
 public class IndexTester {
 
 	@SuppressWarnings("unused")
@@ -38,10 +36,9 @@ public class IndexTester {
 
 	@Test
 	public void testOrdinals() throws Exception {
-		assertTrue("index by ordinal", compareRow("range [0] only eval", 4.0));
-		assertTrue("index by negative ordinal", compareRow("range [-1] only eval", 0.0d));
-		assertTrue("index by multiple ordinal", compareRow("range [-1,2] only eval", 2.0d, 0.0d));
-		assertTrue("index by multiple same ordinal", compareRow("range [-1,4] only eval", 0.0d, 0.0d));
+		assertTrue("index by ordinal", compareRow("range [0] only eval", 3.0));
+		assertTrue("index by negative ordinal", compareRow("range [-1] only eval", 1.0d));
+		assertTrue("index by multiple ordinal", compareRow("range [-1,0] only eval", 3.0d, 1.0d));
 	}
 
 	public void testSlices() throws Exception {
@@ -50,27 +47,16 @@ public class IndexTester {
 
 	@Test
 	public void testLabels() throws Exception {
-		Table ts = pinto.eval("1 2 3 {a,b,c} label [c] eval").get(0);
+		Table ts = pinto.eval("1 2 3 {a,b,c} [c] eval").get(0);
 		assertEquals("label index (simple) value", 3.0, first(0,ts), 0.1);
-		ts = pinto.eval("1 2 3 {a,b,c} label [b,b] neg eval").get(0);
-		assertEquals("repeated label index", sumRow(0,ts),0.0,0.1);
-		ts = pinto.eval("1 2 3 {b,b,a} label [b] neg eval").get(0);
-		assertEquals("label index (repeated label) value", sumRow(0,ts),0.0,0.1);
-		
 	}
 
 	@Test
 	public void testCopyAndRepeat() throws Exception {
-		pinto.eval("[&0] 1 + \"function_that_copies\" def");
+		pinto.eval(":function_that_copies [&0] 1 + def");
 		Table t = pinto.eval("98 99 [0+] function_that_copies eval").get(0);
 		assertEquals("Repeat a defined that copies", t.getColumnCount(),4);
 		assertEquals("Repeat a defined that copies", first(1,t),99, 0.1);
-	}
-	
-	
-
-	private double sumRow(int row, Table t) {
-		return Arrays.stream(t.toRowMajorArray().get()[0]).sum();
 	}
 	
 	private double first(int column, Table t) {

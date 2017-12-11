@@ -68,9 +68,9 @@ public class FunctionTester {
 	
 	@Test
 	public void testNoInputsToDefined() throws Exception {
-		pinto.eval("2 \"20\" r_mean \"a, [x],test\" def");
-		pinto.eval("3 \"30\" r_mean \"b, [x],test\" def");
-		pinto.eval("a b \"c\" def");
+		pinto.eval(":a [x] 2 {size: 20} rolling average def");
+		pinto.eval(":b [x] 3 {size: 30} rolling average def");
+		pinto.eval(":c a b def");
 		Table  c = pinto.eval("c eval").get(0);
 		assertEquals("defineNoInputs count",c.getColumnCount(),2);
 		assertEquals("definedNoInputs output",sumRow(0,c),5.0,0.01);
@@ -113,10 +113,10 @@ public class FunctionTester {
 	 * @throws InterruptedException 
 	 * @throws TimeoutException 
 	 */
-	private String A = "\"2014-07-07;2014-07-11;B\" eval";
-	private String B = "\"2014-07-01;2014-07-07;B\" eval";
-	private String C = "\"2014-07-09;2014-07-09;B\" eval";
-	private String D = "\"2014-07-11;2014-07-15;B\" eval";
+	private String A = "{start:\"2014-07-07\", end:\"2014-07-11\", freq:\"B\"} eval";
+	private String B = "{start:\"2014-07-01\", end:\"2014-07-07\", freq:\"B\"} eval";
+	private String C = "{start:\"2014-07-09\", end:\"2014-07-09\", freq:\"B\"} eval";
+	private String D = "{start:\"2014-07-11\", end:\"2014-07-15\", freq:\"B\"} eval";
 	@Test
 	public void testCaching() throws Exception {
 		String formula = "counter ";

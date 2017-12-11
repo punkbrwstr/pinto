@@ -2,9 +2,7 @@ package tech.pinto.tests;
 
 import java.util.Arrays;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.DoubleStream;
 
 import javax.inject.Singleton;
 
@@ -18,13 +16,15 @@ import org.junit.runners.Suite.SuiteClasses;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
-import tech.pinto.Indexer;
+import tech.pinto.Cache;
+import tech.pinto.Column;
+import tech.pinto.Name;
 import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
-import tech.pinto.time.Period;
-import tech.pinto.time.PeriodicRange;
+
+import static tech.pinto.Pinto.toTableConsumer;
 
 @RunWith(Suite.class)
 @SuiteClasses({
@@ -62,39 +62,21 @@ public class AllTests {
 	}
 	
 	public static class TestVocabulary extends StandardVocabulary {
+		private static AtomicInteger count = new AtomicInteger();
 		
 		public TestVocabulary() {
-//			names.put("counter", new tech.pinto.Name((n,p,s,f,i) -> new CallCounter(n,f,i), new FunctionHelp.Builder()));
+			names.put("counter", new Name("counter", toTableConsumer(s -> {
+				s.addFirst(new Column.OfDoubles(inputs -> "", inputs -> range -> {
+					return Cache.getCachedValues("counter", range, r -> {
+						Column.OfConstantDoubles col = new Column.OfConstantDoubles(count.getAndIncrement());
+						col.setRange(r);
+						return Arrays.asList(col.rows());
+					}).get(0);
+					
+				}));
+			}), "[x]", "For cache testing"));
 		}
 
 	}
-	
-//	public static class CallCounter extends CachedFunction {
-//		
-//		private static AtomicInteger count = new AtomicInteger();
-//
-//		public CallCounter(String name, Function previousFunction, Indexer indexer) {
-//			super(name, previousFunction, indexer);
-//		}
-//
-//		@Override
-//		protected <P extends Period> List<DoubleStream> getUncachedSeries(PeriodicRange<P> range) {
-//			double d = count.getAndIncrement();
-//			return Arrays.asList( DoubleStream.iterate(d, r -> d ).limit(range.size()));
-//		}
-//
-//		@Override
-//		protected int columns() {
-//			return 1;
-//		}
-//
-//		@Override
-//		protected List<String> getUncachedText() {
-//			return Arrays.asList("counter");
-//		}
-//
-//	}
-
-
 
 }
