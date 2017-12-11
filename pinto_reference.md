@@ -46,6 +46,8 @@ pinto> 1 2 {Onesy, Twosy} eval
 ╚════════════╧═══════╧═══════╝
 ```
 
+The two types may be combined within one set of curly braces.
+
 ## Indexing
 
 An indexing operator determines which columns in the stack are passed to the following function.  
@@ -62,8 +64,8 @@ The indexer can also take string arguments to select stack columns by their head
 #### Multiple indicies
 Lists of indicies are separated by commas.   ```[1,3]``` represents the second and fourth columns.   ```[1,3:]``` is the second and all columns after the third.  ```[1,pin*]``` is the second column and all columns with headers starting with "pin".
 
-#### Index modifiers: Or
-The Or modifier (```"|"```) tells the indexer to use the following Pinto expression if the column is not found.  For instance, ```[guac|"yes"]``` will select columns with the header "guac", or will return a constant string column of "yes".
+#### Index modifiers: Default
+The Default modifier (```"="```) tells the indexer to use the following Pinto expression if the column is not found.  For instance, ```[guac="yes"]``` will select columns with the header "guac", or will return a constant string column of "yes".
 
 #### Index modifiers: Copy
 The Copy modifier (```"&"```) forces the indexer make a copy of the column for the subsequent function, leaving the original column on the stack.  For example, ```[:&]``` will make a copy of all columns in the stack for the following function and maintain the originals in the stack.
@@ -72,32 +74,27 @@ The Copy modifier (```"&"```) forces the indexer make a copy of the column for t
 The repeat modifier (```"+"```) causes the indexer to make multiple calls to the following function until the stack no longer contains enough columns for the indexer.  The index ```[:2+]``` will make repeated calls to the following function, each time supplying the top two columns on the stack as the function inputs.  It will stop when there are fewer than two columns left on the stack. 
 
 
-
-## Function parameters
-
-Parameters are special inputs to functions that modify how the function operates.  They only use the header of a column and discard the number values.  Parameters may be supplied by position (by being at the top of the stack) or by name (by having a header that starts with ```parametername=```).  As an example, to supply a file name to the read function you could add a header-only column to the top of the stack ```"/tmp/my_file_name" read``` or you could specify the parameter by name ```"source=/tmp/my_file_name" read```.  Multiple parameters may be specified as separate columns on the stack (```"tickers=TACO Equity" "fields=PX_LAST" bbg```) or within one column header by delimiting with ```;``` (```"tickers=TACO Equity;fields=PX_LAST" bbg```).
-
-
 ## Function reference
 
 ### Terminal functions
 
 These functions tell the interpreter to start executing your Pinto code.  The most common is *eval* which evaluates the columns over the date range that can be specified by constant string with the headers: start, end, freq.  In console mode the resulting table is printed.
 
-Function name | Parameters |Description
-    :---:|:---|:---
+Function name | Default indexer |Description
+:---:|:---|:---
 def|[x]|Defines the expression as the preceding name literal.
 del|[x]|Deletes name specified by the preceding name literal.
 eval|[start="today",end="today",freq="B",:]|Evaluates the expression over the date range specified by *start, *end* and *freq* columns, returning the resulting table.
 exec|[filename]|Executes pinto expressions contained in the specifed file *filename*.
 help|[x]|Prints help for the preceding name literal or all names if one has not been specified.
 list|[x]|Shows description for all names.
+write|[filename, start="today",end="today",freq="B",:]|Evaluates the expression over the date range specified by *start, *end* and *freq* columns, exporting the resulting table to csv *filename*.
 
 ### Stack manipulation functions
 
 These commands manipulate stack elements, but do not modify values.
 
-Function name | Parameters |Description
+Function name | Default indexer |Description
 :---:|:---|:---
 clear|[:]|Clears indexed columns from stack.
 copy|[n=2,:]|Copies indexed columns *n* times.
@@ -110,7 +107,7 @@ roll|[n=1,:]|Permutes columns in stack *n* times.
 
 These commands generate data values.
 
-Function name | Parameters |Description
+Function name | Default indexer|Description
 :---:|:---|:---
 moon|[x]|Creates a double column with values corresponding the phase of the moon.
 pi|[x]|Creates a constant double column with the value pi.
@@ -119,7 +116,7 @@ read|[source,includes_header="true"]|Reads CSV formatted table from file or URL 
 
 ### Data cleaning functions
 
-Function name | Parameters |Description
+Function name | Default indexer |Description
 :---:|:---|:---
 fill|[lookback="true",freq="BQ-DEC",:]|Fills missing values with last good value, looking back one period of *freq* if *lookback* is true.
 join|[dates,:]|Joins columns over time, switching between columns on dates supplied in ";" denominated list *dates*.
@@ -127,13 +124,13 @@ resample|[freq="BM",:]|Sets frequency of prior columns to periodicity *freq*, ca
 
 ### Header functions
 
-Function name | Parameters |Description
+Function name | Default indexer |Description
 :---:|:---|:---
 hformat|[format,:]|Formats headers, setting new value to *format* and substituting and occurences of "{}" with previous header value.
 
 
 ### Binary double operators
-Function name | Parameters |Description
+Function name | Default indexer |Description
 :---:|:---|:---
 !=|[n=1,:]|Binary double operator != that operates on *n* columns at a time with fixed right-side operand.
 %|[n=1,:]|Binary double operator % that operates on *n* columns at a time with fixed right-side operand.
@@ -150,69 +147,68 @@ Function name | Parameters |Description
 
 ### Unary double operators
 
-Function name | Parameters |Description
+Function name | Default indexer |Description
 :---:|:---|:---
-abs|[:]|Unary double operator abs
-acgbPrice|[:]|Unary double operator acgbPrice
-acos|[:]|Unary double operator acos
-asin|[:]|Unary double operator asin
-atan|[:]|Unary double operator atan
-cbrt|[:]|Unary double operator cbrt
-ceil|[:]|Unary double operator ceil
-cos|[:]|Unary double operator cos
-cosh|[:]|Unary double operator cosh
-exp|[:]|Unary double operator exp
-expm1|[:]|Unary double operator expm1
-floor|[:]|Unary double operator floor
-inv|[:]|Unary double operator inv
-log|[:]|Unary double operator log
-log10|[:]|Unary double operator log10
-log1p|[:]|Unary double operator log1p
-neg|[:]|Unary double operator neg
-nextDown|[:]|Unary double operator nextDown
-nextUp|[:]|Unary double operator nextUp
-rint|[:]|Unary double operator rint
-signum|[:]|Unary double operator signum
-sin|[:]|Unary double operator sin
-sinh|[:]|Unary double operator sinh
-sqrt|[:]|Unary double operator sqrt
-tan|[:]|Unary double operator tan
-tanh|[:]|Unary double operator tanh
-toDegrees|[:]|Unary double operator toDegrees
-toRadians|[:]|Unary double operator toRadians
-ulp|[:]|Unary double operator ulp
+abs|[:]|Unary double operator for absolute value.
+acgbPrice|[:]|Unary double operator for Australian bond futures price calculation.
+acos|[:]|Unary double operator for arc cosine.
+asin|[:]|Unary double operator for arc sine.
+atan|[:]|Unary double operator for arc tangent.
+cbrt|[:]|Unary double operator for cbrt.
+ceil|[:]|Unary double operator for ceiling.
+cos|[:]|Unary double operator for cosine.
+cosh|[:]|Unary double operator for cosh.
+exp|[:]|Unary double operator for e raised to the x.
+expm1|[:]|Unary double operator for expm1.
+floor|[:]|Unary double operator for floor.
+inv|[:]|Unary double operator for inverse.
+log|[:]|Unary double operator for natural log.
+log10|[:]|Unary double operator for log base 10.
+log1p|[:]|Unary double operator for log1p.
+neg|[:]|Unary double operator for additive inverse.
+nextDown|[:]|Unary double operator for nextDown.
+nextUp|[:]|Unary double operator for nextUp.
+rint|[:]|Unary double operator for rint.
+signum|[:]|Unary double operator for signum.
+sin|[:]|Unary double operator for sine.
+sinh|[:]|Unary double operator for sinh.
+sqrt|[:]|Unary double operator for square root.
+tan|[:]|Unary double operator for tangent.
+tanh|[:]|Unary double operator for tanh.
+toDegrees|[:]|Unary double operator to convert to degrees.
+toRadians|[:]|Unary double operator to convert to radians.
+ulp|[:]|Unary double operator for ulp.
 
 ### Double array creation functions
-Function name | Parameters |Description
+Function name | Default indexer |Description
 :---:|:---|:---
 cross|[:]|Creates a double array column with each row containing values of input columns.
 expanding|[start="range",freq="range",initial_zero="false",:]|Creates double array columns for each input column with rows containing values from an expanding window of past data with periodicity *freq* that starts on date *start*.
 rolling|[size=2,freq="B",:]|Creates double array columns for each input column with rows containing values from rolling window of past data where the window is *size* periods of periodicity *freq*.
 
 ### Double array aggregators (double array to double functions)
-Function name | Parameters |Description
+Function name | Default indexer |Description
 :---:|:---|:---
-average|[:]|Aggregates row values in double array columns to a double value by average
-change|[:]|Aggregates row values in double array columns to a double value by change
-changelog|[:]|Aggregates row values in double array columns to a double value by changelog
-changepct|[:]|Aggregates row values in double array columns to a double value by changepct
-first|[:]|Aggregates row values in double array columns to a double value by first
-geomean|[:]|Aggregates row values in double array columns to a double value by geomean
-last|[:]|Aggregates row values in double array columns to a double value by last
-max|[:]|Aggregates row values in double array columns to a double value by max
-min|[:]|Aggregates row values in double array columns to a double value by min
-stdev|[:]|Aggregates row values in double array columns to a double value by stdev
-stdevp|[:]|Aggregates row values in double array columns to a double value by stdevp
-sum|[:]|Aggregates row values in double array columns to a double value by sum
-var|[:]|Aggregates row values in double array columns to a double value by var
-varp|[:]|Aggregates row values in double array columns to a double value by varp
-write|[filename, start="today",end="today",freq="B",:]|Evaluates the expression over the date range specified by *start, *end* and *freq* columns, exporting the resulting table to csv *filename*.
-zscore|[:]|Aggregates row values in double array columns to a double value by zscore
-zscorep|[:]|Aggregates row values in double array columns to a double value by zscorep
+average|[:]|Aggregates row values in double array columns to a double value by average.
+change|[:]|Aggregates row values in double array columns to a double value by change.
+changelog|[:]|Aggregates row values in double array columns to a double value by change of logs.
+changepct|[:]|Aggregates row values in double array columns to a double value by change in percent.
+first|[:]|Aggregates row values in double array columns to a double value by first value.
+geomean|[:]|Aggregates row values in double array columns to a double value by geometric mean.
+last|[:]|Aggregates row values in double array columns to a double value by last value.
+max|[:]|Aggregates row values in double array columns to a double value by max.
+min|[:]|Aggregates row values in double array columns to a double value by min.
+stdev|[:]|Aggregates row values in double array columns to a double value by standard deviation.
+stdevp|[:]|Aggregates row values in double array columns to a double value by population standard deviation.
+sum|[:]|Aggregates row values in double array columns to a double value by sum.
+var|[:]|Aggregates row values in double array columns to a double value by variance.
+varp|[:]|Aggregates row values in double array columns to a double value by population variance.
+zscore|[:]|Aggregates row values in double array columns to a double value by zscore.
+zscorep|[:]|Aggregates row values in double array columns to a double value by zscorep.
 
 ### Extra functions (requires additional libraries, see wiki)
 
-Function name | Parameters |Description
+Function name | Default indexer |Description
 :---:|:---|:---
 bbg|[tickers,fields="PX_LAST"]|Downloads Bloomberg history for each *fields* for each *tickers*
 chart|[start="today",end="today",freq="B",title="none",:]|Creates a const string column with code for an HTML chart.
