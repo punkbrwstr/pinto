@@ -1,7 +1,7 @@
 # Pinto Language Reference
 
 ## Types
-Columns in Pinto are statically typed.  For any requested periodic time range a column will have values that are of the same type.  All column types also have a string header.
+Columns in Pinto are statically typed.  For any requested time range a column will have values that are of the same type.  All column types also have a string header.
 
 - *double*: Floating point number values
 - *doublearray*: One-dimensional array of floating point number values for each period
