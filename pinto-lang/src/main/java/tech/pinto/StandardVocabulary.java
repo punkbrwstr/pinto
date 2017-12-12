@@ -340,9 +340,11 @@ public class StandardVocabulary extends Vocabulary {
 /* array creation */
     	names.put("rolling", new Name("rolling", toTableConsumer(s-> {
     		int size = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
-    		Periodicity<Period> wf = Periodicities.get(((Column.OfConstantStrings)s.removeFirst()).getValue());
+            String wfs = ((Column.OfConstantStrings)s.removeFirst()).getValue();
+            Optional<Periodicity<Period>> windowFreq = wfs.equals("eval") ? Optional.empty() : Optional.of(Periodicities.get(wfs));
     		s.replaceAll(c -> {
     			return new Column.OfDoubleArrays(inputs -> inputs[0].getHeader() + " rolling", inputs -> range -> {
+                    Periodicity<Period> wf = windowFreq.orElse((Periodicity<Period>) range.periodicity());
     				Stream.Builder<DoubleStream> b = Stream.builder();
     				Period expandedWindowStart = wf.offset(-1 * (size - 1), wf.from(range.start().endDate()));
     				Period windowEnd = wf.from(range.end().endDate());
@@ -356,8 +358,8 @@ public class StandardVocabulary extends Vocabulary {
     				return b.build();
     			},c);
     		});
-    	}),"[size=2,freq=\"B\",:]", "Creates double array columns for each input column with rows containing values "+
-    			"from rolling window of past data where the window is *size* periods of periodicity *freq*."));
+    	}),"[size=2,freq=\"eval\",:]", "Creates double array columns for each input column with rows containing values "+
+    			"from rolling window of past data where the window is *size* periods of periodicity *freq*, defaulting to the evaluation periodicity."));
     	names.put("cross", new Name("cross", toTableConsumer(s-> {
     		Column.OfDoubles[] a = s.toArray(new Column.OfDoubles[]{});
     		s.clear();
