@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -52,8 +53,8 @@ public class ExtraVocabulary extends StandardVocabulary {
 			String id = getId();
 			StringBuilder sb = new StringBuilder();
 			try (BufferedReader bf = 
-				new BufferedReader(new FileReader(new File(
-					getClass().getClassLoader().getResource("report_top.html").getFile())))) {
+				new BufferedReader(new InputStreamReader(
+					getClass().getClassLoader().getResourceAsStream("report_top.html")))) {
 				bf.lines().forEach(l -> sb.append(l).append("\n"));
 			} catch (IOException e) {
 				throw new PintoSyntaxException("Unable to open report", e);
@@ -67,8 +68,8 @@ public class ExtraVocabulary extends StandardVocabulary {
 			try {
 				File f = File.createTempFile(id, ".html");
 				try(BufferedReader bf = 
-						new BufferedReader(new FileReader(new File(
-							getClass().getClassLoader().getResource("report_bottom.html").getFile())));
+						new BufferedReader(new InputStreamReader(
+							getClass().getClassLoader().getResourceAsStream("report_bottom.html")));
 					PrintWriter pw = new PrintWriter(new FileWriter(f));
 					) {
 					bf.lines().forEach(l -> sb.append(l).append("\n"));

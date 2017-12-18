@@ -13,7 +13,7 @@ import tech.pinto.time.PeriodicRange;
 public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 	
 	protected Optional<PeriodicRange<?>> range = Optional.empty();
-	protected final Column<?,?>[] inputs;
+	protected Column<?,?>[] inputs;
 	protected Function<Column<?,?>[],String> headerFunction = columns -> "";
 	final private Function<Column<?,?>[],Function<PeriodicRange<?>,S>> rowsFunction;
 	final private Function<Column<?,?>[],Function<NumberFormat,Function<PeriodicRange<?>,Stream<String>>>> rowsAsTextFunction;
@@ -68,11 +68,12 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		return getHeader();
 	}
 	
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public Column clone() {
 		try {
 			Column clone = (Column) super.clone();
+			clone.inputs = new Column<?,?>[inputs.length];
 			for(int i = 0; i < inputs.length; i++) {
 				clone.inputs[i] = inputs[i].clone();
 			}
