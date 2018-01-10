@@ -144,7 +144,7 @@ public class Indexer implements Consumer<Table>, Cloneable {
 				if (thisOrThat.length != 2) {
 					throw new IllegalArgumentException("Index \"=\" should be followed by alternative expression.");
 				}
-				or = Optional.of(thisOrThat[1]);
+				or = Optional.of(thisOrThat[1] + " {" + thisOrThat[0] + "}");
 				s = thisOrThat[0];
 			}
 			if (s.contains("+")) {
