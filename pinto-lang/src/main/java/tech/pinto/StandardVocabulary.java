@@ -269,7 +269,7 @@ public class StandardVocabulary extends Vocabulary {
     	}),"[lookback=\"true\",freq=\"BQ-DEC\",:]","Fills missing values with last good value, " +
     			"looking back one period of *freq* if *lookback* is true."));
     	names.put("join", new Name("join", toTableConsumer(s-> {
-   			List<LocalDate> cutoverDates = Stream.of(((Column.OfConstantStrings)s.removeFirst()).getValue().split(";")).map(String::trim).map(LocalDate::parse).collect(Collectors.toList());
+   			List<LocalDate> cutoverDates = Stream.of(((Column.OfConstantStrings)s.removeFirst()).getValue().split(",")).map(String::trim).map(LocalDate::parse).collect(Collectors.toList());
     		Column.OfDoubles[] inputStack = s.toArray(new Column.OfDoubles[] {});
     		s.clear();
     		s.add(new Column.OfDoubles(i -> "join", inputArray -> range -> {
@@ -283,7 +283,7 @@ public class StandardVocabulary extends Vocabulary {
     			int i = 0;
     			while (i < cutoverPeriods.size() && !current.isAfter(range.end())) {
     				if(inputs.isEmpty()) {
-    					throw new PintoSyntaxException("Not enough columns for join");
+    					throw new PintoSyntaxException("Not enough columns to join on " + cutoverDates.size() + " dates.");
     				}
     				Column.OfDoubles currentFunction = (Column.OfDoubles) inputs.removeFirst();
     				if (current.isBefore(cutoverPeriods.get(i))) {
@@ -296,7 +296,7 @@ public class StandardVocabulary extends Vocabulary {
     				i++;
     			}
     			if (inputs.isEmpty()) {
-    				throw new IllegalArgumentException("Not enough inputs for " + toString());
+    				throw new IllegalArgumentException("Not enough columns to join on " + cutoverDates.size() + " dates.");
     			}
     			Column.OfDoubles currentFunction = (Column.OfDoubles) inputs.removeFirst();
     			if (!current.isAfter(range.end())) {
