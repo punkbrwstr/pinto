@@ -90,6 +90,9 @@ public class Indexer implements Consumer<Table>, Cloneable {
 		for (StackOperation o : ops) {
 			if (o.isAlternative()) {
 				indexed.addAll(pinto.parseSubExpression(o.getAlternativeString()));
+				if(o.isCopy()) {
+					stack.addAll(pinto.parseSubExpression(o.getAlternativeString()));
+				}
 			} else if ((!alreadyUsed.contains(o.getOrdinal())) && !o.skip()) {
 				Column<?,?> c = stack.get(o.getOrdinal());
 				indexed.add(o.checkType(o.needsCloning() || o.isCopy() ? c.clone() : c));
@@ -139,6 +142,14 @@ public class Indexer implements Consumer<Table>, Cloneable {
 		private boolean checkConstant = false;
 
 		public Index(String s) {
+			if (s.contains("&")) {
+				if (repeat) {
+					throw new PintoSyntaxException(
+							"Cannot copy and repeat an index because it will create an infinite loop.");
+				}
+				copy = true;
+				s = s.replace("&", "");
+			}
 			if (s.contains("=")) {
 				String[] thisOrThat = s.split("=");
 				if (thisOrThat.length != 2) {
@@ -150,14 +161,6 @@ public class Indexer implements Consumer<Table>, Cloneable {
 			if (s.contains("+")) {
 				repeat = true;
 				s = s.replace("+", "");
-			}
-			if (s.contains("&")) {
-				if (repeat) {
-					throw new PintoSyntaxException(
-							"Cannot copy and repeat an index because it will create an infinite loop.");
-				}
-				copy = true;
-				s = s.replace("&", "");
 			}
 			if (s.contains("?")) {
 				optional = true;

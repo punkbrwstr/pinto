@@ -1,15 +1,20 @@
 package tech.pinto;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.StringTokenizer;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,12 +31,40 @@ public class Servlet extends HttpServlet {
 
 	private final Gson gson;
 	private final Supplier<Pinto> pintoSupplier;
+	Optional<String> reportTop = Optional.empty();
+	Optional<String> reportBottom = Optional.empty();
 
 	public Servlet(Supplier<Pinto> pintoSupplier) {
 		GsonBuilder b = new GsonBuilder();
 		b.serializeSpecialFloatingPointValues();
 		this.gson = b.create();
 		this.pintoSupplier = pintoSupplier;
+	}
+	
+	private void getReport(Pinto pinto, HttpServletRequest request, HttpServletResponse response) throws IOException {
+		try {
+			response.setContentType("text/html");
+			response.setCharacterEncoding("UTF-8");
+			ServletOutputStream os = response.getOutputStream();
+			if(!request.getParameterMap().containsKey("p")) {
+				throw new Exception("Empty request.");
+			}
+			if(!reportTop.isPresent()) {
+				reportTop = Optional.of(readInputStreamIntoString((getClass().getClassLoader().getResourceAsStream("report_top.html"))));
+				reportBottom = Optional.of(readInputStreamIntoString((getClass().getClassLoader().getResourceAsStream("report_bottom.html"))));
+			}
+			os.print(reportTop.get());
+			Table t = new Table();
+			pinto.getNamespace().getName("_rpt-" + request.getParameter("p")).apply(pinto).accept(t);
+			for(Column<?,?> c : t.peekStack()) {
+				os.print(((Column.OfConstantStrings) c).getValue());
+			}
+			os.print(reportBottom.get());
+		} catch (Exception e) {
+			logError(e, request);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+		}
+		
 	}
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -52,6 +85,8 @@ public class Servlet extends HttpServlet {
 			getCompletion(pinto, request, response);
 		} else if(path.contains("sas")) {
 			getSas(pinto, request, response);
+		} else if(path.contains("report")) {
+			getReport(pinto, request, response);
 		}
 	}
 	
@@ -167,5 +202,16 @@ public class Servlet extends HttpServlet {
             return new StringTokenizer(xForwardedForHeader, ",").nextToken().trim();
         }
     }
-
+	
+	private String readInputStreamIntoString(InputStream inputStream) throws IOException {
+		BufferedInputStream bis = new BufferedInputStream(inputStream);
+		ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		int result = bis.read();
+		while(result != -1) {
+		    buf.write((byte) result);
+		    result = bis.read();
+		}
+		// StandardCharsets.UTF_8.name() > JDK 7
+		return buf.toString("UTF-8");
+	}
 }

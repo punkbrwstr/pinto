@@ -1,0 +1,39 @@
+
+<div id="{0}"></div>
+
+<script type="text/javascript">
+var chart = c3.generate('{'
+	bindto: ''#{0}'',
+	data: '{'
+		x: ''x'',
+		columns: [
+			{1},
+			{2}
+			]
+		'}',
+		axis: '{'
+			x: '{'
+				type: ''timeseries'',
+				tick: '{'
+                format: ''%Y-%m-%d''
+            '}'
+			'}',
+			y: '{'
+				format: d3.format(".0%")
+			'}'
+		'}',
+		point: '{'
+			show: false
+		'}'
+		,
+		grid: '{'
+        	y: '{'
+            	show: true
+        	'}'
+    	'}',
+    	title: '{'
+  			text: ''{3}''
+		'}'
+'}');
+</script>
+

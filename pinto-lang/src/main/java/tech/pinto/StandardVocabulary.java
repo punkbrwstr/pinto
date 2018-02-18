@@ -61,6 +61,7 @@ public class StandardVocabulary extends Vocabulary {
 					state.getDependencies().subList(0,state.getDependencies().size() - 1), f);
     		t.setStatus("Defined " + name);
     	}, Optional.empty(), Optional.of("[x]"), "Defines the expression as the preceding name literal.", true, true, true));
+
     	names.put("del", new Name("del", p -> t -> {
     		String name = p.getState().getNameLiteral().orElseThrow(() -> new PintoSyntaxException("del requires a name literal."));
     		p.getNamespace().undefine(name);

@@ -4,11 +4,13 @@ package tech.pinto;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.BindException;
 import java.util.Properties;
 
 import javax.inject.Singleton;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -27,8 +29,7 @@ public class Main {
 
 	protected final PintoComponent component;
 	protected String build;
-	protected final int port;
-	protected final String httpPath;
+	protected Server server;
 
 	protected Main() {
 		//component = DaggerMain_MainComponent.builder().mainModule(new MainModule()).build();
@@ -44,11 +45,9 @@ public class Main {
 		} catch(IOException io) {
 			build = "Unknown";
 		}
-		port = System.getProperties().containsKey("pinto.port") ? Integer.parseInt(System.getProperty("pinto.port")) : 5556;
 
 
         System.out.println("public: " + getClass().getClassLoader().getResource("public").toExternalForm());
-        httpPath = getClass().getClassLoader().getResource("public").toExternalForm();
 
 		//List<String> path = Arrays.asList(tech.pinto.Main.class.getResource("Main.class")
 						//.toString().split("/"));
@@ -62,12 +61,32 @@ public class Main {
 	}
 
 	public void run() throws Exception {
+		int port = System.getProperties().containsKey("pinto.port") ? Integer.parseInt(System.getProperty("pinto.port")) : 5556;
+		try {
+			server = getServer(port);
+			server.start();
+		} catch(BindException be) {
+			server = getServer(0);
+			server.start();
+			port = ((ServerConnector)server.getConnectors()[0]).getLocalPort();
+		}
 
 		org.eclipse.jetty.util.log.Log.setLog(new Slf4jLog());
+		new Thread(new Console(getPinto(),port,build, () -> {
+			try {
+				server.stop();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}), "console_thread").start();
+        server.join();
+	}
+	
+	private Server getServer(int port) {
 		Server server = new Server(port);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        context.setResourceBase(httpPath);
+        context.setResourceBase(getClass().getClassLoader().getResource("public").toExternalForm());
         HashSessionIdManager idmanager = new HashSessionIdManager();
         server.setSessionIdManager(idmanager);
         HashSessionManager manager = new HashSessionManager();
@@ -77,15 +96,7 @@ public class Main {
         ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
         context.addServlet(holderPwd,"/*");
         server.setHandler(sessions);
-		new Thread(new Console(getPinto(),port,build, () -> {
-			try {
-				server.stop();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}), "console_thread").start();
-        server.start();
-        server.join();
+		return server;
 	}
 
 	public static void main(String[] args) throws IOException {
