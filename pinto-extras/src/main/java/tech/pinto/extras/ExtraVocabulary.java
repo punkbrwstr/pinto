@@ -119,7 +119,12 @@ public class ExtraVocabulary extends StandardVocabulary {
     			LocalDate end = endFreqs[Math.min(i, endFreqs.length - 1)].from(LocalDate.now()).offset(-1 * Math.abs(endOffsets[i])).endDate();
     			PeriodicRange<?> pr = freqs[Math.min(i, freqs.length - 1)].range(start, end, false);
     			headers[i] = start + " - " + end;
-    			List<Column<?,?>> l = i == startOffsets.length - 1 ? s : s.stream().map(Column::clone).collect(Collectors.toList());
+    			List<Column<?,?>> l = null;
+    			if(i == startOffsets.length - 1) {
+    				l = s; 
+    			} else {
+    				l = s.stream().map(Column::clone).collect(Collectors.toList());
+    			}
     			double[][] values = new double[l.size()][2];
     			for(int j = 0; j < l.size(); j++) {
     				l.get(j).setRange(pr);
