@@ -12,6 +12,7 @@ import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -123,7 +124,8 @@ public class ExtraVocabulary extends StandardVocabulary {
     			if(i == startOffsets.length - 1) {
     				l = s; 
     			} else {
-    				l = s.stream().map(Column::clone).collect(Collectors.toList());
+    				l = new ArrayList<>();
+                    s.stream().map(Column::clone).forEach(l::add);
     			}
     			double[][] values = new double[l.size()][2];
     			for(int j = 0; j < l.size(); j++) {
