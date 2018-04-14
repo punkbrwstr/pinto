@@ -1,19 +1,13 @@
 package tech.pinto;
 
 import java.time.LocalDate;
-
-
-
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 import com.google.common.collect.Range;
@@ -30,8 +24,8 @@ public class Cache {
 	
 	private static HashMap<String, RangeMap<Long, CachedSeriesList>> seriesCache = new HashMap<>();
 
-	public static List<DoubleStream> getCachedValues(String key, PeriodicRange<?> range,
-			Function<PeriodicRange<?>, List<DoubleStream>> function) {
+	public static DoubleStream getCachedValues(String key, PeriodicRange<?> range, int column,
+			int columnCount, Function<PeriodicRange<?>, double[][]> function) {
 		@SuppressWarnings("unchecked")
 		Periodicity<Period> freq = (Periodicity<Period>) range.periodicity();
 		String wholeKey = key + ":" + range.periodicity().code();
@@ -46,7 +40,7 @@ public class Cache {
 			try {
 				Range<Long> requestedRange = Range.closed(range.start().longValue(), range.end().longValue());
 				Set<Range<Long>> toRemove = new HashSet<>();
-				List<DoubleStream> chunkData = new ArrayList<>();
+				double[][] chunkData = new double[columnCount][];
 				long current = requestedRange.lowerEndpoint();
 				long chunkStart = current;
 				Optional<Long> expirationTime = Optional.empty();
@@ -89,9 +83,8 @@ public class Cache {
 									Optional.of(expirationTime.orElse(System.currentTimeMillis() + CURRENT_DATA_TIMEOUT))));
 				}
 				final long finalStart = chunkStart;
-				return chunkData.stream()
-						.map(s -> s.skip(requestedRange.lowerEndpoint() - finalStart).limit(range.size()))
-						.collect(Collectors.toList());
+				return Arrays.stream(chunkData[column])
+						.skip(requestedRange.lowerEndpoint() - finalStart).limit(range.size());
 			} catch (RuntimeException re) {
 				seriesCache.remove(wholeKey);
 				throw re;
@@ -102,16 +95,16 @@ public class Cache {
 	private static class CachedSeriesList {
 
 		final private PeriodicRange<?> range;
-		final private List<DoubleStream> series;
+		final private double[][] series;
 		final private Optional<Long> expirationTime;
 
-		public CachedSeriesList(PeriodicRange<?> range, List<DoubleStream> series, Optional<Long> expirationTime) {
+		public CachedSeriesList(PeriodicRange<?> range, double[][] series, Optional<Long> expirationTime) {
 			this.series = series;
 			this.range = range;
 			this.expirationTime = expirationTime;
 		}
 
-		public List<DoubleStream> getSeries() {
+		public double[][] getSeries() {
 			return series;
 		}
 
@@ -125,30 +118,26 @@ public class Cache {
 
 	}
 
-	private static void concat(List<DoubleStream> a, List<DoubleStream> b) {
-		if (a.size() == 0) {
-			a.addAll(b);
-		} else {
-			List<DoubleStream> temp = new ArrayList<>(a);
-			a.clear();
-			for (int i = 0; i < temp.size(); i++) {
-				a.add(DoubleStream.concat(temp.get(i), b.get(i)).sequential());
+	private static void concat(double[][] a, double[][] b) {
+		for(int i = 0; i < a.length; i++) {
+			if (a[i] == null) {
+				a[i] = b[i];
+			} else {
+				double[] temp = new double[a[i].length + b[i].length];
+				System.arraycopy(a[i],0,temp,0,a[i].length);
+				System.arraycopy(b[i],0,temp,a[i].length,b[i].length);
+				a[i] = temp;
 			}
 		}
 	}
 
-	private static List<DoubleStream> dup(List<DoubleStream> original, int start, int length) {
-		List<DoubleStream> temp = new ArrayList<>(original);
-		List<DoubleStream> copy = new ArrayList<>();
-		original.clear();
-		for (DoubleStream s : temp) {
-			double[] o = s.toArray();
-			double[] c = new double[length];
-			System.arraycopy(o, start, c, 0, length);
-			original.add(DoubleStream.of(o));
-			copy.add(DoubleStream.of(c));
+	private static double[][] dup(double[][] original, int start, int length) {
+		double[][] dup = new double[original.length][];
+		for(int i = 0; i < original.length; i++) {
+			dup[i] = new double[length];
+			System.arraycopy(original[i], start, dup[i], 0, length);
 		}
-		return copy;
+		return dup;
 	}
 	
 //	public static void main(String[] s) {

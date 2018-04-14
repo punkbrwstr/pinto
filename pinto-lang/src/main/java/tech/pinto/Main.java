@@ -70,6 +70,8 @@ public class Main {
 			server.start();
 			port = ((ServerConnector)server.getConnectors()[0]).getLocalPort();
 		}
+		
+		getPinto().setPort(port);
 
 		org.eclipse.jetty.util.log.Log.setLog(new Slf4jLog());
 		new Thread(new Console(getPinto(),port,build, () -> {

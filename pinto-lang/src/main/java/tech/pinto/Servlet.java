@@ -124,6 +124,7 @@ public class Servlet extends HttpServlet {
 			DecimalFormat nf = new DecimalFormat();
 			nf.setDecimalFormatSymbols(dfs);
 			nf.setGroupingUsed(false);
+                        nf.setMaximumFractionDigits(10);
 			List<Table> l = pinto.eval(request.getParameter("p"));
 			if(l.size() > 0) {
 				if(!l.get(l.size() - 1).getStatus().isPresent()) {

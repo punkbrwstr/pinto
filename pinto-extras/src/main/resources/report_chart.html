@@ -2,7 +2,7 @@
 <div id="{0}"></div>
 
 <script type="text/javascript">
-var chart = c3.generate('{'
+var chart{0} = c3.generate('{'
 	bindto: ''#{0}'',
 	data: '{'
 		x: ''x'',
@@ -33,7 +33,15 @@ var chart = c3.generate('{'
     	'}',
     	title: '{'
   			text: ''{3}''
-		'}'
+		'}',
+		color: '{'
+        	pattern: [''#92d050'',''#c5be97'',''#8db4e3'',''#ffff99'',''#fddf70'',''#ff7c80'',''#f09ebf'',''#efff59'',''#43d2ff'',''#888888'',''#00b050'',''#846802'',''#0070c0'',''#ffff00'',''#fbc913'',''#ea5816'',''#d42069'',''#9fb000'',''#7f7f7f'',''#ccffcc'',''#ffcccc'']
+    	'}'
 '}');
+setTimeout(function () '{'
+	$(''g.c3-event-rects'').css("fill-opacity", "0.6");
+    chart{0}.resize();
+    chart{0}.flush();
+'}',0);
 </script>
 

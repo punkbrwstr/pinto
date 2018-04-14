@@ -68,8 +68,8 @@ public class FunctionTester {
 	
 	@Test
 	public void testNoInputsToDefined() throws Exception {
-		pinto.eval(":a [x] 2 {size: 20} rolling average def");
-		pinto.eval(":b [x] 3 {size: 30} rolling average def");
+		pinto.eval(":a [x] 2 {size: 20} rolling mean def");
+		pinto.eval(":b [x] 3 {size: 30} rolling mean def");
 		pinto.eval(":c a b def");
 		Table  c = pinto.eval("c eval").get(0);
 		assertEquals("defineNoInputs count",c.getColumnCount(),2);

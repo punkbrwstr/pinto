@@ -53,7 +53,7 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("def", new Name("def", p -> t -> {
     		Pinto.State state = p.getState();
     		String name = state.getNameLiteral().orElseThrow(() -> new PintoSyntaxException("def requires a name literal."));
-			String desc = Pinto.NAME_LITERAL.matcher(state.getExpression().get()).replaceAll("").replaceAll("def", "");
+    		String desc = state.getExpression().get();
 			Consumer<Table> f = state.getPrevious().andThen(t2 -> {
 					t2.decrementBase();
 				});
@@ -344,7 +344,7 @@ public class StandardVocabulary extends Vocabulary {
             String wfs = ((Column.OfConstantStrings)s.removeFirst()).getValue();
             Optional<Periodicity<Period>> windowFreq = wfs.equals("eval") ? Optional.empty() : Optional.of(Periodicities.get(wfs));
     		s.replaceAll(c -> {
-    			return new Column.OfDoubleArrays(inputs -> inputs[0].getHeader() + " rolling", inputs -> range -> {
+    			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader() + " rolling", inputs -> range -> {
                     Periodicity<Period> wf = windowFreq.orElse((Periodicity<Period>) range.periodicity());
     				Stream.Builder<DoubleStream> b = Stream.builder();
     				Period expandedWindowStart = wf.offset(-1 * (size - 1), wf.from(range.start().endDate()));
@@ -357,14 +357,14 @@ public class StandardVocabulary extends Vocabulary {
     					b.accept(Arrays.stream(data, (int) windowStartIndex, (int) windowStartIndex + size));
     				}
     				return b.build();
-    			},c);
+    			},size,c);
     		});
     	}),"[size=2,freq=\"eval\",:]", "Creates double array columns for each input column with rows containing values "+
     			"from rolling window of past data where the window is *size* periods of periodicity *freq*, defaulting to the evaluation periodicity."));
     	names.put("cross", new Name("cross", toTableConsumer(s-> {
     		Column.OfDoubles[] a = s.toArray(new Column.OfDoubles[]{});
     		s.clear();
-    		s.add(new Column.OfDoubleArrays(inputs -> "cross", inputs -> range -> {
+    		s.add(new Column.OfDoubleArray1Ds(inputs -> "cross", inputs -> range -> {
 				Stream.Builder<DoubleStream> b = Stream.builder();
 				List<OfDouble> l = Stream.of(inputs).map(c -> ((Column.OfDoubles) c).rows())
 						.map(DoubleStream::iterator).collect(Collectors.toList());
@@ -374,14 +374,14 @@ public class StandardVocabulary extends Vocabulary {
     				b.accept(db.build());
     			}
     			return b.build();
-    		}, a));
+    		}, i -> Optional.of(new int[]{i.length}),a));
     	}),"[:]", "Creates a double array column with each row containing values of input columns."));
     	names.put("expanding", new Name("expanding", toTableConsumer(s-> {
     		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		String freqString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		boolean initialZero = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
     		s.replaceAll(c -> {
-    			return new Column.OfDoubleArrays(inputs -> inputs[0].getHeader() + " expanding", inputs -> range -> {
+    			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader() + " expanding", inputs -> range -> {
     				LocalDate startDate = startString.equals("range") ? range.start().endDate() : LocalDate.parse(startString);
     				Periodicity<Period> wf = freqString.equals("range") ? (Periodicity<Period>) range.periodicity() : Periodicities.get(freqString);
     				Period windowStart = wf.from(startDate);
@@ -414,6 +414,24 @@ public class StandardVocabulary extends Vocabulary {
     		names.put(dc.name(), new Name(dc.name(), makeOperator(dc.name(), dc),"[:]","Aggregates row values in double array " +
     				"columns to a double value by " + dc.name()));
     	}
+//    	names.put("rank", new Name("rank", toTableConsumer(s-> {
+//    		s.replaceAll(c -> {
+//    			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].toString() + " rank",
+//    				inputs -> range -> {
+//    					Column.OfDoubleArray1Ds col = (Column.OfDoubleArray1Ds) inputs[0];
+//    					col.setRange(range);
+//    					return col.rows().map(ds -> {
+//    						double[] d = ds.toArray();
+//    						Double[] ranks = new Double[d.length];
+//    						for(int i = 0; i < d.length; i++) {
+//    							ranks[i] = (double) i;
+//    						}
+//    						Arrays.sort(ranks, (i0,i1) -> (int) Math.signum(d[i0.intValue()] - d[i1.intValue()]));
+//    						return Arrays.stream(ranks).mapToDouble(Double::doubleValue);
+//    					});
+//    				}, c);
+//    		});
+//    	}),"[:]", "Creates a double array column with each row containing values of input columns."));
 
 /* binary operators */
     	names.put("+", makeOperator("+", (x,y) -> x + y));
@@ -518,7 +536,7 @@ public class StandardVocabulary extends Vocabulary {
 			stack.replaceAll(c -> {
 				return new Column.OfDoubles(inputs -> Stream.of(inputs[0].toString(), name).collect(Collectors.joining(" ")),
 					inputs -> range -> {
-						return ((Column.OfDoubleArrays)inputs[0]).rows().mapToDouble( s -> {
+						return ((Column.OfDoubleArray1Ds)inputs[0]).rows().mapToDouble( s -> {
 							return s.collect(dc, (v,d) -> v.add(d), (v,v1) -> v.combine(v1)).finish();
 						});
 				}, c);

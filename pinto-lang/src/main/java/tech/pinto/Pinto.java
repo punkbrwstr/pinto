@@ -17,6 +17,7 @@ public class Pinto {
 	static Pattern HEADER_LITERAL = Pattern.compile("\\{(.*)\\}");
 	static Pattern NAME_LITERAL = Pattern.compile(":(\\S+)");
 	static Pattern ILLEGAL_NAME = Pattern.compile(".*[\\{\\}\\[\\]\"\\s:].*");
+	private static int port;
 
 	@Inject
 	Namespace namespace;
@@ -112,6 +113,14 @@ public class Pinto {
 	
 	public State getState() {
 		return engineState;
+	}
+	
+	public void setPort(int port) {
+		Pinto.port = port;
+	}
+	
+	public int getPort() {
+		return port;
 	}
 	
 	public static Consumer<Table> toTableConsumer(Consumer<LinkedList<Column<?,?>>> colsFunction) {

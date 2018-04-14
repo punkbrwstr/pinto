@@ -13,7 +13,6 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,6 +24,7 @@ import tech.pinto.Name;
 import tech.pinto.Pinto;
 import tech.pinto.PintoSyntaxException;
 import tech.pinto.StandardVocabulary;
+import tech.pinto.Table;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
@@ -48,23 +48,69 @@ public class ExtraVocabulary extends StandardVocabulary {
 			for (int i = 0; i < tickersfields.size(); i++) {
 				final int index = i;
 				s.addFirst(new Column.OfDoubles(inputs -> tickersfields.get(index), inputs -> range -> {
-					return Cache.getCachedValues(key, range, bc.getFunction(tickers, fields)).get(index);
+					return Cache.getCachedValues(key, range, index, tickersfields.size(),
+							bc.getFunction(tickers, fields));
 				}));
 			}
 
 		}), "[tickers,fields=\"PX_LAST\"]", "Downloads Bloomberg history for each *fields* for each *tickers*"));
-    	names.put("rpt", new Name("rpt", p -> t -> {
+    	names.put("report", new Name("rpt", p -> t -> {
     		Pinto.State state = p.getState();
 			String id = getId();
 			p.getNamespace().define("_rpt-" + id , state.getNameIndexer(), "Report id: " + id,
 					state.getDependencies().subList(0,state.getDependencies().size() - 1), state.getPrevious());
 			try {
-				Desktop.getDesktop().browse(new URI("http://127.0.0.1:5556/pinto/report?p=" + id));
+				int port = p.getPort();
+				Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + port + "/pinto/report?p=" + id));
 			} catch (Exception e) {
 				throw new PintoSyntaxException("Unable to open report", e);
 			}
     		t.setStatus("Report id: " + id);
     	}, Optional.empty(), Optional.of("[HTML]"), "Creates an HTML page from any columns labelled HTML.", true, true, true));
+		names.put("grid", new Name("grid", p -> toTableConsumer(s->  {
+    		int columns = Double.valueOf(((Column.OfConstantDoubles)s.removeFirst()).getValue()).intValue();
+			StringBuilder sb = new StringBuilder();
+			sb.append("\n<table class=\"pintoGrid\">\n\t<tbody>\n");
+			for(int i = 0; i < s.size(); ) {
+				if(i % columns == 0) {
+					sb.append("\t\t<tr>\n");
+				}
+				sb.append("\t\t\t<td>").append(((Column.OfConstantStrings)s.get(s.size() - i++ - 1)).getValue()).append("</td>\n");
+				if(i % columns == 0 || i == s.size()) {
+					sb.append("\t\t</tr>\n");
+				}
+			}
+			sb.append("\t</tbody>\n</table>\n");
+			s.clear();
+			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
+		}),"[columns=3,HTML]", "Creates a grid layout in a report with all input columns labelled HTML as cells in the grid.",false));
+		names.put("table", new Name("table", p -> toTableConsumer(s->  {
+    		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
+    		LocalDate start = startString.equals("today") ? LocalDate.now() : LocalDate.parse(startString);
+    		String endString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
+    		LocalDate end = endString.equals("today") ? LocalDate.now() : LocalDate.parse(endString);
+    		PeriodicRange<?> range = Periodicities.get(((Column.OfConstantStrings)s.removeFirst()).getValue())
+    									.range(start, end, false);
+    		NumberFormat nf = ((Column.OfConstantStrings)s.removeFirst()).getValue().equals("percent") ? NumberFormat.getPercentInstance() :
+    								NumberFormat.getNumberInstance();
+    		nf.setGroupingUsed(false);
+    		s.stream().forEach(c -> c.setRange(range));
+    		Table t = new Table();
+    		t.pushToBase(s);
+    		String[] lines = t.toCsv(nf).split("\n");
+    		s.clear();
+    		StringBuilder sb = new StringBuilder();
+    		sb.append("<table class=\"pintoTable\">\n<thead>\n");
+    		Arrays.stream(lines[0].split(",")).forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
+    		sb.append("</thead>\n<tbody>\n");
+    		Arrays.stream(lines).skip(1).map(l -> l.split(",")).forEach(l -> {
+    			sb.append("<tr>\n");
+    			Arrays.stream(l).forEach(c -> sb.append("<td>").append(c).append("</td>"));
+    			sb.append("</tr>\n");
+    		});
+   			sb.append("</tbody></table>\n");
+			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
+		}),"[start=\"today\",end=\"today\",freq=\"B\",format=\"decimal\",:]", "Creates a const string column with code for an HTML ranking table.",false));
 		names.put("chart", new Name("chart", p -> toTableConsumer(s->  {
     		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		LocalDate start = startString.equals("today") ? LocalDate.now() : LocalDate.parse(startString);
@@ -95,17 +141,18 @@ public class ExtraVocabulary extends StandardVocabulary {
 		}),"[start=\"today\",end=\"today\",freq=\"B\",title=\"\",:]", "Creates a const string column with code for an HTML chart.",false));
 		names.put("rt", new Name("rt", p -> toTableConsumer(s->  {
     		int[] startOffsets = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    									.mapToInt(Integer::parseInt).toArray();
+    									.map(String::trim).mapToInt(Integer::parseInt).toArray();
     		int[] endOffsets = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    									.mapToInt(Integer::parseInt).toArray();
+    									.map(String::trim).mapToInt(Integer::parseInt).toArray();
     		Periodicity<?>[] startFreqs = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    												.map(str -> Periodicities.get(str)).toArray(Periodicity[]::new);
+    												.map(String::trim).map(str -> Periodicities.get(str)).toArray(Periodicity[]::new);
     		Periodicity<?>[] endFreqs = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    												.map(str -> Periodicities.get(str)).toArray(Periodicity[]::new);
+    												.map(String::trim).map(str -> Periodicities.get(str)).toArray(Periodicity[]::new);
     		DoubleCollectors[] dc = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    									.map(str -> DoubleCollectors.valueOf(str)).toArray(DoubleCollectors[]::new);
+    									.map(String::trim).map(str -> DoubleCollectors.valueOf(str)).toArray(DoubleCollectors[]::new);
     		Periodicity<?>[] freqs = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    												.map(str -> Periodicities.get(str)).toArray(Periodicity[]::new);
+    												.map(String::trim).map(str -> Periodicities.get(str)).toArray(Periodicity[]::new);
+    		String[] columnLabels = ((Column.OfConstantStrings)s.removeFirst()).getValue().split(",");
     		NumberFormat nf = ((Column.OfConstantStrings)s.removeFirst()).getValue().equals("percent") ? NumberFormat.getPercentInstance() :
     								NumberFormat.getNumberInstance();
     		int digits = ((Column.OfConstantDoubles)s.removeFirst()).getValue().intValue();
@@ -120,7 +167,8 @@ public class ExtraVocabulary extends StandardVocabulary {
     			LocalDate start = startFreqs[Math.min(i, startFreqs.length - 1)].from(LocalDate.now()).offset(-1 * Math.abs(startOffsets[i])).endDate();
     			LocalDate end = endFreqs[Math.min(i, endFreqs.length - 1)].from(LocalDate.now()).offset(-1 * Math.abs(endOffsets[i])).endDate();
     			PeriodicRange<?> pr = freqs[Math.min(i, freqs.length - 1)].range(start, end, false);
-    			headers[i] = start + " - " + end;
+    			String columnLabel = i >= columnLabels.length ? "" : columnLabels[i];
+    			headers[i] = columnLabel.equals("") ? start + " - " + end : columnLabel;
     			List<Column<?,?>> l = null;
     			if(i == startOffsets.length - 1) {
     				l = new ArrayList<>(s); 
@@ -149,7 +197,7 @@ public class ExtraVocabulary extends StandardVocabulary {
     		StringBuilder sb = new StringBuilder();
     		sb.append("<table class=\"rankingTable\">\n<thead>\n");
     		Arrays.stream(headers).forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
-    		sb.append("</thead>\n</tbody>\n");
+    		sb.append("</thead>\n<tbody>\n");
     		for(int i = 0; i < cells.length; i++) {
     			sb.append("<tr>\n");
     			for(int j = 0; j < startOffsets.length; j++) {
@@ -159,7 +207,7 @@ public class ExtraVocabulary extends StandardVocabulary {
     		}
    			sb.append("</tbody></table>\n");
 			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
-		}),"[start_offsets,end_offsets,start_freqs,end_freqs,functions=\"changepct\",freqs=\"B\",format=\"percent\",digits=2,:]", "Creates a const string column with code for an HTML ranking table.",false));
+		}),"[start_offsets,end_offsets,start_freqs,end_freqs,functions=\"pct_change\",freqs=\"B\",labels=\"\",format=\"percent\",digits=2,:]", "Creates a const string column with code for an HTML ranking table.",false));
 	}
 	
 	private static String getId() {

@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
 import com.bloomberglp.blpapi.CorrelationID;
@@ -120,7 +119,7 @@ public class BloombergClient {
 		}
 	}
 
-	public <P extends Period> Function<PeriodicRange<?>, List<DoubleStream>> 
+	public <P extends Period> Function<PeriodicRange<?>, double[][]> 
 					getFunction(List<String> securities, List<String> fields ) {
 		return (range) -> {
 			if (session == null) {
@@ -135,7 +134,7 @@ public class BloombergClient {
 						.collect(Collectors.toMap((i) -> securityCodeFieldCode.get(i), Function.identity()));
 			final double[][] data = new double[securityCodeFieldCode.size()][(int) range.size()];
 			Arrays.stream(data).forEach(d -> Arrays.fill(d, Double.NaN));
-			final CompletableFuture<List<DoubleStream>> futureDS = new CompletableFuture<>();
+			final CompletableFuture<double[][]> futureDS = new CompletableFuture<>();
 //			final Map<String,DoubleStream.Builder> builders = securityCodeFieldCode.stream()
 //						.collect(Collectors.toMap(Function.identity(), (s) -> DoubleStream.builder()));
 //			final Map<String,AtomicInteger> stillNeeded = securityCodeFieldCode.stream()
@@ -191,16 +190,7 @@ public class BloombergClient {
 							}
 						}
 						jobs.remove(jobNumber);
-//						for(String securityField : securityCodeFieldCode) {
-//							for (int i = 0; i < stillNeeded.get(securityField).get(); i++) {
-//								builders.get(securityField).add(Double.NaN);
-//							}
-//						}
-						futureDS.complete(IntStream.range(0, securityCodeFieldCode.size())
-								.mapToObj(i -> DoubleStream.of(data[i])).collect(Collectors.toList()));
-//						futureDS.complete(builders.entrySet().stream()
-//								.map(e -> new DoubleData(d, e.getKey(), e.getValue().build()))
-//								.collect(Collectors.toCollection(() -> new ArrayDeque<DoubleData>())));
+						futureDS.complete(data);
 					}, errorHandler));
 					session.sendRequest(request, new CorrelationID(jobNumber));
 				}

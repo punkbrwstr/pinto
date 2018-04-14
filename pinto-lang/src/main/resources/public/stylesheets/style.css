@@ -115,6 +115,10 @@ table.pintoDataTable col:nth-child(2n+3) {background: #CCC}
 .c3-legend-item-tile, .c3-xgrid-focus, .c3-ygrid, .c3-event-rect, .c3-bars path {
   shape-rendering: crispEdges;
 }
+.c3-event-rects {
+ 	fill-opacity: 1;
+ 	fill: #D0ECEC;   
+}  
 .c3-chart-arc path {
   stroke: #fff;
 }
@@ -284,27 +288,48 @@ td.rankingTableCell {
     text-align: center;
 }
 
-td#rankingColor0 { background: #92d050; }
-td#rankingColor1 { background: #c5be97; }
-td#rankingColor2 { background: #8db4e3; }
-td#rankingColor3 { background: #ffff99; }
-td#rankingColor4 { background: #fddf70; }
-td#rankingColor5 { background: #ff7c80; }
-td#rankingColor6 { background: #f09ebf; }
-td#rankingColor7 { background: #efff59; }
-td#rankingColor8 { background: #43d2ff; }
-td#rankingColor9 { background: #888888; }
+td#rankingColor20 { background: #92d050; }
+td#rankingColor19 { background: #c5be97; }
+td#rankingColor18 { background: #8db4e3; }
+td#rankingColor17 { background: #ffff99; }
+td#rankingColor16 { background: #fddf70; }
+td#rankingColor15 { background: #ff7c80; }
+td#rankingColor14 { background: #f09ebf; }
+td#rankingColor13 { background: #efff59; }
+td#rankingColor12 { background: #43d2ff; }
+td#rankingColor11 { background: #888888; }
 td#rankingColor10 { background: #00b050; }
-td#rankingColor11 { background: #846802; }
-td#rankingColor12 { background: #0070c0; }
-td#rankingColor13 { background: #ffff00; }
-td#rankingColor14 { background: #fbc913; }
-td#rankingColor15 { background: #ea5816; }
-td#rankingColor16 { background: #d42069; }
-td#rankingColor17 { background: #9fb000; }
-td#rankingColor18 { background: #7f7f7f; }
-td#rankingColor19 { background: #ccffcc; }
-td#rankingColor20 { background: #ffcccc; }
+td#rankingColor9 { background: #846802; }
+td#rankingColor8 { background: #0070c0; }
+td#rankingColor7 { background: #ffff00; }
+td#rankingColor6 { background: #fbc913; }
+td#rankingColor5 { background: #ea5816; }
+td#rankingColor4 { background: #d42069; }
+td#rankingColor3 { background: #9fb000; }
+td#rankingColor2 { background: #7f7f7f; }
+td#rankingColor1 { background: #ccffcc; }
+td#rankingColor0 { background: #ffcccc; }
   
-  
+table.pintoGrid {
+    width: 100%;
+    font: 10px Helvetica, Arial, sans-serif;
+    border-collapse: collapse;
+    border-style: none;
+    table-layout: fixed
+} 
 
+table.pintoTable {
+    width: 100%;
+    font: 10px Helvetica, Arial, sans-serif;
+    border-collapse: collapse;
+    border-style: none;
+    table-layout: fixed
+} 
+
+table.pintoTable tr:nth-child(even) {
+    background-color: #ffffff;
+}
+
+table.pintoTable tr:nth-child(odd) {
+    background-color: #dddddd;
+}

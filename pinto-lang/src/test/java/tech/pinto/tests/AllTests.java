@@ -1,11 +1,10 @@
 package tech.pinto.tests;
 
-import java.util.Arrays;
+import static tech.pinto.Pinto.toTableConsumer;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Singleton;
-
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -23,8 +22,6 @@ import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
-
-import static tech.pinto.Pinto.toTableConsumer;
 
 @RunWith(Suite.class)
 @SuiteClasses({
@@ -67,11 +64,11 @@ public class AllTests {
 		public TestVocabulary() {
 			names.put("counter", new Name("counter", toTableConsumer(s -> {
 				s.addFirst(new Column.OfDoubles(inputs -> "", inputs -> range -> {
-					return Cache.getCachedValues("counter", range, r -> {
+					return Cache.getCachedValues("counter", range, 0, 1, r -> {
 						Column.OfConstantDoubles col = new Column.OfConstantDoubles(count.getAndIncrement());
 						col.setRange(r);
-						return Arrays.asList(col.rows());
-					}).get(0);
+						return new double[][] {col.rows().toArray()};
+					});
 					
 				}));
 			}), "[x]", "For cache testing"));

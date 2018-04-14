@@ -83,6 +83,15 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		}
 	}
 	
+	public interface ArrayColumn<T2,S2 extends BaseStream<T2,S2>>  {
+		public Optional<int[]> getDimensions();
+	}
+
+	public interface ConstantColumn<T2,S2 extends BaseStream<T2,S2>>  {
+
+		public T2 getValue();
+	}
+
 	public static class OfDoubles extends Column<Double,DoubleStream> {
 
 		public OfDoubles(Function<Column<?, ?>[], String> headerFunction,
@@ -93,23 +102,39 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		
 	}
 	
-	public static class OfDoubleArrays extends Column<DoubleStream,Stream<DoubleStream>> {
+	public static class OfDoubleArray1Ds extends Column<DoubleStream,Stream<DoubleStream>>
+							implements ArrayColumn<DoubleStream,Stream<DoubleStream>> {
+		
+		private final Function<Column<?,?>[],Optional<int[]>> dimensions;
 
-		public OfDoubleArrays(Function<Column<?, ?>[], String> headerFunction,
-				Function<Column<?, ?>[], Function<PeriodicRange<?>, Stream<DoubleStream>>> rowsFunction,
+		public OfDoubleArray1Ds(Function<Column<?, ?>[], String> headerFunction,
+				Function<Column<?, ?>[], Function<PeriodicRange<?>, Stream<DoubleStream>>> rowsFunction, Function<Column<?, ?>[],Optional<int[]>> dimensions,
 				Column<?, ?>... inputs) {
 			super(headerFunction, rowsFunction, i -> nf -> range -> {
 				return rowsFunction.apply(i).apply(range).map(DoubleStream::toArray).map(a -> {
 					return "[" + nf.format(a[0]) + (a.length == 1 ? "" : ", ..., " + nf.format(a[a.length-1]) + "]");
 				});
 			}, inputs);
+			this.dimensions = dimensions;
+		}
+
+		public OfDoubleArray1Ds(Function<Column<?, ?>[], String> headerFunction,
+				Function<Column<?, ?>[], Function<PeriodicRange<?>, Stream<DoubleStream>>> rowsFunction, 
+				Column<?, ?>... inputs) {
+			this(headerFunction, rowsFunction, i -> Optional.empty(), inputs);
+		}
+
+		public OfDoubleArray1Ds(Function<Column<?, ?>[], String> headerFunction,
+				Function<Column<?, ?>[], Function<PeriodicRange<?>, Stream<DoubleStream>>> rowsFunction, int dimension,
+				Column<?, ?>... inputs) {
+			this(headerFunction, rowsFunction, i -> Optional.of(new int[] {dimension}), inputs);
+		}
+
+		@Override
+		public Optional<int[]> getDimensions() {
+			return dimensions.apply(inputs);
 		}
 		
-	}
-	
-	public interface ConstantColumn<T2,S2 extends BaseStream<T2,S2>>  {
-
-		public T2 getValue();
 	}
 	
 	public static class OfConstantDoubles extends OfDoubles implements ConstantColumn<Double,DoubleStream> {

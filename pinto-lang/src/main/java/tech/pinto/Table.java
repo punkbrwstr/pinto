@@ -158,6 +158,7 @@ public class Table {
 	public String toCsv() {
 		NumberFormat nf = NumberFormat.getInstance();
 		nf.setGroupingUsed(false);
+                nf.setMaximumFractionDigits(10);
 		return toCsv(DateTimeFormatter.ISO_LOCAL_DATE,nf);
 	}
 
