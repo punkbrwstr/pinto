@@ -1,36 +1,36 @@
 # Pinto
 
-Pinto is a domain-specific programming language for manipulating time series. Technically it is a [concatenative](https://en.wikipedia.org/wiki/Concatenative_programming_language) language that uses [postfix](https://en.wikipedia.org/wiki/Reverse_Polish_notation) notation. That means that Pinto programs are comprised of a sequence of functions, written left-to-right, where each function's inputs are the outputs of the previous function (to its left).  These inputs and outputs are in the form of a table with columns representing specific time series definitions and a varying number of rows that correspond to a requested date range.  The rows may contain different types of data with values that vary over time or are constant.  Each column also has a text header to identify it. The table is set up as a [stack](https://en.wikipedia.org/wiki/Stack_(abstract_data_type)), with  new columns added to the right and functions operating on the rightmost column first.
-
-
-## How does it work?
-
-Here's a simple example of a Pinto expression broken down into numbered steps:
-
-![Alt text](https://pinto.tech/files/diag.png "2 3 +")
+Pinto is a domain-specific programming language for working with time series data. Pinto expressions produce one thing: tables of data with rows that correspond to periodic points in time.  Each table column contains a consistent type of data, but the values could be constant or time-varying.  Columns also have a text header for identifying metadata.  Pinto expressions can be evaluated to produce values for any periodicity over any range of time.  As a [concatenative](https://en.wikipedia.org/wiki/Concatenative_programming_language) language that uses [postfix](https://en.wikipedia.org/wiki/Reverse_Polish_notation) notation, Pinto expressions are comprised of a sequence of functions that operate on the the same table in left-to-right order.  The table is set up as a [stack](https://en.wikipedia.org/wiki/Stack_(abstract_data_type)), with new columns added to the right and functions operating on the rightmost column first.  Pinto indexing expressions allow convenient filtering of the table--passing only selected columns to the next function by referencing a column's header value or position in the table.   
 
 For language details see the [Pinto Language Reference](./pinto_reference.md).
 
+## Key features
+
+ - Expressive: Concise code using recognizable symbols and efficient postfix notation
+ - Batteries included: Bloomberg interface, built-in charting, rolling/expanding/cross window statistics
+ - Efficient: Lazy evaluation, range-based caching for [nullary](https://en.wikipedia.org/wiki/Arity) functions 
+ - Extensible: User-defined functions behave just like primitives
+ - Interoperable: Accessible through an http interface (works great with Python or SAS)
+
+## Why Pinto?
+
+Pinto was designed to prepare financial market data for use in models or visualizations.  A Pinto one-liner can perform data transformations that would require many lines of Pandas operations, multiple SAS data steps, or an Excel sheet full of formulas.  With Pinto's side-effect-free functional paradigm, the expression will return the same values every time.  And, Pinto can reevaluate the same expression for a different frequency or an expand the range of dates without changes to the code.  
+
+Pinto combines the efficiency of an HP-12c calculator, the simplicity of Postscript, the tersity of J, and the familiarity of Python indexing.   
 
 ## Try Pinto!
 Try Pinto live [online](http://pinto.tech/)
 
-
-## Key features
-
- - Concise: One line of pinto code can define an entire table of data
- - Updateable: Automatically update tables over any date range or periodicity 
- - Extensible: Build reusable functions that define specific data or transformations
- - Interoperable: Pinto is accessible through an http interface (works great with python or SAS)
- - Batteries included: Functions for rolling/expanding/cross window statistics, Bloomberg interface, etc.
- - Efficient: Lazy evaluation, range-based caching for supplier ([nullary](https://en.wikipedia.org/wiki/Arity)) functions
-
-
 ## Requirements
 
-The Pinto interpreter is built in Java using Maven. It requires:
+The Pinto interpreter is built in Java. 
+
+Running Pinto requires:
 
  - [Java 8](https://java.com/download)
+ 
+Building Pinto also requires:
+
  - [Maven](https://maven.apache.org/download.cgi)
 
 
