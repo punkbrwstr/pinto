@@ -60,13 +60,13 @@ public class StandardVocabulary extends Vocabulary {
 			p.getNamespace().define(name, state.getNameIndexer(), desc,
 					state.getDependencies().subList(0,state.getDependencies().size() - 1), f);
     		t.setStatus("Defined " + name);
-    	}, Optional.empty(), Optional.of("[x]"), "Defines the expression as the preceding name literal.", true, true, true));
+    	}, Optional.empty(), Optional.of("[]"), "Defines the expression as the preceding name literal.", true, true, true));
 
     	names.put("del", new Name("del", p -> t -> {
     		String name = p.getState().getNameLiteral().orElseThrow(() -> new PintoSyntaxException("del requires a name literal."));
     		p.getNamespace().undefine(name);
     		t.setStatus("Deleted " + name);
-    	},"[x]", "Deletes name specified by the preceding name literal.", true));
+    	},"[]", "Deletes name specified by the preceding name literal.", true));
     	names.put("help", new Name("help", p -> t -> {
     		StringBuilder sb = new StringBuilder();
     		String crlf = System.getProperty("line.separator");
@@ -92,7 +92,7 @@ public class StandardVocabulary extends Vocabulary {
     			sb.append(crlf).append("For help with a specific function type \":function help\"").append(crlf);
     		}
    			t.setStatus(sb.toString());
-    	}, "[x]", "Prints help for the preceding name literal or all names if one has not been specified.", true));
+    	}, "[]", "Prints help for the preceding name literal or all names if one has not been specified.", true));
     	names.put("list", new Name("help", p -> t -> {
     		StringBuilder sb = new StringBuilder();
     		String crlf = System.getProperty("line.separator");
@@ -102,7 +102,7 @@ public class StandardVocabulary extends Vocabulary {
                         .append(name.getDescription()).append(crlf);
             });
    			t.setStatus(sb.toString());
-    	}, "[x]", "Shows description for all names.", true));
+    	}, "[]", "Shows description for all names.", true));
     	names.put("eval", new Name("eval", p -> toTableConsumer(s -> {
     		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		LocalDate start = startString.equals("today") ? LocalDate.now() : LocalDate.parse(startString);
@@ -184,7 +184,7 @@ public class StandardVocabulary extends Vocabulary {
     				return new tech.pinto.tools.MoonPhase(d).getPhase();
     			});
     		}));
-    	}),"[x]","Creates a double column with values corresponding the phase of the moon."));
+    	}),"[]","Creates a double column with values corresponding the phase of the moon."));
     	names.put("range", new Name("range", toTableConsumer(s -> {
     		int n = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
     		IntStream.range(1,n+1).mapToDouble(i -> (double)i).mapToObj(
@@ -192,7 +192,7 @@ public class StandardVocabulary extends Vocabulary {
     	}),"[n=3]", "Creates double columns corresponding to the first *n* positive integers."));
     	names.put("pi", new Name("pi", toTableConsumer(s -> {
     				s.addFirst(new Column.OfConstantDoubles(Math.PI));
-    	}),"[x]", "Creates a constant double column with the value pi."));
+    	}),"[]", "Creates a constant double column with the value pi."));
     	names.put("read", new Name("read", toTableConsumer(s -> {
     		String source = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		boolean includesHeader = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());

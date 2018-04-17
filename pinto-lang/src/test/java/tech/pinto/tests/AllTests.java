@@ -71,7 +71,7 @@ public class AllTests {
 					});
 					
 				}));
-			}), "[x]", "For cache testing"));
+			}), "[]", "For cache testing"));
 		}
 
 	}

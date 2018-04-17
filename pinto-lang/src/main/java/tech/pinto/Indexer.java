@@ -177,9 +177,9 @@ public class Indexer implements Consumer<Table>, Cloneable {
 				checkConstant = true;
 				s = s.replace("#", "");
 			}
-			if (s.equals("x")) {
+			if (s.equals("")) {
 				// none index
-			} else if (s.equals(":") || s.equals("")) {
+			} else if (s.equals(":")) {
 				everything = true;
 			} else if (s.contains(":")) {
 				if (s.indexOf(":") == 0) {
