@@ -50,10 +50,13 @@ The two types may be combined within one set of curly braces.
 
 ## Indexing
 
-An indexing operator determines which columns in the stack are passed to the following function.  
+An indexing operator determines which columns in the stack are passed to the following function.  They are also used when defining functions to specify which input columns the function requires.    
 
 #### All columns
 When no indexer is specified, the entire stack is passed to the following function.  To explicitly show that you want the whole stack you can also use the indexer ```[:]```.
+
+#### No columns
+An indexer to pass an empty stack looks like ```[]```.
 
 #### Indexing by number
 The indexer can take numerical indicies or ranges of numerical indicies (ala python indexing/slicing).  Index numbering starts with ```0```, which represents the top or rightmost column of the stack.  Ranges may specify an inclusive starting index, an exclusive ending index or both.  ```[0:3]```  represents the first through third columns in the stack.  ```[1:]``` represents all stack columns after the first.  Negative indicies are converted to the stack size minus that number.  ```[-2:]```  represents the last two columns in the stack.
@@ -82,12 +85,12 @@ These functions tell the interpreter to start executing your Pinto code.  The mo
 
 Function name | Default indexer |Description
 :---:|:---|:---
-def|[x]|Defines the expression as the preceding name literal.
-del|[x]|Deletes name specified by the preceding name literal.
+def|[]|Defines the expression as the preceding name literal.
+del|[]|Deletes name specified by the preceding name literal.
 eval|[start="today",end="today",freq="B",:]|Evaluates the expression over the date range specified by *start, *end* and *freq* columns, returning the resulting table.
 exec|[filename]|Executes pinto expressions contained in the specifed file *filename*.
-help|[x]|Prints help for the preceding name literal or all names if one has not been specified.
-list|[x]|Shows description for all names.
+help|[]|Prints help for the preceding name literal or all names if one has not been specified.
+list|[]|Shows description for all names.
 write|[filename, start="today",end="today",freq="B",:]|Evaluates the expression over the date range specified by *start, *end* and *freq* columns, exporting the resulting table to csv *filename*.
 
 ### Stack manipulation functions
@@ -109,8 +112,8 @@ These commands generate data values.
 
 Function name | Default indexer|Description
 :---:|:---|:---
-moon|[x]|Creates a double column with values corresponding the phase of the moon.
-pi|[x]|Creates a constant double column with the value pi.
+moon|[]|Creates a double column with values corresponding the phase of the moon.
+pi|[]|Creates a constant double column with the value pi.
 range|[n=3]|Creates double columns corresponding to the first *n* positive integers.
 read|[source,includes_header="true"]|Reads CSV formatted table from file or URL specified as *source*.
 
