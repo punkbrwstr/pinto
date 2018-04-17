@@ -14,8 +14,20 @@
         </header>
         <div id="pintoBody">
         	<h3>What is Pinto?</h3>
-        	<p>Pinto is a domain-specific programming language for manipulating time series. Technically it is a <a href="https://en.wikipedia.org/wiki/Concatenative_programming_language" rel="nofollow">concatenative</a> language that uses <a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation" rel="nofollow">postfix</a> notation. That means that Pinto programs are comprised of a sequence of functions, written left-to-right, where each function's inputs are the outputs of the previous function (to its left).  These inputs and outputs are in the form of a table with columns representing specific time series definitions and a varying number of rows that correspond to a requested date range.  The rows may contain different types of data with values that vary over time or are constant.  Each column also has a text header to identify it. The table is set up as a <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)" rel="nofollow">stack</a>, with  new columns added to the right and functions operating on the rightmost column first.</p>
-        </div>
+		<p>Pinto is a domain-specific programming language for working with time series data. Pinto expressions produce one thing: tables of data with rows that correspond to periodic points in time.  Each table column contains a consistent type of data, but the values could be constant or time-varying.  Columns also have a text header for identifying metadata.  Pinto expressions can be evaluated to produce values for any periodicity over any range of time.  As a <a href="https://en.wikipedia.org/wiki/Concatenative_programming_language" rel="nofollow">concatenative</a> language that uses <a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation" rel="nofollow">postfix</a> notation, Pinto expressions are comprised of a sequence of functions that operate on the the same table in left-to-right order.  The table is set up as a <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)" rel="nofollow">stack</a>, with new columns added to the right and functions operating on the rightmost column first.  Pinto indexing expressions allow convenient filtering of the table--passing only selected columns to the next function by referencing a column's header value or position in the table.</p>
+		<p>For language details see the <a href="/punkbrwstr/pinto/blob/master/pinto_reference.md">Pinto Language Reference</a>.</p>
+		<h3>Key features</h3>
+		<ul>
+			<li>Expressive: Concise code using recognizable symbols and efficient postfix notation</li>
+			<li>Batteries included: Bloomberg interface, built-in charting, rolling/expanding/cross window statistics</li>
+			<li>Efficient: Lazy evaluation, range-based caching for <a href="https://en.wikipedia.org/wiki/Arity" rel="nofollow">nullary</a> functions</li>
+			<li>Extensible: User-defined functions behave just like primitives</li>
+			<li>Interoperable: Accessible through an http interface (works great with Python or SAS)</li>
+		</ul>
+		<h3>Why Pinto?</h3>
+		<p>Pinto was designed to prepare financial market data for use in models or visualizations.  A Pinto one-liner can perform data transformations that would require many lines of Pandas operations, multiple SAS data steps, or an Excel sheet full of formulas.  With Pinto's side-effect-free functional paradigm, the expression will return the same values every time.  And, Pinto can reevaluate the same expression for a different frequency or an expand the range of dates without changes to the code.</p>
+		<p>Pinto combines the efficiency of an HP-12c calculator, the simplicity of Postscript, the tersity of J, and the familiarity of Python indexing.</p
+	</div>
         <div id="tryPinto">
         	<h3>Try Pinto!</h3>
         	<br/>
@@ -24,7 +36,7 @@
         <p class="examples">(Type Pinto expressions into above terminal window. Tab will complete names.)</p>
         <ul>
             <li>Define a function to read in a file with stock prices
-                <p><pre><code>:get_stocks {source: "https://pinto.tech/files/stocks.csv"} read def</code></pre></p></li>
+                <p><pre><code>:get_stocks [] {source: "https://pinto.tech/files/stocks.csv"} read def</code></pre></p></li>
             <li>Select two columns using label indexing and compute their ratio
                 <p><pre><code>get_stocks [TRAN,UTIL] only / {start: "2015-10-01", end:"2015-10-30", freq: "W-FRI"} eval</code></pre></p></li>
        		<li>Compute 20 and 200-day moving averages
