@@ -1,7 +1,7 @@
 # Pinto Language Reference
 
 ## Types
-Columns in Pinto are statically typed.  For any requested time range a column will have values that are of the same type.  All column types also have a string header.
+Pinto is a dynamically typed language.  Columns have a consistent type over any time range.  All column types also have a string header.
 
 - *double*: Floating point number values
 - *doublearray*: One-dimensional array of floating point number values for each period
@@ -16,6 +16,9 @@ Type | Format
 *constdouble* | `3.0` or `3`
 *conststring* | `"string value"`
 *name* | `:a_name` (must appear at beginning of expression)
+
+## Comments
+Comments start with a `#` character and continue to the end of the line.  Comments cannot be with an expression--they must start after a terminal function (or at the beginning of a program).
 
 ## Headers
 Pinto will automatically assign a string header to every column according to the functions that are composed together to define the column.  Column headers can also by set manually by using header literals.  Header literals are surrounded by curly braces.  Literals for multiple headers are separated by commas.  There are two formats:
@@ -46,7 +49,7 @@ pinto> 1 2 {Onesy, Twosy} eval
 ╚════════════╧═══════╧═══════╝
 ```
 
-The two types may be combined within one set of curly braces.
+The two types of header literals may be combined within one set of curly braces.
 
 ## Indexing
 
