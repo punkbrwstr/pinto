@@ -18,7 +18,7 @@ Type | Format
 *name* | `:a_name` (must appear at beginning of expression)
 
 ## Comments
-Comments start with a `#` character and continue to the end of the line.  Comments cannot be with an expression--they must start after a terminal function (or at the beginning of a program).
+Comments start with a `#` character and continue to the end of the line.  Comments cannot be within an expression--they must start after a terminal function (or at the beginning of a program).
 
 ## Headers
 Pinto will automatically assign a string header to every column according to the functions that are composed together to define the column.  Column headers can also by set manually by using header literals.  Header literals are surrounded by curly braces.  Literals for multiple headers are separated by commas.  There are two formats:
