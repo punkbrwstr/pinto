@@ -1,6 +1,7 @@
 package tech.pinto;
 
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.BaseStream;
@@ -9,6 +10,7 @@ import java.util.stream.Stream;
 
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
+import tech.pinto.time.Periodicity;
 
 public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 	
@@ -168,10 +170,50 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 					);
 			this.value = value;
 			this.header = header;
-			headerFunction = inputs -> header;
+			//headerFunction = inputs -> header;
 		}
 
 		public String getValue() {
+			return value;
+		}
+
+	}
+
+	public static class OfConstantDates extends Column<LocalDate,Stream<LocalDate>> implements ConstantColumn<LocalDate,Stream<LocalDate>> {
+		
+		final LocalDate value;
+
+		public OfConstantDates(LocalDate value) {
+			super(inputs -> "date",
+					i -> range -> Stream.generate(() -> value).limit(range.size()),
+					i -> nf -> range -> Stream.generate(() -> value).map(LocalDate::toString).limit(range.size()),
+					new Column<?,?>[] {}
+					);
+			this.value = value;
+		}
+
+		public LocalDate getValue() {
+			return value;
+		}
+
+	}
+
+	@SuppressWarnings("rawtypes")
+	public static class OfConstantPeriodicities extends Column<Periodicity,Stream<Periodicity>>
+					implements ConstantColumn<Periodicity,Stream<Periodicity>> {
+		
+		final Periodicity value;
+
+		public OfConstantPeriodicities(Periodicity value) {
+			super(inputs -> "periodicity",
+					i -> range -> Stream.generate(() -> value).limit(range.size()),
+					i -> nf -> range -> Stream.generate(() -> value).map(Periodicity::code).limit(range.size()),
+					new Column<?,?>[] {}
+					);
+			this.value = value;
+		}
+
+		public Periodicity<?> getValue() {
 			return value;
 		}
 

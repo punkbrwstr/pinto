@@ -17,6 +17,7 @@ import dagger.Module;
 import dagger.Provides;
 import tech.pinto.Cache;
 import tech.pinto.Column;
+import tech.pinto.MarketData;
 import tech.pinto.Name;
 import tech.pinto.Namespace;
 import tech.pinto.Pinto;
@@ -48,6 +49,9 @@ public class AllTests {
 	public static class TestModule {
 		@Provides @Singleton Vocabulary provideVocabulary()  {
 			return new TestVocabulary();
+		}
+		@Provides @Singleton MarketData provideMarketData()  {
+			return new MarketData() {};
 		}
 	}
 	

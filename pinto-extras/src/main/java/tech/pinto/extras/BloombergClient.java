@@ -32,10 +32,11 @@ import com.bloomberglp.blpapi.Service;
 import com.bloomberglp.blpapi.Session;
 import com.bloomberglp.blpapi.SessionOptions;
 
+import tech.pinto.MarketData;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class BloombergClient {
+public class BloombergClient implements MarketData {
 
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 

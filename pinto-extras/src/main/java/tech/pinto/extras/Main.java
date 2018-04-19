@@ -11,6 +11,7 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import jline.TerminalFactory;
+import tech.pinto.MarketData;
 import tech.pinto.Namespace;
 import tech.pinto.Pinto;
 import tech.pinto.Vocabulary;
@@ -57,6 +58,12 @@ public class Main extends tech.pinto.Main {
 		@Singleton
 		Vocabulary provideVocabulary() {
 			return new ExtraVocabulary();
+		}
+
+		@Provides
+		@Singleton
+		MarketData provideMarketData() {
+			return new BloombergClient();
 		}
 	}
 

@@ -23,6 +23,8 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import jline.TerminalFactory;
+import tech.pinto.DaggerMain_PintoComponent;
+import tech.pinto.DaggerMain_MainComponent;
 import tech.pinto.tools.NonSingletonScope;
 
 public class Main {
@@ -34,9 +36,11 @@ public class Main {
 	protected Main() {
 		//component = DaggerMain_MainComponent.builder().mainModule(new MainModule()).build();
 		component = DaggerMain_PintoComponent.builder()
-					.namespaceComponent(DaggerMain_NamespaceComponent.builder()
-						.vocabularyComponent(DaggerMain_VocabularyComponent.builder()
-								.vocabularyModule(new VocabularyModule()).build()).build()).build();
+						.mainComponent(DaggerMain_MainComponent.builder().mainModule(new MainModule()).build())
+						.build();
+//		component = DaggerMain_PintoComponent.builder()
+//				.pintoModule(new PintoModule())
+//				.build();
 		ClassLoader loader = Thread.currentThread().getContextClassLoader();
 		Properties props = new Properties();
 		try(InputStream resourceStream = loader.getResourceAsStream("pinto.properties")) {
@@ -115,28 +119,64 @@ public class Main {
 		}
 	}
 
+//	@Module
+//	public static class PintoModule {
+//		@Provides
+//		@Singleton
+//		Namespace provideNamespace(Vocabulary vocabulary) {
+//			return new Namespace(vocabulary);
+//		}
+//
+//		@Provides
+//		@Singleton
+//		Vocabulary provideVocabulary() {
+//			return new StandardVocabulary();
+//		}
+//
+//		@Provides
+//		@Singleton
+//		MarketData provideMarketData() {
+//			return new MarketData() {};
+//		}
+//	}
+//
+//	@Component(modules = PintoModule.class)
+//	public interface PintoComponent {
+//		Pinto pinto();
+//	}
+	
+	
 	@Module
-	public static class VocabularyModule {
+	public static class MainModule {
 		@Provides Vocabulary vocabulary() {
 			return new StandardVocabulary();
+		}
+
+		@Provides MarketData marketdata() {
+			return new MarketData() {};
+		}
+		@Provides Namespace provideNamespace(Vocabulary vocabulary) {
+			return new Namespace(vocabulary);
 		}
 	}
 
 	@NonSingletonScope
-	@Component(dependencies = NamespaceComponent.class)
+	@Component(dependencies = {MainComponent.class})
 	public interface PintoComponent {
 		Pinto pinto();
 	}
 
-	@Singleton
-	@Component(dependencies = VocabularyComponent.class)
-	public interface NamespaceComponent {
-		Namespace namespace();
-	}
+//	@Singleton
+//	@Component(dependencies = VocabularyComponent.class)
+//	public interface NamespaceComponent {
+//	}
 
-	@Component(modules = VocabularyModule.class)
-	public interface VocabularyComponent {
+	@Singleton
+	@Component(modules = MainModule.class)
+	public interface MainComponent {
+		Namespace namespace();
 		Vocabulary vocabulary();
+		MarketData marketdata();
 	}
 
 }

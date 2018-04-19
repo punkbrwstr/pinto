@@ -110,9 +110,11 @@ public class Demo {
 	
 	@Module
 	public static class DemoModule {
-		@Provides
-		Vocabulary provideVocabulary() {
+		@Provides Vocabulary provideVocabulary() {
 			return new DemoVocabulary();
+		}
+		@Provides MarketData provideMarketData() {
+			return new MarketData() {};
 		}
 	}
 

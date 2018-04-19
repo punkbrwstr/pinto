@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.PrimitiveIterator.OfDouble;
 import java.util.concurrent.atomic.AtomicReference;
@@ -104,49 +105,44 @@ public class StandardVocabulary extends Vocabulary {
    			t.setStatus(sb.toString());
     	}, "[]", "Shows description for all names.", true));
     	names.put("eval", new Name("eval", p -> toTableConsumer(s -> {
-    		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		LocalDate start = startString.equals("today") ? LocalDate.now() : LocalDate.parse(startString);
-    		String endString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		LocalDate end = endString.equals("today") ? LocalDate.now() : LocalDate.parse(endString);
-    		PeriodicRange<?> range = Periodicities.get(((Column.OfConstantStrings)s.removeFirst()).getValue())
-    									.range(start, end, false);
+    		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
+    		LocalDate start = ((Column.OfConstantDates)s.removeFirst()).getValue();
+    		LocalDate end = s.peekFirst() instanceof Column.OfConstantDates ?
+    				((Column.OfConstantDates)s.removeFirst()).getValue() : LocalDate.now();
+    		PeriodicRange<?> range = periodicity.range(start, end, false);
     		s.stream().forEach(c -> c.setRange(range));
-    	}, true),"[start=\"today\",end=\"today\",freq=\"B\",:]",
+    	}, true),"[periodicity=B,date=today today,:]",
     			"Evaluates the expression over the date range specified by *start, *end* and *freq* columns, " + 
     					"returning the resulting table.", true ));
     	names.put("exec", new Name("exec", p -> t -> {
 			for(LinkedList<Column<?,?>> s : t.popStacks()) {
-				String filename = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-				try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
-				    String line = null;
-				    //Pinto.State state = new Pinto.State(false);
-				    p.engineState.reset();
-				    while ((line = reader.readLine()) != null) {
-				    	//p.evaluate(line, state);
-				    	if(!line.trim().matches("^#.*")) {
-				    		p.eval(line);
-				    	}
-				    }
-				    //state.getCurrent().accept(t);
-				} catch (FileNotFoundException e) {
-					throw new IllegalArgumentException("Cannot find pinto file \"" + filename + "\" to execute");
-				} catch (IOException e1) {
-					throw new IllegalArgumentException("IO error for pinto file \"" + filename + "\" in execute");
-				} catch (PintoSyntaxException e) {
-					throw new IllegalArgumentException("Pinto syntax error in  file \"" + filename + "\"", e);
+				while(!s.isEmpty()) {
+					String filename = ((Column.OfConstantStrings)s.removeFirst()).getValue();
+					try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+						String line = null;
+						p.engineState.reset();
+						while ((line = reader.readLine()) != null) {
+							p.eval(line);
+						}
+					} catch (FileNotFoundException e) {
+						throw new IllegalArgumentException("Cannot find pinto file \"" + filename + "\" to execute");
+					} catch (IOException e1) {
+						throw new IllegalArgumentException("IO error for pinto file \"" + filename + "\" in execute");
+					} catch (PintoSyntaxException e) {
+						throw new IllegalArgumentException("Pinto syntax error in  file \"" + filename + "\"", e);
+					}
 				}
 			}
 			t.setStatus("Successfully executed");
-    	},"[filename]", "Executes pinto expressions contained in the specifed file *filename*.", true));
-    	names.put("write", new Name("write", p -> t -> {
+    	},"[:]", "Executes pinto expressions contained files specified by file names in constantstring columns.", true));
+    	names.put("to_csv", new Name("to_csv", p -> t -> {
     		LinkedList<Column<?,?>> s = t.peekStack();
     		String filename = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		LocalDate start = startString.equals("today") ? LocalDate.now() : LocalDate.parse(startString);
-    		String endString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		LocalDate end = endString.equals("today") ? LocalDate.now() : LocalDate.parse(endString);
-    		PeriodicRange<?> range = Periodicities.get(((Column.OfConstantStrings)s.removeFirst()).getValue())
-    									.range(start, end, false);
+    		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
+    		LocalDate start = ((Column.OfConstantDates)s.removeFirst()).getValue();
+    		LocalDate end = s.peekFirst() instanceof Column.OfConstantDates ?
+    				((Column.OfConstantDates)s.removeFirst()).getValue() : LocalDate.now();
+    		PeriodicRange<?> range = periodicity.range(start, end, false);
     		s.stream().forEach(c -> c.setRange(range));
     		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)))) {
     			out.print(t.toCsv());
@@ -154,7 +150,7 @@ public class StandardVocabulary extends Vocabulary {
     				throw new IllegalArgumentException("Unable to open file \"" + filename + "\" for export");
     		}
 			t.setStatus("Successfully exported");
-    	},"[filename, start=\"today\",end=\"today\",freq=\"B\",:]","Evaluates the expression over the date range " +
+    	},"[filename,periodicity=B,date=today today,:]","Evaluates the expression over the date range " +
     		"specified by *start, *end* and *freq* columns, exporting the resulting table to csv *filename*.", true));
 
 
@@ -178,6 +174,19 @@ public class StandardVocabulary extends Vocabulary {
     	}), "[n=1,:]", "Permutes columns in stack *n* times."));
     	
 /* data creation/testing */
+    	/* constants */
+    	for(Entry<String, Supplier<Periodicity<?>>> e : Periodicities.map.entrySet()) {
+    		names.put(e.getKey(), new Name(e.getKey(), toTableConsumer(s -> {
+    				s.addFirst(new Column.OfConstantPeriodicities(e.getValue().get()));
+    		}),"[]", "Creates a constant periodcities column for " + e.getKey()));
+    	}
+    	names.put("today", new Name("today", toTableConsumer(s -> {
+    				s.addFirst(new Column.OfConstantDates(LocalDate.now()));
+    	}),"[]", "Creates a constant double column with the value pi."));
+    	names.put("pi", new Name("pi", toTableConsumer(s -> {
+    				s.addFirst(new Column.OfConstantDoubles(Math.PI));
+    	}),"[]", "Creates a constant double column with the value pi."));
+
     	names.put("moon", new Name("moon", toTableConsumer(s -> {
     		s.addFirst(new Column.OfDoubles(i -> "moon", inputs -> range -> {
     			return range.dates().stream().mapToDouble(d -> {
@@ -190,10 +199,7 @@ public class StandardVocabulary extends Vocabulary {
     		IntStream.range(1,n+1).mapToDouble(i -> (double)i).mapToObj(
     				value -> new Column.OfConstantDoubles(value)).forEach(s::addFirst);
     	}),"[n=3]", "Creates double columns corresponding to the first *n* positive integers."));
-    	names.put("pi", new Name("pi", toTableConsumer(s -> {
-    				s.addFirst(new Column.OfConstantDoubles(Math.PI));
-    	}),"[]", "Creates a constant double column with the value pi."));
-    	names.put("read", new Name("read", toTableConsumer(s -> {
+    	names.put("read_csv", new Name("read_csv", toTableConsumer(s -> {
     		String source = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		boolean includesHeader = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
     		try {
