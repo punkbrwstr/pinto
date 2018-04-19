@@ -124,13 +124,13 @@ pinto> 1 2 3 ([0] 1 + 2 *) eval
 
 ### Terminal functions
 
-These functions tell the interpreter to start executing your Pinto code.  The most common is *eval* which evaluates the columns over the date range that can be specified by constant string with the headers: start, end, freq.  In console mode the resulting table is printed.
+These functions mark the end of the expression.  The most common is *eval* which evaluates the expression over the date range and return the resulting table.  In console mode the resulting table is printed.
 
 Function name | Default indexer |Description
 :---:|:---|:---
+eval|[periodicity=B,date=today today,:]|Evaluates the expression over the (closed) date range from the first to the second *date* over *periodicity*, returning the resulting table.
 def|[]|Defines the expression as the preceding name literal.
 del|[]|Deletes name specified by the preceding name literal.
-eval|[start="today",end="today",freq="B",:]|Evaluates the expression over the date range specified by *start, *end* and *freq* columns, returning the resulting table.
 exec|[filename]|Executes pinto expressions contained in the specifed file *filename*.
 help|[]|Prints help for the preceding name literal or all names if one has not been specified.
 list|[]|Shows description for all names.
@@ -151,10 +151,11 @@ roll|[n=1,:]|Permutes columns in stack *n* times.
 
 ### Data creation functions
 
-These commands generate data values.
+These commands add columns to the stack.
 
 Function name | Default indexer|Description
 :---:|:---|:---
+today|[]|Adds a *constant date* column with today's date to the table.
 moon|[]|Creates a double column with values corresponding the phase of the moon.
 pi|[]|Creates a constant double column with the value pi.
 range|[n=3]|Creates double columns corresponding to the first *n* positive integers.
