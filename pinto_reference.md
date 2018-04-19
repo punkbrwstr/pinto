@@ -3,22 +3,25 @@
 ## Types
 Pinto is a dynamically typed language.  Columns have a consistent type over any time range.  All column types also have a string header.
 
-- *double*: Floating point number values
-- *doublearray*: One-dimensional array of floating point number values for each period
-- *constdouble*: Constant floating point number value
-- *conststring*: Constant character value
+- *doubles*: Floating point number values
+- *double arrays*: One-dimensional arrays of floating point number values
+- *constant doubles*: Constant floating point number values
+- *constant strings*: Constant string values
+- *constant dates*: Constant date values
+- *constant periodicities*: Constant periodicity values 
 
 ## Literals
 Literals are values in a Pinto expression that are recognized based on their formatting and become columns on their own.
 
-Type | Format
+Type | Format example
 :--- | :---
-*constdouble* | `3.0` or `3`
-*conststring* | `"string value"`
-*name* | `:a_name` (must appear at beginning of expression)
+*double* | `3.0` or `3`
+*string* | `"string value"`
+*name* | `:a_name` (must appear at beginning of expression) 
+*date* | `2018-01-01`
+*periodicities* | `{B, W-MON, W-TUE, W-WED, W-THU, W-FRI, BM, BQ-DEC, BA-DEC}` for business days, weekly ending each day of the week, business month end, business quarter (ending Mar, Jun, Sep, Dec) and business year end (ending Dec)
+*market data* | `$TACO Equity,CMG Equity:PX_OPEN,PX_LAST$`
 
-## Comments
-Comments start with a `#` character and continue to the end of the line.  Comments cannot be within an expression--they must start after a terminal function (or at the beginning of a program).
 
 ## Headers
 Pinto will automatically assign a string header to every column according to the functions that are composed together to define the column.  Column headers can also by set manually by using header literals.  Header literals are surrounded by curly braces.  Literals for multiple headers are separated by commas.  There are two formats:
@@ -79,8 +82,45 @@ The Copy modifier (```"&"```) forces the indexer make a copy of the column for t
 #### Index modifiers: Repeat
 The repeat modifier (```"+"```) causes the indexer to make multiple calls to the following function until the stack no longer contains enough columns for the indexer.  The index ```[:2+]``` will make repeated calls to the following function, each time supplying the top two columns on the stack as the function inputs.  It will stop when there are fewer than two columns left on the stack. 
 
+## Comments
+Comments start with a `#` character and continue to the end of the line.  Comments cannot be within an expression--they must start after a terminal function (or at the beginning of a program).
 
-## Function reference
+## User-defined functions
+Users can define functions that behave identically to built-in functions.  Any references to other names within a user-defined function  will refer to the version of the referenced name that is currently defined at time of evaluation.
+
+#### Defining functions
+Function definitions have four parts as in the following example:
+````
+:my_function [:2] 1 + def
+````
+Example | Part | Description
+:--- | :--- | :---
+`:my_function` | *name literal*|  This will be the name for the new function.
+`[:2]` | *default indexer* | Optional indexer (default: `[:]`) that will determine which columns on the stack will passed to the function.  Any header-based indices that cannot be found in on the stack and do not have defaults will cause an error.
+`1 +` | *function body* | This expression will be evaluated when the user-defined function is called.
+`def` | *terminal* | The terminal function `def` finishes a function definition.
+
+#### Deleting functions
+User-defined functions can be deleted by specifying a *name literal* and calling the `del` function as in this example:
+```
+:my_function del
+```
+
+## In-line functions
+A in-line function is a portion of an expression during which the stack remains indexed by a given indexer.  They allow multiple functions to be applied to the same indexed stack.  In-line functions are demarcated by parenthesis.  
+
+In the following example the `1 +` and `2 *` functions are applied to the stack indexed by `[0]` (containing *constant double* `3`).
+```
+pinto> 1 2 3 ([0] 1 + 2 *) eval
+╔════════════╤═════╤═════╤═════════════════╗
+║ Date       │ 1.0 │ 2.0 │ 3.0 1.0 + 2.0 * ║
+╠════════════╪═════╪═════╪═════════════════╣
+║ 2018-04-18 │ 1   │ 2   │ 8               ║
+╚════════════╧═════╧═════╧═════════════════╝
+```
+
+
+## Built-in function reference
 
 ### Terminal functions
 
