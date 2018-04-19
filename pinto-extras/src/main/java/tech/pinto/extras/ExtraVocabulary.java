@@ -13,6 +13,7 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,13 +27,12 @@ import tech.pinto.PintoSyntaxException;
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Table;
 import tech.pinto.time.PeriodicRange;
-import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 import tech.pinto.tools.DoubleCollectors;
 
 public class ExtraVocabulary extends StandardVocabulary {
 
-	public BloombergClient bc = new BloombergClient();
+	public BloombergMarketData bc = new BloombergMarketData();
     private Optional<MessageFormat> chartHTML = Optional.empty();
 
 	public ExtraVocabulary() {
@@ -85,12 +85,12 @@ public class ExtraVocabulary extends StandardVocabulary {
 			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
 		}),"[columns=3,HTML]", "Creates a grid layout in a report with all input columns labelled HTML as cells in the grid.",false));
 		names.put("table", new Name("table", p -> toTableConsumer(s->  {
-    		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		LocalDate start = startString.equals("today") ? LocalDate.now() : LocalDate.parse(startString);
-    		String endString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		LocalDate end = endString.equals("today") ? LocalDate.now() : LocalDate.parse(endString);
-    		PeriodicRange<?> range = Periodicities.get(((Column.OfConstantStrings)s.removeFirst()).getValue())
-    									.range(start, end, false);
+    		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
+    		LinkedList<LocalDate> d = new LinkedList<>();
+    		while((!s.isEmpty()) && d.size() < 2 && s.peekFirst().getHeader().equals("date")) {
+    			d.add(((Column.OfConstantDates)s.removeFirst()).getValue());
+    		}
+    		PeriodicRange<?> range = periodicity.range(d.removeLast(), d.isEmpty() ? LocalDate.now() : d.peek(), false);
     		NumberFormat nf = ((Column.OfConstantStrings)s.removeFirst()).getValue().equals("percent") ? NumberFormat.getPercentInstance() :
     								NumberFormat.getNumberInstance();
     		nf.setGroupingUsed(false);
@@ -110,14 +110,14 @@ public class ExtraVocabulary extends StandardVocabulary {
     		});
    			sb.append("</tbody></table>\n");
 			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
-		}),"[start=\"today\",end=\"today\",freq=\"B\",format=\"decimal\",:]", "Creates a const string column with code for an HTML ranking table.",false));
+		}),"[periodicity=B, date=[count=-20] offset today,format=\"decimal\",:]", "Creates a const string column with code for an HTML ranking table.",false));
 		names.put("chart", new Name("chart", p -> toTableConsumer(s->  {
-    		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		LocalDate start = startString.equals("today") ? LocalDate.now() : LocalDate.parse(startString);
-    		String endString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		LocalDate end = endString.equals("today") ? LocalDate.now() : LocalDate.parse(endString);
-    		PeriodicRange<?> range = Periodicities.get(((Column.OfConstantStrings)s.removeFirst()).getValue())
-    									.range(start, end, false);
+    		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
+    		LinkedList<LocalDate> d = new LinkedList<>();
+    		while((!s.isEmpty()) && d.size() < 2 && s.peekFirst().getHeader().equals("date")) {
+    			d.add(((Column.OfConstantDates)s.removeFirst()).getValue());
+    		}
+    		PeriodicRange<?> range = periodicity.range(d.removeLast(), d.isEmpty() ? LocalDate.now() : d.peek(), false);
     		String title = ((Column.OfConstantStrings)s.removeFirst()).getValue();
 			if(!chartHTML.isPresent()) {
 				try {
@@ -138,39 +138,47 @@ public class ExtraVocabulary extends StandardVocabulary {
 			String html = chartHTML.get().format(new Object[] {getId(), dates, data, title}, new StringBuffer(), null).toString();
 			s.clear();
 			s.add(new Column.OfConstantStrings(html, "HTML"));
-		}),"[start=\"today\",end=\"today\",freq=\"B\",title=\"\",:]", "Creates a const string column with code for an HTML chart.",false));
+		}),"[periodicity=B, date=[count=-20] offset today,title=\"\",:]", "Creates a const string column with code for an HTML chart.",false));
 		names.put("rt", new Name("rt", p -> toTableConsumer(s->  {
-    		int[] startOffsets = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    									.map(String::trim).mapToInt(Integer::parseInt).toArray();
-    		int[] endOffsets = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    									.map(String::trim).mapToInt(Integer::parseInt).toArray();
-    		Periodicity<?>[] startFreqs = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    												.map(String::trim).map(str -> Periodicities.get(str)).toArray(Periodicity[]::new);
-    		Periodicity<?>[] endFreqs = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    												.map(String::trim).map(str -> Periodicities.get(str)).toArray(Periodicity[]::new);
+			LinkedList<LocalDate> starts = new LinkedList<>();
+			while((!s.isEmpty()) && s.peekFirst().getHeader().equals("starts")) {
+				starts.addFirst(((Column.OfConstantDates)s.removeFirst()).getValue());
+			}
+			LinkedList<LocalDate> ends = new LinkedList<>();
+			while((!s.isEmpty()) && s.peekFirst().getHeader().equals("ends")) {
+				ends.addFirst(((Column.OfConstantDates)s.removeFirst()).getValue());
+			}
+			LinkedList<String> columnLabels = new LinkedList<>();
+			while((!s.isEmpty()) && s.peekFirst().getHeader().equals("labels")) {
+				columnLabels.addFirst(((Column.OfConstantStrings)s.removeFirst()).getValue());
+			}
+			LinkedList<Periodicity<?>> periodicities = new LinkedList<>();
+			while((!s.isEmpty()) && s.peekFirst().getHeader().equals("periodicities")) {
+				periodicities.addFirst(((Column.OfConstantPeriodicities)s.removeFirst()).getValue());
+			}
+			LinkedList<DoubleCollectors> collectors = new LinkedList<>();
+			while((!s.isEmpty()) && s.peekFirst().getHeader().equals("collectors")) {
+				collectors.addFirst(DoubleCollectors.valueOf(((Column.OfConstantStrings)s.removeFirst()).getValue()));
+			}
     		DoubleCollectors[] dc = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
     									.map(String::trim).map(str -> DoubleCollectors.valueOf(str)).toArray(DoubleCollectors[]::new);
-    		Periodicity<?>[] freqs = Arrays.stream(((Column.OfConstantStrings)s.removeFirst()).getValue().split(","))
-    												.map(String::trim).map(str -> Periodicities.get(str)).toArray(Periodicity[]::new);
-    		String[] columnLabels = ((Column.OfConstantStrings)s.removeFirst()).getValue().split(",");
     		NumberFormat nf = ((Column.OfConstantStrings)s.removeFirst()).getValue().equals("percent") ? NumberFormat.getPercentInstance() :
     								NumberFormat.getNumberInstance();
     		int digits = ((Column.OfConstantDoubles)s.removeFirst()).getValue().intValue();
     		nf.setMaximumFractionDigits(digits);
-    		if(startOffsets.length != endOffsets.length /*|| startOffsets.length != startFreqs.length || startOffsets.length != endFreqs.length */) {
-    			throw new PintoSyntaxException("Offset lists must have same length.");
-    		}
-    		String[] labels = new String[s.size()];
-    		String[] headers = new String[startOffsets.length];
-    		String[][] cells = new String[s.size()][startOffsets.length];
-    		for(int i = 0; i < startOffsets.length; i++) {
-    			LocalDate start = startFreqs[Math.min(i, startFreqs.length - 1)].from(LocalDate.now()).offset(-1 * Math.abs(startOffsets[i])).endDate();
-    			LocalDate end = endFreqs[Math.min(i, endFreqs.length - 1)].from(LocalDate.now()).offset(-1 * Math.abs(endOffsets[i])).endDate();
-    			PeriodicRange<?> pr = freqs[Math.min(i, freqs.length - 1)].range(start, end, false);
-    			String columnLabel = i >= columnLabels.length ? "" : columnLabels[i];
+    		int columns = starts.size();
+    		int rows = s.size();
+    		String[] labels = new String[rows];
+    		String[] headers = new String[columns];
+    		String[][] cells = new String[rows][columns];
+    		for(int i = 0; i < columns; i++) {
+    			LocalDate start = starts.get(Math.min(i, columns - 1));
+    			LocalDate end = ends.get(Math.min(i, columns - 1));
+    			PeriodicRange<?> pr = periodicities.get(Math.min(i, periodicities.size() - 1)).range(start, end, false);
+    			String columnLabel = i >= columnLabels.size() ? "" : columnLabels.get(i);
     			headers[i] = columnLabel.equals("") ? start + " - " + end : columnLabel;
     			List<Column<?,?>> l = null;
-    			if(i == startOffsets.length - 1) {
+    			if(i == columns - 1) {
     				l = new ArrayList<>(s); 
     				s.clear();
     			} else {
@@ -200,14 +208,14 @@ public class ExtraVocabulary extends StandardVocabulary {
     		sb.append("</thead>\n<tbody>\n");
     		for(int i = 0; i < cells.length; i++) {
     			sb.append("<tr>\n");
-    			for(int j = 0; j < startOffsets.length; j++) {
+    			for(int j = 0; j < columns; j++) {
     				sb.append(cells[i][j]);
     			}
     			sb.append("</tr>\n");
     		}
    			sb.append("</tbody></table>\n");
 			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
-		}),"[start_offsets,end_offsets,start_freqs,end_freqs,functions=\"pct_change\",freqs=\"B\",labels=\"\",format=\"percent\",digits=2,:]", "Creates a const string column with code for an HTML ranking table.",false));
+		}),"[starts=[periodicity=BA-DEC] offset,ends=today,labels=\"YTD\",periodicities=B,functions=\"pct_change\",format=\"percent\",digits=2,:]", "Creates a const string column with code for an HTML ranking table.",false));
 	}
 	
 	private static String getId() {

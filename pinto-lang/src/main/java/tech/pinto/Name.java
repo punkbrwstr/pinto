@@ -49,7 +49,7 @@ public class Name implements Function<Pinto,Consumer<Table>> {
 	
 	public Consumer<Table> getDefaultIndexer(Pinto pinto) {
 		if(!indexer.isPresent()) {
-			indexer = Optional.of(new Indexer(pinto, indexString.get(), false));
+			indexer = Optional.of(new Indexer(pinto, indexString.get().replaceAll("^\\[|\\]$", ""), false));
 		}
 		return t -> {
 			try {

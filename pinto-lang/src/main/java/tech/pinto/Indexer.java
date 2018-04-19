@@ -9,6 +9,7 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class Indexer implements Consumer<Table>, Cloneable {
 
@@ -22,14 +23,42 @@ public class Indexer implements Consumer<Table>, Cloneable {
 	}
 
 	public Indexer(Pinto pinto, String indexString, boolean incrementBase) {
-		indexString = indexString.replaceAll("\\[|\\]", "");
 		this.pinto = pinto;
 		this.indexString = indexString;
 		this.incrementBase = incrementBase;
-		String[] indexParts = indexString.split(",");
-		for (int n = 0; n < indexParts.length; n++) {
-			Index i = new Index(indexParts[n].trim());
-			indexes.add(i);
+		
+		StringBuilder sb = new StringBuilder();
+		final int[] open = new int[4]; // ", $, {, [
+		for(int i = 0; i < indexString.length(); i++) {
+			// first check what's open
+			switch(indexString.charAt(i)) {
+				case '"':	open[0] = open[0] == 0 ? 1 : 0;		break;
+				case '$':	open[1] = open[1] == 0 ? 1 : 0;		break;
+				case '{':	open[2]++;							break;
+				case '}':	open[2]--;							break;
+				case '[':	open[3]++;							break;
+				case ']':	open[3]--;							break;
+			}
+
+			// don't count commas if anything's open 
+			if(Arrays.stream(open).sum() > 0) { 
+				sb.append(indexString.charAt(i));
+			} else {
+				if(indexString.charAt(i) == ',') {
+					indexes.add(new Index(sb.toString().trim()));
+					sb = new StringBuilder();
+					Arrays.setAll(open, x -> 0);
+				} else {
+					 sb.append(indexString.charAt(i));
+				}
+			}
+		}
+		if(Arrays.stream(open).sum() == 0) { 
+			indexes.add(new Index(sb.toString().trim()));
+		} else {
+			String unmatched = IntStream.range(0, 4).mapToObj(i -> open[i] == 0 ? "" : new String[]{"\"","$","{","["}[i])
+					.filter(s -> !s.equals("")).collect(Collectors.joining(","));
+			throw new IllegalArgumentException("Unmatched \"" + unmatched + "\" in Index: \"[" + indexString + "]\"");
 		}
 	}
 
@@ -61,17 +90,17 @@ public class Indexer implements Consumer<Table>, Cloneable {
 	@SuppressWarnings("unchecked")
 	private LinkedList<Column<?,?>> operate(LinkedList<Column<?,?>> stack, List<StackOperation> ops, Pinto pinto) {
 		indexes.stream().map(i -> i.index(stack)).forEach(ops::addAll);
-		List<StackOperation> headerOps = ops.stream().filter(StackOperation::isHeader).collect(Collectors.toList());
+		List<StackOperation> indexStringOps = ops.stream().filter(StackOperation::isHeader).collect(Collectors.toList());
 		List<StackOperation> ordinalOps = ops.stream().filter(so -> ! so.isHeader()).collect(Collectors.toList());
 		// determine which operations need to be copies
 		LinkedList<StackOperation>[] opsByOrdinal = new LinkedList[stack.size()];
-		for(List<StackOperation> l : Arrays.asList(headerOps, ordinalOps)) {
+		for(List<StackOperation> l : Arrays.asList(indexStringOps, ordinalOps)) {
 			for (StackOperation op : l) {
 				if (!op.isAlternative()) {
 					if (opsByOrdinal[op.getOrdinal()] != null) {
 						if(opsByOrdinal[op.getOrdinal()].getLast().isHeader() &&
 								!opsByOrdinal[op.getOrdinal()].getLast().isHeader()) {
-							op.setSkip(true); // don't include cols index by header in subsequent ordinal indexes
+							op.setSkip(true); // don't include cols index by indexString in subsequent ordinal indexes
 						} else {
 							opsByOrdinal[op.getOrdinal()].getLast().setNeedsCloning(true);
 						}
@@ -129,7 +158,7 @@ public class Indexer implements Consumer<Table>, Cloneable {
 
 	private class Index {
 
-		private Optional<String> header = Optional.empty();
+		private Optional<String> indexString = Optional.empty();
 		private Optional<Integer> ordinal = Optional.empty();
 		private Optional<Integer> sliceStart = Optional.empty();
 		private Optional<Integer> sliceEnd = Optional.empty();
@@ -152,10 +181,11 @@ public class Indexer implements Consumer<Table>, Cloneable {
 			}
 			if (s.contains("=")) {
 				String[] thisOrThat = s.split("=");
-				if (thisOrThat.length != 2) {
-					throw new IllegalArgumentException("Index \"=\" should be followed by alternative expression.");
+				if (thisOrThat.length < 2) {
+					throw new IllegalArgumentException("\"=\" should be followed by alternative expression in index:" + s);
 				}
-				or = Optional.of(thisOrThat[1] + " {" + thisOrThat[0] + "}");
+				String alt = Arrays.stream(thisOrThat).skip(1).collect(Collectors.joining("="));
+				or = Optional.of(" {" + thisOrThat[0] + ": " + alt + "}");
 				s = thisOrThat[0];
 			}
 			if (s.contains("+")) {
@@ -198,7 +228,7 @@ public class Indexer implements Consumer<Table>, Cloneable {
 				if (isNumeric(s)) {
 					ordinal = Optional.of(Integer.parseInt(s));
 				} else {
-					header = Optional.of(s);
+					indexString = Optional.of(s);
 				}
 			}
 
@@ -240,8 +270,8 @@ public class Indexer implements Consumer<Table>, Cloneable {
 						ops.add(new StackOperation(n, isCopy(), false, checkString, checkConstant));
 					}
 				}
-			} else if (header.isPresent()) {
-				final String query = header.get();
+			} else if (indexString.isPresent()) {
+				final String query = indexString.get();
 				Predicate<String> test;
 				if (query.startsWith("*")) {
 					final String toFind = query.substring(1);
@@ -266,7 +296,7 @@ public class Indexer implements Consumer<Table>, Cloneable {
 					if (or.isPresent()) {
 						ops.add(new StackOperation(or.get(), checkString, checkConstant));
 					} else {
-						throw new IllegalArgumentException("Missing required header \"" + query + "\"");
+						throw new IllegalArgumentException("Missing required indexString \"" + query + "\"");
 					}
 				}
 			}

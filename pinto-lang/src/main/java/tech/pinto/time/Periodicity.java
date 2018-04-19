@@ -50,6 +50,10 @@ public abstract class Periodicity<P extends Period> extends DiscreteDomain<P> {
 		return get(start.longValue() + count);
 	}
 
+	public LocalDate offset(long count, LocalDate start) {
+		return get(from(start).longValue() + count).endDate();
+	}
+
 	@SuppressWarnings("unchecked")
 	public PeriodicRange<P> range(Period start, Period end, boolean clearCache) {
 		return new PeriodicRange<P>(this, (Range<P>) Range.closed(start, end), clearCache);

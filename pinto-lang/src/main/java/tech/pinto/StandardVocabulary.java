@@ -63,10 +63,10 @@ public class StandardVocabulary extends Vocabulary {
     		t.setStatus("Defined " + name);
     	}, Optional.empty(), Optional.of("[]"), "Defines the expression as the preceding name literal.", true, true, true));
 
-    	names.put("del", new Name("del", p -> t -> {
+    	names.put("undef", new Name("undef", p -> t -> {
     		String name = p.getState().getNameLiteral().orElseThrow(() -> new PintoSyntaxException("del requires a name literal."));
     		p.getNamespace().undefine(name);
-    		t.setStatus("Deleted " + name);
+    		t.setStatus("Undefined " + name);
     	},"[]", "Deletes name specified by the preceding name literal.", true));
     	names.put("help", new Name("help", p -> t -> {
     		StringBuilder sb = new StringBuilder();
@@ -94,7 +94,7 @@ public class StandardVocabulary extends Vocabulary {
     		}
    			t.setStatus(sb.toString());
     	}, "[]", "Prints help for the preceding name literal or all names if one has not been specified.", true));
-    	names.put("list", new Name("help", p -> t -> {
+    	names.put("list", new Name("list", p -> t -> {
     		StringBuilder sb = new StringBuilder();
     		String crlf = System.getProperty("line.separator");
             p.getNamespace().getNames().stream().map(s -> p.getNamespace().getName(s))
@@ -106,15 +106,15 @@ public class StandardVocabulary extends Vocabulary {
     	}, "[]", "Shows description for all names.", true));
     	names.put("eval", new Name("eval", p -> toTableConsumer(s -> {
     		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
-    		LocalDate start = ((Column.OfConstantDates)s.removeFirst()).getValue();
-    		LocalDate end = s.peekFirst() instanceof Column.OfConstantDates ?
-    				((Column.OfConstantDates)s.removeFirst()).getValue() : LocalDate.now();
-    		PeriodicRange<?> range = periodicity.range(start, end, false);
+    		LinkedList<LocalDate> dates = new LinkedList<>();
+    		while((!s.isEmpty()) && dates.size() < 2 && s.peekFirst().getHeader().equals("date")) {
+    			dates.add(((Column.OfConstantDates)s.removeFirst()).getValue());
+    		}
+    		PeriodicRange<?> range = periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek(), false);
     		s.stream().forEach(c -> c.setRange(range));
     	}, true),"[periodicity=B,date=today today,:]",
-    			"Evaluates the expression over the date range specified by *start, *end* and *freq* columns, " + 
-    					"returning the resulting table.", true ));
-    	names.put("exec", new Name("exec", p -> t -> {
+    			"Evaluates the expression over date range between two *date* columns over *periodicity*.", true ));
+    	names.put("import", new Name("import", p -> t -> {
 			for(LinkedList<Column<?,?>> s : t.popStacks()) {
 				while(!s.isEmpty()) {
 					String filename = ((Column.OfConstantStrings)s.removeFirst()).getValue();
@@ -134,15 +134,16 @@ public class StandardVocabulary extends Vocabulary {
 				}
 			}
 			t.setStatus("Successfully executed");
-    	},"[:]", "Executes pinto expressions contained files specified by file names in constantstring columns.", true));
+    	},"[:]", "Executes pinto expressions contained files specified by file names in string columns.", true));
     	names.put("to_csv", new Name("to_csv", p -> t -> {
     		LinkedList<Column<?,?>> s = t.peekStack();
     		String filename = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
-    		LocalDate start = ((Column.OfConstantDates)s.removeFirst()).getValue();
-    		LocalDate end = s.peekFirst() instanceof Column.OfConstantDates ?
-    				((Column.OfConstantDates)s.removeFirst()).getValue() : LocalDate.now();
-    		PeriodicRange<?> range = periodicity.range(start, end, false);
+    		LinkedList<LocalDate> dates = new LinkedList<>();
+    		while((!s.isEmpty()) && dates.size() < 2 && s.peekFirst().getHeader().equals("date")) {
+    			dates.add(((Column.OfConstantDates)s.removeFirst()).getValue());
+    		}
+    		PeriodicRange<?> range = periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek(), false);
     		s.stream().forEach(c -> c.setRange(range));
     		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)))) {
     			out.print(t.toCsv());
@@ -172,6 +173,16 @@ public class StandardVocabulary extends Vocabulary {
     			s.addFirst(s.removeLast());
     		}
     	}), "[n=1,:]", "Permutes columns in stack *n* times."));
+/* dates */
+    	names.put("today", new Name("today", toTableConsumer(s -> {
+    				s.addFirst(new Column.OfConstantDates(LocalDate.now()));
+    	}),"[]", "Creates a constant date column with today's date."));
+    	names.put("offset", new Name("offset", toTableConsumer(s -> {
+    		LocalDate date = ((Column.OfConstantDates)s.removeFirst()).getValue();
+    		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
+    		int count = ((Column.OfConstantDoubles)s.removeFirst()).getValue().intValue();
+    		s.addFirst(new Column.OfConstantDates(periodicity.offset(count, date)));
+    	}),"[date=today,periodicity=B,count=-1]", "Offset a given number of periods from today's date."));
     	
 /* data creation/testing */
     	/* constants */
@@ -180,9 +191,6 @@ public class StandardVocabulary extends Vocabulary {
     				s.addFirst(new Column.OfConstantPeriodicities(e.getValue().get()));
     		}),"[]", "Creates a constant periodcities column for " + e.getKey()));
     	}
-    	names.put("today", new Name("today", toTableConsumer(s -> {
-    				s.addFirst(new Column.OfConstantDates(LocalDate.now()));
-    	}),"[]", "Creates a constant double column with the value pi."));
     	names.put("pi", new Name("pi", toTableConsumer(s -> {
     				s.addFirst(new Column.OfConstantDoubles(Math.PI));
     	}),"[]", "Creates a constant double column with the value pi."));

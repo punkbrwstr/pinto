@@ -36,7 +36,7 @@ import tech.pinto.MarketData;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class BloombergClient implements MarketData {
+public class BloombergMarketData implements MarketData {
 
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
@@ -47,7 +47,7 @@ public class BloombergClient implements MarketData {
 	private final ConcurrentMap<Long, Job> jobs = new ConcurrentHashMap<>();
 	private final SessionOptions options;
 
-	public BloombergClient() {
+	public BloombergMarketData() {
 		options = new SessionOptions();
 		options.setServerHost("localhost");
 		options.setServerPort(8194);

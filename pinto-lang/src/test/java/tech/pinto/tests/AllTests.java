@@ -29,6 +29,7 @@ import tech.pinto.Vocabulary;
 	DateTester.class,
 	FunctionTester.class,
         IndexTester.class,
+        SyntaxTester.class,
 	SearchableMultiMapTester.class
 })
 public class AllTests {

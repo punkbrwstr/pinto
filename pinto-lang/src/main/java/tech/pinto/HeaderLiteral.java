@@ -1,9 +1,13 @@
 package tech.pinto;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 
 public class HeaderLiteral implements Consumer<LinkedList<Column<?,?>>>{
 	
@@ -13,40 +17,44 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?,?>>>{
 	public HeaderLiteral(Pinto pinto, String header) {
 		this.headers = new ArrayList<>();
 
-		String[] as = new String[2];
-		int start = 0;
-		boolean foundColon = false, foundQuote = false;
-		String raw = header.replaceAll("^\\{|\\}$", "");
-		for(int i = 0; i < raw.length(); i++) {
-			if(raw.charAt(i) == '"') {
-				foundQuote = !foundQuote;
+		StringBuilder[] h = new StringBuilder[] {new StringBuilder(), new StringBuilder()};
+		int position = 0;
+		final int[] open = new int[4]; // ", $, {, [
+
+		for(int i = 0; i < header.length(); i++) {
+			// first check what's open
+			switch(header.charAt(i)) {
+				case '"':	open[0] = open[0] == 0 ? 1 : 0;		break;
+				case '$':	open[1] = open[1] == 0 ? 1 : 0;		break;
+				case '{':	open[2]++;							break;
+				case '}':	open[2]--;							break;
+				case '[':	open[3]++;							break;
+				case ']':	open[3]--;							break;
 			}
-			if(raw.charAt(i) == ':' && ! foundQuote) {
-				if(foundColon) {
-					throw new PintoSyntaxException("Repeated \":\" in header literal");
-				}
-//				else if(foundQuote) {
-//					throw new PintoSyntaxException("Double-quote found in header literal");
-//				}
-				as[0] = raw.substring(start, i);
-				start = i+1;
-				foundColon = true;
-			} else if(raw.charAt(i) == ',' || i == raw.length()-1) {
-				if(!foundQuote) {
-					if(!foundColon) {
-						as[0] = raw.substring(start, raw.charAt(i) == ',' ? i : i + 1);
-					} else {
-						as[1] = raw.substring(start, raw.charAt(i) == ',' ? i : i + 1);
-						foundColon = false;
-					}
-					this.headers.add(as);
-					as = new String[2];
-					start = i+1;
+
+			// don't count colons of commas if anything's open 
+			if(Arrays.stream(open).sum() > 0) { 
+				h[position].append(header.charAt(i));
+			} else {
+				if(header.charAt(i) == ':') {
+					position = 1;
+				} else if(header.charAt(i) == ',') {
+					this.headers.add(new String[] {h[0].toString(),h[1].length() == 0 ? null : h[1].toString()});
+					h = new StringBuilder[] {new StringBuilder(), new StringBuilder()};
+					Arrays.setAll(open, x -> 0);
+					position = 0;
+				} else {
+					 h[position].append(header.charAt(i));
 				}
 			}
 		}
-		//this.headers = Stream.of(header.replaceAll("\\{|\\}", "").split(","))
-							//.map(s -> s.split(":")).collect(Collectors.toList());
+		if(Arrays.stream(open).sum() == 0) { 
+			this.headers.add(new String[] {h[0].toString(),h[1].length() == 0 ? null : h[1].toString()});
+		} else {
+			String unmatched = IntStream.range(0, 4).mapToObj(i -> open[i] == 0 ? "" : new String[]{"\"","$","{","["}[i])
+					.filter(s -> !s.equals("")).collect(Collectors.joining(","));
+			throw new IllegalArgumentException("Unmatched \"" + unmatched + "\" in header literal: \"[" + header + "]\"");
+		}
 		this.pinto = pinto;
 	}
 

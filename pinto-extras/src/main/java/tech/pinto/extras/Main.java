@@ -63,7 +63,7 @@ public class Main extends tech.pinto.Main {
 		@Provides
 		@Singleton
 		MarketData provideMarketData() {
-			return new BloombergClient();
+			return new BloombergMarketData();
 		}
 	}
 

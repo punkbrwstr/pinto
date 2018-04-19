@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -51,7 +53,7 @@ public class Pinto {
 						String nl = sc.next(NAME_LITERAL).replaceAll(":", "");
 						state.setNameLiteral(checkName(nl));
 						String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
-						state.setNameIndexer(new Indexer(this, functionIndexString, true));
+						state.setNameIndexer(new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true));
 						state.setExpression(expression);
 					} else if(sc.hasNext(Pattern.compile("#.*"))) { // comment
 						sc.nextLine();
@@ -62,7 +64,7 @@ public class Pinto {
 				if(state.isInlineStart()) {
 					String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
 					state.setCurrent(state.getCurrent().andThen(
-							new Indexer(this, functionIndexString, true)));
+							new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true)));
 				}
 				if (sc.hasNext(Pattern.compile(".*?\\)"))) { // end inline function
 					if(!state.isInline()) {
@@ -71,28 +73,34 @@ public class Pinto {
 					state.setInlineEnd();
 					sc.useDelimiter("[\\s\\)]+");
 				}
-				if (sc.hasNextDouble()) { // double literal
-					double d = sc.nextDouble();
-					state.setCurrent(state.getCurrent().andThen(toTableConsumer(s -> {
-						s.addFirst(new tech.pinto.Column.OfConstantDoubles(d));
-					})));
-				} else if (sc.hasNext(Pattern.compile("\\(.*?"))) { // start inline function
+				if (sc.hasNext(Pattern.compile("\\(.*?"))) { // start inline function
 					sc.useDelimiter("");
 					sc.next();
 					sc.useDelimiter("\\p{javaWhitespace}+");
 					state.startInline();
+				} else if (sc.hasNextDouble()) { // double literal
+					double d = sc.nextDouble();
+					state.setCurrent(state.getCurrent().andThen(toTableConsumer(s -> {
+						s.addFirst(new tech.pinto.Column.OfConstantDoubles(d));
+					})));
 				} else if (sc.hasNext(DATE_LITERAL)) { // date literal
 					final LocalDate d = LocalDate.parse(sc.next(DATE_LITERAL));
 					state.setCurrent(state.getCurrent().andThen(toTableConsumer(s -> {
 						s.addFirst(new tech.pinto.Column.OfConstantDates(d));
 					})));
+				} else if (sc.hasNext(Pattern.compile("\\[.*?"))) { // indexer
+					state.setCurrent(state.getCurrent().andThen(
+							new Indexer(this, parseBlock(sc, "\\[", "\\]"), false)));
+				} else if (sc.hasNext(Pattern.compile("\\{.*?"))) { // header literal
+					state.setCurrent(state.getCurrent().andThen(toTableConsumer(
+							new HeaderLiteral(this, parseBlock(sc, "\\{", "\\}")))));
 				} else if (sc.hasNext(Pattern.compile("\".*?"))) { // string literal
-					final String sl = parseBlock(sc,"\"").replaceAll("\"", "");
+					final String sl = parseBlock(sc,"\"","\"");
 					state.setCurrent(state.getCurrent().andThen(toTableConsumer(s -> {
 						s.addFirst(new tech.pinto.Column.OfConstantStrings(sl,sl));
 					})));
 				} else if (sc.hasNext(Pattern.compile("\\$.*?"))) { // market literal
-					final String sl = parseBlock(sc,"\\$").replaceAll("\\$", "");
+					final String sl = parseBlock(sc,"\\$","\\$");
 					state.setCurrent(state.getCurrent().andThen(toTableConsumer(s -> {
 						String[] sa = sl.split(":");
 						List<String> tickers = Arrays.asList(sa[0].split(","));
@@ -110,12 +118,6 @@ public class Pinto {
 							}));
 						}
 					})));
-				} else if (sc.hasNext(Pattern.compile("\\[.*?"))) { // indexer
-					state.setCurrent(state.getCurrent().andThen(
-							new Indexer(this, parseBlock(sc,"\\]"), false)));
-				} else if (sc.hasNext(Pattern.compile("\\{.*?"))) { // header literal
-					state.setCurrent(state.getCurrent().andThen(toTableConsumer(
-							new HeaderLiteral(this, parseBlock(sc, "\\}")))));
 				} else { // name
 					String name = sc.next();
 					if (!namespace.contains(name)) {
@@ -202,18 +204,18 @@ public class Pinto {
 	}
 	
 	
-	private String parseBlock(Scanner scanner, String closing) throws PintoSyntaxException {
-		StringBuilder sb = new StringBuilder();
-		String next = null;
-		do {
-			if (!scanner.hasNext()) {
-				throw new PintoSyntaxException("Missing " + closing);
-			}
-			next = next == null ? scanner.next().replaceAll("^" + closing, "") : " " + scanner.next();
-			sb.append(next);
-		} while (!Pattern.matches(".*?" + closing, next));
-		return sb.toString();
-	}
+//	private String parseBlock(Scanner scanner, String closing) throws PintoSyntaxException {
+//		StringBuilder sb = new StringBuilder();
+//		String next = null;
+//		do {
+//			if (!scanner.hasNext()) {
+//				throw new PintoSyntaxException("Missing " + closing);
+//			}
+//			next = next == null ? scanner.next().replaceAll("^" + closing, "") : " " + scanner.next();
+//			sb.append(next);
+//		} while (!Pattern.matches(".*?" + closing, next));
+//		return sb.toString();
+//	}
 	
 	public static class State {
 		
@@ -318,10 +320,58 @@ public class Pinto {
 		}
 	}
 	
-	public static void main(String[] s) {
-		LinkedList<String> l = new LinkedList<>();
-		l.addFirst("one");
-		l.addFirst("two");
-		l.size();
+	public static void main(String[] x) {
+		Stream.of(
+			"nope nope { yes {notreally} yes } nope",
+			"nope nope {yes {notreally} yes } nope",
+			"nope nope [ yes [notreally] yes ] nope",
+			"nope nope [yes [notreally] yes] nope",
+			"nope nope \"yes [notreally] yes\" nope",
+			"nope nope \" yes [notreally] yes \" nope",
+			"nope nope $yes [notreally] yes$ nope",
+			"nope nope $ yes [notreally] yes $ nope"
+		).forEach(s -> {
+			Scanner sc = new Scanner(s);
+			while(sc.hasNext()) {
+				if(sc.hasNext(Pattern.compile("\\{.*?"))) {
+					System.out.println("Curly block: " + parseBlock(sc,"\\{","\\}"));
+				} else if(sc.hasNext(Pattern.compile("\\[.*?"))) {
+					System.out.println("Square block: " + parseBlock(sc,"\\[","\\]"));
+				} else if(sc.hasNext(Pattern.compile("\".*?"))) {
+					System.out.println("Quote block: " + parseBlock(sc,"\"","\""));
+				} else if(sc.hasNext(Pattern.compile("\\$.*?"))) {
+					System.out.println("Dollar block: " + parseBlock(sc,"\\$","\\$"));
+				} else {
+					sc.next();
+				}
+			}
+		});
+		
 	}
+	
+	public static String parseBlock(Scanner scanner, String opening, String closing) throws PintoSyntaxException {
+		StringBuilder sb = new StringBuilder();
+		String next = null;
+		Pattern openPattern = Pattern.compile(".*?" + opening + ".*?");
+		Pattern closePattern = Pattern.compile(".*?" + closing + ".*?");
+		boolean sameOpenClose = opening.equals(closing);
+		int openCount = sameOpenClose ? 2 : 0;
+		do {
+			if (!scanner.hasNext()) {
+				throw new PintoSyntaxException("Missing " + closing);
+			}
+			next = scanner.next();
+			sb.append(next).append(" ");
+			Matcher openMatcher = openPattern.matcher(next);
+			while(openMatcher.find() && ! sameOpenClose) {
+				openCount++;
+			}
+			Matcher closeMatcher = closePattern.matcher(next);
+			while(closeMatcher.find()) {
+				openCount--;
+			}
+		} while (openCount != 0);
+		return sb.toString().replaceAll("^" + opening + "|" + closing + " $" , "");
+	}
+	
 }
