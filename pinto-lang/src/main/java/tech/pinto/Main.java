@@ -153,7 +153,7 @@ public class Main {
 		}
 
 		@Provides MarketData marketdata() {
-			return new MarketData() {};
+			return new IEXMarketData();
 		}
 		@Provides Namespace provideNamespace(Vocabulary vocabulary) {
 			return new Namespace(vocabulary);
