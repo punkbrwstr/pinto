@@ -56,9 +56,9 @@ public class Pinto {
 						state.setNameIndexer(new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true));
 						state.setExpression(expression);
 					} else if(sc.hasNext(Pattern.compile("#.*"))) { // comment
-						sc.nextLine();
+						String test = sc.nextLine();
 						state.reset();
-						break;
+						continue;
 					}
 				}
 				if(state.isInlineStart()) {

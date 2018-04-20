@@ -101,9 +101,9 @@ public class Demo {
 	public static class DemoVocabulary extends StandardVocabulary {
 		
 		public DemoVocabulary() {
-			names.remove("exec");
-			names.remove("exec");
-			names.remove("exec");
+			names.remove("import");
+			names.remove("read_csv");
+			names.remove("to_csv");
 		}
 		
 	}
@@ -114,7 +114,7 @@ public class Demo {
 			return new DemoVocabulary();
 		}
 		@Provides MarketData provideMarketData() {
-			return new MarketData() {};
+			return new IEXMarketData();
 		}
 	}
 

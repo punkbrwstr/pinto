@@ -34,13 +34,9 @@ public class Main {
 	protected Server server;
 
 	protected Main() {
-		//component = DaggerMain_MainComponent.builder().mainModule(new MainModule()).build();
 		component = DaggerMain_PintoComponent.builder()
 						.mainComponent(DaggerMain_MainComponent.builder().mainModule(new MainModule()).build())
 						.build();
-//		component = DaggerMain_PintoComponent.builder()
-//				.pintoModule(new PintoModule())
-//				.build();
 		ClassLoader loader = Thread.currentThread().getContextClassLoader();
 		Properties props = new Properties();
 		try(InputStream resourceStream = loader.getResourceAsStream("pinto.properties")) {
@@ -49,15 +45,8 @@ public class Main {
 		} catch(IOException io) {
 			build = "Unknown";
 		}
+//        System.out.println("public: " + getClass().getClassLoader().getResource("public").toExternalForm());
 
-
-        System.out.println("public: " + getClass().getClassLoader().getResource("public").toExternalForm());
-
-		//List<String> path = Arrays.asList(tech.pinto.Main.class.getResource("Main.class")
-						//.toString().split("/"));
-		//path = new ArrayList<>(path.subList(0, path.size()-3));
-		//path.add("public");
-		//httpPath = path.stream().collect(Collectors.joining(File.separator));
 	}
 	
 	protected Pinto getPinto() {
@@ -119,32 +108,6 @@ public class Main {
 		}
 	}
 
-//	@Module
-//	public static class PintoModule {
-//		@Provides
-//		@Singleton
-//		Namespace provideNamespace(Vocabulary vocabulary) {
-//			return new Namespace(vocabulary);
-//		}
-//
-//		@Provides
-//		@Singleton
-//		Vocabulary provideVocabulary() {
-//			return new StandardVocabulary();
-//		}
-//
-//		@Provides
-//		@Singleton
-//		MarketData provideMarketData() {
-//			return new MarketData() {};
-//		}
-//	}
-//
-//	@Component(modules = PintoModule.class)
-//	public interface PintoComponent {
-//		Pinto pinto();
-//	}
-	
 	
 	@Module
 	public static class MainModule {
@@ -165,11 +128,6 @@ public class Main {
 	public interface PintoComponent {
 		Pinto pinto();
 	}
-
-//	@Singleton
-//	@Component(dependencies = VocabularyComponent.class)
-//	public interface NamespaceComponent {
-//	}
 
 	@Singleton
 	@Component(modules = MainModule.class)

@@ -48,7 +48,7 @@ public class IEXMarketData implements MarketData {
 				SortedMap<LocalDate,double[]> tree = cache.get(ticker);
 				for(int j = 0; j < dates.size(); j++) {
 					tree = tree.tailMap(dates.get(j));
-					if(tree.firstKey().equals(dates.get(j))) {
+					if(!tree.isEmpty() && tree.firstKey().equals(dates.get(j))) {
 						double[] prices = tree.get(tree.firstKey());
 						for(int k = 0; k < fields.size(); k++) {
 							Field f = null;

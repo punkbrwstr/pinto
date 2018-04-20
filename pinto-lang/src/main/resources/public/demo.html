@@ -19,7 +19,7 @@
 		<h3>Key features</h3>
 		<ul>
 			<li>Expressive: Concise code using recognizable symbols and efficient postfix notation</li>
-			<li>Batteries included: Bloomberg interface, built-in charting, rolling/expanding/cross window statistics</li>
+			<li>Batteries included: Integrated Bloomberg or IEX data, charting, rich library of statistical functions</li>
 			<li>Efficient: Lazy evaluation, range-based caching for <a href="https://en.wikipedia.org/wiki/Arity" rel="nofollow">nullary</a> functions</li>
 			<li>Extensible: User-defined functions behave just like primitives</li>
 			<li>Interoperable: Accessible through an http interface (works great with Python or SAS)</li>
@@ -29,25 +29,40 @@
 		<p>Pinto combines the efficiency of an HP-12c calculator, the simplicity of Postscript, the tersity of J, and the familiarity of Python indexing.</p
 	</div>
         <div id="tryPinto">
-        	<h3>Try Pinto!</h3>
+        	<h3>Try Pinto Live!</h3>
         	<br/>
         </div>
-        <p>Here are some sample Pinto expressions to try:</p>
-        <p class="examples">(Type Pinto expressions into above terminal window. Tab will complete names.)</p>
-        <ul>
-            <li>Define a function to read in a file with stock prices
-                <p><pre><code>:get_stocks [] {source: "https://pinto.tech/files/stocks.csv"} read def</code></pre></p></li>
-            <li>Select two columns using label indexing and compute their ratio
-                <p><pre><code>get_stocks [TRAN,UTIL] only / {start: "2015-10-01", end:"2015-10-30", freq: "W-FRI"} eval</code></pre></p></li>
-       		<li>Compute 20 and 200-day moving averages
-                <p><pre><code>get_stocks [DOW] only {size:20} [0,-1&amp;] rolling {size:200} [0,-1&amp;] rolling [:2] average {start:"2016-01-01", end: "2016-01-05", freq:"B"} eval</code></pre></p></li>
-       		<li>Define a table of returns of your favorite stocks
-                <p><pre><code>:my_stocks_returns get_stocks [CMG,LOCO,TACO] only rolling changepct def</code></pre></p></li>
-       		<li>Define a function to compute compound returns
-                <p><pre><code>:compound_return 1 + log expanding sum exp -1 + def</code></pre></p></li>
-       		<li>Apply the function to your stocks
-                <p><pre><code>my_stocks_returns cross average compound_return {start:"2015-09-30", end:"2015-10-31"} eval</code></pre></p></li>
-        </ul>
+        <h3>Pinto by example</h3>
+        <pre><code>
+        # Here are examples of Pinto code that you can run in the interpreter window above 
+        # Historical market data is provided by IEX and available for US stocks
+
+        # First let's define a function that returns a date range
+        # B is a periodicity literal for business days
+        # We will evaluate our expressions over this range
+        :my_range [] B 2018-03-01 2018-03-07 def
+        
+        # We can retrieve stock prices using a market data literal expression
+        # and evaluating it over our date range
+        $cmg,loco,yum:CLOSE$ my_range eval
+        
+        # We can see which columns the eval function expects from the stack
+        # by using the help function
+        :eval help
+        
+        # Next, define a function to return the stock prices with labels
+        :my_portfolio $cmg,loco,yum:CLOSE$ {Chipotle,El Pollo,Yum} def
+        
+        # Using a the rolling function we can compute a moving averages for our portfolio
+        my_portfolio ([:&] {size: 20} rolling mean) my_range eval
+        
+        # This will compute the difference between two moving averages
+        my_portfolio ([:&] {size: 20} rolling mean) ([:3] {size: 200} rolling mean) {n:3} - my_range eval
+        
+        
+        
+        
+        </code></pre>
         <h3>Get Pinto</h3>
         <p>The latest version of Pinto, as well as <a href="https://github.com/punkbrwstr/pinto/blob/master/pinto_reference.md">documentation</a> are available on <a href="https://github.com/punkbrwstr/pinto">GitHub</a>.</p>
         	
@@ -66,7 +81,7 @@
             		   	$.ajax({
 							type: "GET",
 							url: "/pinto/console",
-							data: { p: line },
+							data: { p: line + '\n' },
 							dataType: "json"
 						}).done(function(response) {
 							if("error" in response) {
