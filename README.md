@@ -7,10 +7,10 @@ For language details see the [Pinto Language Reference](./pinto_reference.md).
 ## Key features
 
  - Expressive: Concise code using recognizable symbols and efficient postfix notation
- - Batteries included: Bloomberg interface, built-in charting, rolling/expanding/cross window statistics
- - Efficient: Lazy evaluation, range-based caching for [nullary](https://en.wikipedia.org/wiki/Arity) functions 
+ - Batteries included: Integrated Bloomberg or IEX data, charting, rich library of statistical functions
+ - Performant: Lazy evaluation, range-based caching for [nullary](https://en.wikipedia.org/wiki/Arity) functions 
  - Extensible: User-defined functions behave just like primitives
- - Interoperable: Accessible through an http interface (works great with Python or SAS)
+ - Interoperable: Accessible through an HTTP interface (works great with Python or SAS)
 
 ## Why Pinto?
 
@@ -36,9 +36,13 @@ Building Pinto also requires:
 
 ## How to get up and running locally
 
-If you have the requirements, it's easy to get up and running with the Pinto console:
+The easiest way to get up and running with the Pinto console is to download a [release jar](https://github.com/punkbrwstr/pinto/releases) and run:
 
+```
+java -jar extras.jar
+```
 
+To build and run Pinto from source:
 ```
 git clone https://github.com/punkbrwstr/pinto.git
 cd pinto
