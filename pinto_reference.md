@@ -103,7 +103,7 @@ Example | Part | Description
 #### Deleting functions
 User-defined functions can be deleted by specifying a *name literal* and calling the `del` function as in this example:
 ```
-:my_function del
+:my_function undef
 ```
 
 ## In-line functions
@@ -130,11 +130,11 @@ Function name | Default indexer |Description
 :---:|:---|:---
 eval|[periodicity=B,date=today today,:]|Evaluates the expression over the (closed) date range from the first to the second *date* over *periodicity*, returning the resulting table.
 def|[]|Defines the expression as the preceding name literal.
-del|[]|Deletes name specified by the preceding name literal.
-exec|[filename]|Executes pinto expressions contained in the specifed file *filename*.
+undef|[]|Deletes name specified by the preceding name literal.
+import|[:]|Executes pinto expressions contained in the specifed file names in constant string columns.
 help|[]|Prints help for the preceding name literal or all names if one has not been specified.
 list|[]|Shows description for all names.
-write|[filename, start="today",end="today",freq="B",:]|Evaluates the expression over the date range specified by *start, *end* and *freq* columns, exporting the resulting table to csv *filename*.
+to_csv|[filename, periodicity=B,date=today today,:]|Evaluates the expression over the date range the (closed) date range from the first to the second *date* with *periodicity*, exporting the resulting table to csv *filename*.
 
 ### Stack manipulation functions
 
@@ -159,15 +159,22 @@ today|[]|Adds a *constant date* column with today's date to the table.
 moon|[]|Creates a double column with values corresponding the phase of the moon.
 pi|[]|Creates a constant double column with the value pi.
 range|[n=3]|Creates double columns corresponding to the first *n* positive integers.
-read|[source,includes_header="true"]|Reads CSV formatted table from file or URL specified as *source*.
+read_csv|[source,includes_header="true"]|Reads CSV formatted table from file or URL specified as *source*.
 
 ### Data cleaning functions
 
 Function name | Default indexer |Description
 :---:|:---|:---
-fill|[lookback="true",freq="BQ-DEC",:]|Fills missing values with last good value, looking back one period of *freq* if *lookback* is true.
+fill|[periodicity=BQ-DEC,lookback="true",:]|Fills missing values with last good value, looking back one period of *periodicity* if *lookback* is true.
 join|[dates,:]|Joins columns over time, switching between columns on dates supplied in ";" denominated list *dates*.
-resample|[freq="BM",:]|Sets frequency of prior columns to periodicity *freq*, carrying values forward if evaluation periodicity is more frequent.
+resample|[periodicity=BM,:]|Sets frequency of prior columns to periodicity *periodicity*, carrying values forward if evaluation periodicity is more frequent.
+
+### Date functions
+
+Function name | Default indexer |Description
+:---:|:---|:---
+today|[]|Returns constant date column with today's date.
+offset|[date=today,periodicity=B,count=-1]|Returns date that is *count* number of periods of *periodicity* from *date*.
 
 ### Header functions
 
