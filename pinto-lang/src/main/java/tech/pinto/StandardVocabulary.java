@@ -257,9 +257,9 @@ public class StandardVocabulary extends Vocabulary {
 
 /* data cleanup */
     	names.put("fill", new Name("fill", toTableConsumer(s-> {
-    		boolean lookBack = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
-    		@SuppressWarnings("rawtypes")
+			@SuppressWarnings("rawtypes")
 			Periodicity p = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
+    		boolean lookBack = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
     		s.replaceAll(function -> {
     			return new Column.OfDoubles(inputs -> inputs[0].toString() + " fill", inputs -> range -> {
     				DoubleStream input = null;
