@@ -259,7 +259,7 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("fill", new Name("fill", toTableConsumer(s-> {
     		boolean lookBack = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
     		@SuppressWarnings("rawtypes")
-			Periodicity p = Periodicities.get(((Column.OfConstantStrings)s.removeFirst()).getValue());
+			Periodicity p = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
     		s.replaceAll(function -> {
     			return new Column.OfDoubles(inputs -> inputs[0].toString() + " fill", inputs -> range -> {
     				DoubleStream input = null;
@@ -281,7 +281,7 @@ public class StandardVocabulary extends Vocabulary {
     				}).skip(skip);
     			}, new Column<?,?>[] {function});
     		});
-    	}),"[lookback=\"true\",freq=\"BQ-DEC\",:]","Fills missing values with last good value, " +
+    	}),"[periodicity=BQ-DEC,lookback=\"true\",:]","Fills missing values with last good value, " +
     			"looking back one period of *freq* if *lookback* is true."));
     	names.put("join", new Name("join", toTableConsumer(s-> {
    			List<LocalDate> cutoverDates = Stream.of(((Column.OfConstantStrings)s.removeFirst()).getValue().split(",")).map(String::trim).map(LocalDate::parse).collect(Collectors.toList());
