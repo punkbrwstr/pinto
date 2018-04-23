@@ -284,7 +284,10 @@ public class StandardVocabulary extends Vocabulary {
     	}),"[periodicity=BQ-DEC,lookback=\"true\",:]","Fills missing values with last good value, " +
     			"looking back one period of *freq* if *lookback* is true."));
     	names.put("join", new Name("join", toTableConsumer(s-> {
-   			List<LocalDate> cutoverDates = Stream.of(((Column.OfConstantStrings)s.removeFirst()).getValue().split(",")).map(String::trim).map(LocalDate::parse).collect(Collectors.toList());
+    		LinkedList<LocalDate> cutoverDates = new LinkedList<>();
+    		while((!s.isEmpty()) && s.peekFirst().getHeader().equals("date")) {
+    			cutoverDates.add(((Column.OfConstantDates)s.removeFirst()).getValue());
+    		}
     		Column.OfDoubles[] inputStack = s.toArray(new Column.OfDoubles[] {});
     		s.clear();
     		s.add(new Column.OfDoubles(i -> "join", inputArray -> range -> {
@@ -320,7 +323,7 @@ public class StandardVocabulary extends Vocabulary {
     			}
     			return ds;
     		}, inputStack)); 
-    	}),"[dates,:]", "Joins columns over time, switching between columns on dates supplied in \";\" denominated list *dates*."));
+    	}),"[date,:]", "Joins columns over time, switching between columns on dates supplied in \";\" denominated list *dates*."));
     	names.put("resample", new Name("resample", toTableConsumer(s-> {
 			Periodicity<Period> newPeriodicity = Periodicities.get(((Column.OfConstantStrings)s.removeFirst()).getValue());
 			s.replaceAll(c -> {
