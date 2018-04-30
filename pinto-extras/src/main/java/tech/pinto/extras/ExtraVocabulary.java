@@ -96,7 +96,7 @@ public class ExtraVocabulary extends StandardVocabulary {
     		nf.setGroupingUsed(false);
     		s.stream().forEach(c -> c.setRange(range));
     		Table t = new Table();
-    		t.pushToBase(s);
+    		t.insertAtTop(s);
     		String[] lines = t.toCsv(nf).split("\n");
     		s.clear();
     		StringBuilder sb = new StringBuilder();

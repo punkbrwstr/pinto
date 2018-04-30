@@ -16,16 +16,16 @@ public class Indexer implements Consumer<Table>, Cloneable {
 	private final List<Index> indexes = new ArrayList<>();
 	private final Pinto pinto;
 	private final String indexString;
-	private final boolean incrementBase;
+	private final boolean functionIndexer;
 
 	public Indexer(Pinto pinto, String indexString) {
 		this(pinto, indexString, false);
 	}
 
-	public Indexer(Pinto pinto, String indexString, boolean incrementBase) {
+	public Indexer(Pinto pinto, String indexString, boolean functionIndexer) {
 		this.pinto = pinto;
 		this.indexString = indexString;
-		this.incrementBase = incrementBase;
+		this.functionIndexer = functionIndexer;
 		
 		StringBuilder sb = new StringBuilder();
 		final int[] open = new int[4]; // ", $, {, [
@@ -64,9 +64,9 @@ public class Indexer implements Consumer<Table>, Cloneable {
 
 	@Override
 	public void accept(Table t) {
-		LinkedList<Column<?,?>> unused = new LinkedList<>();
+		LinkedList<LinkedList<Column<?,?>>> unused = new LinkedList<>();
 		LinkedList<LinkedList<Column<?,?>>> indexed = new LinkedList<>();
-		for (LinkedList<Column<?,?>> stack : t.popStacks()) {
+		for (LinkedList<Column<?,?>> stack : t.takeTop()) {
 			List<StackOperation> ops = new ArrayList<>();
 				indexed.addLast(operate(stack, ops, pinto));
 				Index last = indexes.get(indexes.size() - 1);
@@ -77,13 +77,10 @@ public class Indexer implements Consumer<Table>, Cloneable {
 						break;
 					}
 				}
-			unused.addAll(stack);
+			unused.add(stack);
 		}
-		t.pushToBase(unused);
-		t.pushStacks(indexed);
-		if (incrementBase) {
-			t.incrementBase();
-		}
+		t.insertAtTop(unused);
+		t.push(functionIndexer, indexed);
 
 	}
 

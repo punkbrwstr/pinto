@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,7 @@ public class StandardVocabulary extends Vocabulary {
     		String name = state.getNameLiteral().orElseThrow(() -> new PintoSyntaxException("def requires a name literal."));
     		String desc = state.getExpression().get();
 			Consumer<Table> f = state.getPrevious().andThen(t2 -> {
-					t2.decrementBase();
+					t2.collapseFunction();
 				});
 			p.getNamespace().define(name, state.getNameIndexer(), desc,
 					state.getDependencies().subList(0,state.getDependencies().size() - 1), f);
@@ -104,7 +105,8 @@ public class StandardVocabulary extends Vocabulary {
             });
    			t.setStatus(sb.toString());
     	}, "[]", "Shows description for all names.", true));
-    	names.put("eval", new Name("eval", p -> toTableConsumer(s -> {
+    	names.put("eval", new Name("eval", p -> t -> {
+    		LinkedList<Column<?,?>> s = t.flatten();
     		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
     		LinkedList<LocalDate> dates = new LinkedList<>();
     		while((!s.isEmpty()) && dates.size() < 2 && s.peekFirst().getHeader().equals("date")) {
@@ -112,10 +114,10 @@ public class StandardVocabulary extends Vocabulary {
     		}
     		PeriodicRange<?> range = periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek(), false);
     		s.stream().forEach(c -> c.setRange(range));
-    	}, true),"[periodicity=B,date=today today,:]",
+    	},"[periodicity=B,date=today today,:]",
     			"Evaluates the expression over date range between two *date* columns over *periodicity*.", true ));
     	names.put("import", new Name("import", p -> t -> {
-			for(LinkedList<Column<?,?>> s : t.popStacks()) {
+			for(LinkedList<Column<?,?>> s : t.takeTop()) {
 				while(!s.isEmpty()) {
 					String filename = ((Column.OfConstantStrings)s.removeFirst()).getValue();
 					try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
@@ -136,7 +138,7 @@ public class StandardVocabulary extends Vocabulary {
 			t.setStatus("Successfully executed");
     	},"[:]", "Executes pinto expressions contained files specified by file names in string columns.", true));
     	names.put("to_csv", new Name("to_csv", p -> t -> {
-    		LinkedList<Column<?,?>> s = t.peekStack();
+    		LinkedList<Column<?,?>> s = t.flatten();
     		String filename = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
     		LinkedList<LocalDate> dates = new LinkedList<>();
@@ -156,7 +158,11 @@ public class StandardVocabulary extends Vocabulary {
 
 
 /* stack manipulation */
-    	names.put("only", new Name("only", toTableConsumer(s -> {}, true),"[:]", "Clears stack except for indexed columns."));
+    	names.put("only", new Name("only", t -> { 
+    		List<LinkedList<Column<?,?>>> indexed = t.takeTop();
+    		t.clearTop();
+    		t.insertAtTop(indexed);
+    	},"[:]", "Clears stack except for indexed columns."));
     	names.put("clear", new Name("clear", toTableConsumer(s -> s.clear()),"[:]", "Clears indexed columns from stack."));
     	names.put("rev", new Name("rev", toTableConsumer(s -> Collections.reverse(s)),"[:]","Reverses order of columns in stack."));
     	names.put("copy", new Name("copy", toTableConsumer(s -> {
@@ -530,11 +536,43 @@ public class StandardVocabulary extends Vocabulary {
 			for (int i = 0; i < lefts.size(); i++) {
 				Column<?,?> right = i >= rights.size() ? rights.getFirst().clone() : rights.getFirst();
 				rights.addLast(rights.removeFirst());
-				stack.add(new Column.OfDoubles(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
+				if(right instanceof Column.OfDoubles && lefts.get(i) instanceof Column.OfDoubles) {
+					stack.add(new Column.OfDoubles(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
 						inputs -> range -> {
 							OfDouble leftIterator = ((Column.OfDoubles)inputs[1]).rows().iterator();
 							return  ((Column.OfDoubles)inputs[0]).rows().map(r -> dbo.applyAsDouble(leftIterator.nextDouble(), r));
 						}, right, lefts.get(i)));
+				} else if(right instanceof Column.OfDoubleArray1Ds && lefts.get(i) instanceof Column.OfDoubleArray1Ds) {
+					stack.add(new Column.OfDoubleArray1Ds(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
+						inputs -> range -> {
+							Iterator<DoubleStream> leftIterator = ((Column.OfDoubleArray1Ds)inputs[1]).rows().iterator();
+							return  ((Column.OfDoubleArray1Ds)inputs[0]).rows()
+									.map(strm -> {
+										OfDouble leftDoubleIterator = leftIterator.next().iterator();
+										return strm.map(r -> dbo.applyAsDouble(leftDoubleIterator.nextDouble(), r));
+									});
+						}, right, lefts.get(i)));
+				} else if(right instanceof Column.OfDoubles && lefts.get(i) instanceof Column.OfDoubleArray1Ds) {
+					stack.add(new Column.OfDoubleArray1Ds(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
+						inputs -> range -> {
+							return  ((Column.OfDoubles)inputs[0]).rows()
+									.mapToObj(r -> {
+										Iterator<DoubleStream> leftIterator = ((Column.OfDoubleArray1Ds)inputs[1]).rows().iterator();
+										return leftIterator.next().map(l -> dbo.applyAsDouble(l, r));
+									});
+						}, right, lefts.get(i)));
+				} else if(right instanceof Column.OfDoubleArray1Ds && lefts.get(i) instanceof Column.OfDoubles) {
+					stack.add(new Column.OfDoubleArray1Ds(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
+						inputs -> range -> {
+							OfDouble leftIterator = ((Column.OfDoubles)inputs[1]).rows().iterator();
+							return  ((Column.OfDoubleArray1Ds)inputs[0]).rows().map(rstrm -> {
+								double l = leftIterator.nextDouble();
+								return rstrm.map(r -> dbo.applyAsDouble(l, r));
+							});
+						}, right, lefts.get(i)));
+				} else {
+					throw new IllegalArgumentException("Operator " + dbo.toString() + " can only operate on columns of doubles or double arrays.");
+				}
 			}
 		}),"[n=1,:]", "Binary double operator " + name + " that operates on *n* columns at a time with fixed right-side operand.");
 	}
@@ -542,8 +580,16 @@ public class StandardVocabulary extends Vocabulary {
 	public static Name makeOperator(String name, DoubleUnaryOperator duo) {
 		return new Name(name, toTableConsumer(stack -> {
 			stack.replaceAll(c -> {
-				return new Column.OfDoubles(inputs -> inputs[0].toString() + " " + name,
-					inputs -> range -> ((Column.OfDoubles)inputs[0]).rows().map(duo), c);
+				if(c instanceof Column.OfDoubles) {
+					return new Column.OfDoubles(inputs -> inputs[0].toString() + " " + name,
+							inputs -> range -> ((Column.OfDoubles)inputs[0]).rows().map(duo), c);
+				} else if(c instanceof Column.OfDoubleArray1Ds) {
+					return new Column.OfDoubleArray1Ds(inputs -> inputs[0].toString() + " " + name,
+							inputs -> range -> ((Column.OfDoubleArray1Ds)inputs[0]).rows()
+								.map(strm -> strm.map(duo)), c);
+				} else {
+					throw new IllegalArgumentException("Operator " + duo.toString() + " can only operate on columns of doubles or double arrays.");
+				}
 			});
 		}),"[:]", "Unary double operator " + name);
 	}
@@ -553,6 +599,9 @@ public class StandardVocabulary extends Vocabulary {
 			stack.replaceAll(c -> {
 				return new Column.OfDoubles(inputs -> Stream.of(inputs[0].toString(), name).collect(Collectors.joining(" ")),
 					inputs -> range -> {
+						if(!(inputs[0] instanceof Column.OfDoubleArray1Ds)) {
+							throw new IllegalArgumentException("Operator " + dc.toString() + " can only operate on columns of double arrays.");
+						}
 						return ((Column.OfDoubleArray1Ds)inputs[0]).rows().mapToDouble( s -> {
 							return s.collect(dc, (v,d) -> v.add(d), (v,v1) -> v.combine(v1)).finish();
 						});

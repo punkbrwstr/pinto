@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.toList;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -28,12 +29,11 @@ import tech.pinto.time.PeriodicRange;
 
 public class Table {
 
-	private final LinkedList<LinkedList<Column<?,?>>> stacks = new LinkedList<>();
+	private final LinkedList<Level> levels = new LinkedList<>();
 	private Optional<String> status = Optional.empty();
-	private int baseDepth = 0;
 
 	public Table() {
-		stacks.add(new LinkedList<>());
+		levels.add(new Level(true));
 	}
 	
 	public Table(String status) {
@@ -41,92 +41,67 @@ public class Table {
 		this.status = Optional.of(status);
 	}
 	
-	public LinkedList<LinkedList<Column<?,?>>> popStacks() {
-		LinkedList<LinkedList<Column<?,?>>> l = new LinkedList<>();
-		while(stacks.size() > baseDepth + 1 ) {
-			l.addLast(stacks.removeLast());
+	public List<LinkedList<Column<?,?>>> takeTop() {
+		if(!levels.peekFirst().isFunctionLevel()) {
+			return levels.removeFirst().getStacks();
+		} else {
+			return levels.peekFirst().clearStacks();
 		}
-		if(l.size()==0) {
-			l.add(stacks.isEmpty() ? new LinkedList<>() : stacks.removeLast());
-		}
-		return l;
 	}
 	
-	public LinkedList<Column<?,?>> peekStack() {
-		return stacks.getLast();
-	}
-	
-	public void pushToBase(LinkedList<Column<?,?>> stack) {
-		pushToBase(stack, false);
+	public void insertAtTop(LinkedList<Column<?,?>> s) {
+		List<LinkedList<Column<?,?>>> l = new ArrayList<>();
+		l.add(s);
+		insertAtTop(l);
 	}
 
-	public void pushToBase(LinkedList<Column<?,?>> stack, boolean clearBase) {
-		if(clearBase && stacks.size() > baseDepth) {
-			stacks.get(baseDepth).clear();
-		}
-		while(stacks.size() <= baseDepth) {
-			stacks.add(new LinkedList<>());
-		}
-		stacks.get(baseDepth).addAll(0, stack);
-	}
-	
-	public void pushStacks(LinkedList<LinkedList<Column<?,?>>> stacks) {
-		this.stacks.addAll(stacks);
-	}
-	
-	public void incrementBase() {
-		baseDepth++;
-	}
-	
-	public void decrementBase() {
-		baseDepth--;
-		while(stacks.size() > baseDepth + 1) {
-			stacks.get(stacks.size()-2).addAll(0,stacks.removeLast());
+	public void insertAtTop(List<LinkedList<Column<?,?>>> l) {
+		if(levels.peekFirst().getStacks().size() == 1) {
+			levels.peekFirst().getStacks().get(0).addAll(0, l.stream().flatMap(LinkedList::stream).collect(Collectors.toList()));
+		} else if(l.size() > 1) {
+			if(levels.peekFirst().getStacks().size() == l.size()) {
+				for(int i = 0; i < l.size(); i++) {
+					levels.peekFirst().getStacks().get(i).addAll(0,l.get(i));
+				}
+			} else {
+				throw new PintoSyntaxException("Mismatching repeated stack size");
+			}
 		}
 	}
 	
-	/*
-	 **Build-in**
-	 * base after:				0		0
-	 * stack.size() after:		1		1
-	 * Step:			  		start	built-in
-	 *
-	 **Build-in w/ indexer before**
-	 * base after:				0		0			0
-	 * stack.size() after:	  	1		2			1
-	 * Step:		  			start	[regular]	built-in
-	 *
-	 **Build-in w/ default**
-	 * base after:				0		0			0
-	 * stack.size() after:		1		2			1
-	 * Step:			  		start	[default]	built-in
-	 *
-	 **Build-in w/ indexer before w/ default**
-	 * base after:				0		0			0			0
-	 * stack.size() after:	  	1		2			2			0
-	 * Step:		  			start	[regular]	[default]	built-in
-	 *
-	 **Build-in w/ repeat**
-	 * base after:				0		0			0
-	 * stack.size() after:	  	1		5			0
-	 * Step:		  			start	[regular+]	built-in
-	 *
-	 *
-	 **Build-in w/ repeat w/ default**
-	 * base after:				0		0			0			0
-	 * stack.size() after:	  	1		5			5			0
-	 * Step:		  			start	[regular+]	[default]	built-in
-	 *
-	 **Defined** 
-	 * base after:				0		0			1			1		   1        0
-	 * stack.size() after:	  	1		2			2			2		   1		0
-	 * Step:		  			start	[regular]	[default]	[regular]  function definedend
-	 * 
-	 * default doesn't increase depth...unless starting depth 0
-	 */
+	public void push(boolean isFunction, List<LinkedList<Column<?,?>>> l) {
+		levels.addFirst(new Level(isFunction, l));
+	}
+	
+	public void clearTop() {
+		levels.peekFirst().clearStacks();
+	}
+	
+	public void collapse() {
+		while(!levels.peekFirst().isFunctionLevel()) {
+			insertAtTop(levels.removeFirst().getStacks());
+		}
+	}
+	
+	public void collapseFunction() {
+		boolean foundFunction = false;
+		while(!foundFunction) {
+			foundFunction = levels.peekFirst().isFunctionLevel();
+			List<Column<?,?>> collapsed = levels.removeFirst().getStacks().stream().flatMap(LinkedList::stream).collect(Collectors.toList());
+			levels.peekFirst().getStacks().get(0).addAll(0,collapsed);
+		}
+	}
+	
+	public LinkedList<Column<?,?>> flatten() {
+		while(levels.size() > 1) {
+			List<Column<?,?>> collapsed = levels.removeFirst().getStacks().stream().flatMap(LinkedList::stream).collect(Collectors.toList());
+			levels.peekFirst().getStacks().get(0).addAll(0,collapsed);
+		}
+		return levels.peekFirst().getStacks().get(0);
+	}
 	
 	public Optional<PeriodicRange<?>> getRange() {
-		return peekStack().isEmpty() ? Optional.empty() : peekStack().getFirst().getRange(); 
+		return flatten().isEmpty() ? Optional.empty() : flatten().getFirst().getRange(); 
 	}
 	
 	public void setStatus(String s) {
@@ -138,12 +113,12 @@ public class Table {
 	}
 
 	public List<String> getHeaders(boolean reverse) {
-		return (reverse ? streamInReverse(peekStack()) : peekStack().stream())
+		return (reverse ? streamInReverse(flatten()) : flatten().stream())
 				.map(Column::getHeader).collect(Collectors.toList());
 	}
 
 	public int getColumnCount() {
-		return peekStack().size();
+		return flatten().size();
 	}
 
 	public int getRowCount() {
@@ -151,8 +126,8 @@ public class Table {
 	}
 
 	public DoubleStream getSeries(int index, boolean reverse) {
-		int i = reverse ? peekStack().size() - index - 1 : index;
-		return getRange().isPresent() ? (DoubleStream) peekStack().get(i).rows() : DoubleStream.empty();
+		int i = reverse ? flatten().size() - index - 1 : index;
+		return getRange().isPresent() ? (DoubleStream) flatten().get(i).rows() : DoubleStream.empty();
 	}
 
 	public String toCsv() {
@@ -168,14 +143,14 @@ public class Table {
 
 	public String toCsv(DateTimeFormatter dtf, NumberFormat nf) {
 		StringBuilder sb = new StringBuilder();
-		sb.append(streamInReverse(peekStack()).map(Column::getHeader).collect(Collectors.joining(",","Date,","\n")));
+		sb.append(streamInReverse(flatten()).map(Column::getHeader).collect(Collectors.joining(",","Date,","\n")));
 		if(getRange().isPresent()) {
 			List<LocalDate> d = getRange().get().dates();
-			List<OfDouble> s = peekStack().stream().map(c -> (Column.OfDoubles) c).map(c -> c.rows())
+			List<OfDouble> s = flatten().stream().map(c -> (Column.OfDoubles) c).map(c -> c.rows())
 					.map(DoubleStream::iterator).collect(Collectors.toList());
 			for(int row = 0; row < getRange().get().size(); row++) {
 				sb.append(d.get(row).format(dtf)).append(",");
-				for (int col = peekStack().size() - 1; col > -1; col--) {
+				for (int col = flatten().size() - 1; col > -1; col--) {
 					sb.append(nf.format(s.get(col).nextDouble()));
 					sb.append(col > 0 ? "," : "\n");
 				}
@@ -206,9 +181,9 @@ public class Table {
 		if (!getRange().isPresent()) {
 			return Optional.empty();
 		}
-		double[][] series = new double[peekStack().size()][];
-		for (int i = peekStack().size() - 1; i > -1; i--) {
-			series[peekStack().size() - i - 1] = ((Column.OfDoubles)peekStack().get(i)).rows().toArray();
+		double[][] series = new double[flatten().size()][];
+		for (int i = flatten().size() - 1; i > -1; i--) {
+			series[flatten().size() - i - 1] = ((Column.OfDoubles)flatten().get(i)).rows().toArray();
 		}
 		return Optional.of(series);
 	}
@@ -218,11 +193,11 @@ public class Table {
 			return Optional.empty();
 		}
 		double[][] table = new double[getRowCount()][getColumnCount()];
-		for (int col = peekStack().size() - 1; col > -1; col--) {
+		for (int col = flatten().size() - 1; col > -1; col--) {
 			final int thisCol = col;
 			AtomicInteger row = new AtomicInteger(0);
-			((Column.OfDoubles)peekStack().get(col)).rows()
-					.forEach(d -> table[row.getAndIncrement()][peekStack().size() - thisCol - 1] = d);
+			((Column.OfDoubles)flatten().get(col)).rows()
+					.forEach(d -> table[row.getAndIncrement()][flatten().size() - thisCol - 1] = d);
 		}
 		return Optional.of(table);
 	}
@@ -236,19 +211,19 @@ public class Table {
 	public String[][] seriesToText(NumberFormat nf) {
 		if (getRange().isPresent()) {
 			List<LocalDate> dates = getRange().get().dates();
-			String[][] table = new String[(int) getRange().get().size()][peekStack().size() + 1];
+			String[][] table = new String[(int) getRange().get().size()][flatten().size() + 1];
 			for (int row = 0; row < getRange().get().size(); row++) {
 				table[row][0] = dates.get(row).toString();
 			}
-			for (int col = 0; col < peekStack().size(); col++) {
+			for (int col = 0; col < flatten().size(); col++) {
 				final int thisCol = col;
 				AtomicInteger row = new AtomicInteger(0);
-				peekStack().get(col).rowsAsText()
-						.forEach(s -> table[row.getAndIncrement()][peekStack().size() - thisCol] = s);
+				flatten().get(col).rowsAsText()
+						.forEach(s -> table[row.getAndIncrement()][flatten().size() - thisCol] = s);
 			}
 			return table;
 		} else {
-			String[][] table = new String[1][peekStack().size() + 1];
+			String[][] table = new String[1][flatten().size() + 1];
 			Arrays.fill(table[0], " ");
 			return table;
 		}
@@ -275,5 +250,37 @@ public class Table {
 				false);
 	}
 	
+	private static class Level {
+		private final List<LinkedList<Column<?,?>>> stacks;
+		private final boolean functionLevel;
+		
+		public Level(boolean baseLevel) {
+			this(baseLevel, new ArrayList<>());
+			stacks.add(new LinkedList<>());
+		}
+
+		public Level(boolean functionLevel, List<LinkedList<Column<?,?>>> stacks) {
+			this.functionLevel = functionLevel;
+			this.stacks = stacks;
+		}
+		
+		public List<LinkedList<Column<?,?>>> getStacks() {
+			return stacks;
+		}
+		
+		public boolean isFunctionLevel() {
+			return functionLevel;
+		}
+		
+		public List<LinkedList<Column<?,?>>> clearStacks() {
+			ArrayList<LinkedList<Column<?,?>>> l = new ArrayList<>(stacks);
+			stacks.clear();
+			for(int i = 0; i < l.size(); i++) {
+				stacks.add(new LinkedList<>());
+			}
+			return l;
+		}
+			
+	}
 	
 }

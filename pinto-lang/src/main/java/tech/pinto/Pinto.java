@@ -1,6 +1,7 @@
 package tech.pinto;
 
 import java.time.LocalDate;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -11,7 +12,6 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -41,11 +41,12 @@ public class Pinto {
 
 	public LinkedList<Column<?,?>> parseSubExpression(String expression) {
 		Table t = evaluate(expression, new State(true)).get(0);
-		return t.peekStack();
+		return t.flatten();
 	}
 
 	public List<Table> evaluate(String expression, State state) {
 		List<Table> responses = new ArrayList<>();
+		expression = expression.replaceAll("\\(", " \\( ").replaceAll("\\)", " \\) ");
 		try (Scanner sc = new Scanner(expression)) {
 			while (sc.hasNext()) {
 				if(state.isExpressionStart()) {
@@ -56,7 +57,7 @@ public class Pinto {
 						state.setNameIndexer(new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true));
 						state.setExpression(expression);
 					} else if(sc.hasNext(Pattern.compile("#.*"))) { // comment
-						String test = sc.nextLine();
+						sc.nextLine();
 						state.reset();
 						continue;
 					}
@@ -70,13 +71,13 @@ public class Pinto {
 					if(!state.isInline()) {
 						throw new PintoSyntaxException("Closing inline function that had not been opened in \"" + expression + "\"");
 					}
-					state.setInlineEnd();
-					sc.useDelimiter("[\\s\\)]+");
+					sc.next();
+					state.setCurrent(state.getCurrent().andThen(t2 -> {
+						t2.collapseFunction();
+					}));
 				}
 				if (sc.hasNext(Pattern.compile("\\(.*?"))) { // start inline function
-					sc.useDelimiter("");
 					sc.next();
-					sc.useDelimiter("\\p{javaWhitespace}+");
 					state.startInline();
 				} else if (sc.hasNextDouble()) { // double literal
 					double d = sc.nextDouble();
@@ -147,11 +148,6 @@ public class Pinto {
 						state.reset();
 					}
 				}
-				if(state.isInlineEnd()) {
-					state.setCurrent(state.getCurrent().andThen(t2 -> {
-						t2.decrementBase();
-					}));
-				}
 			}
 			if(state.isSubExpression()) {
 				Table t = new Table();
@@ -182,17 +178,11 @@ public class Pinto {
 	}
 	
 	public static Consumer<Table> toTableConsumer(Consumer<LinkedList<Column<?,?>>> colsFunction) {
-		return toTableConsumer(colsFunction, false);
-	}
-
-	public static Consumer<Table> toTableConsumer(Consumer<LinkedList<Column<?,?>>> colsFunction, boolean clearBase) {
 		return t -> {
-			LinkedList<Column<?,?>> endingStack = new LinkedList<>();
-			for(LinkedList<Column<?,?>> cols : t.popStacks()) {
-				colsFunction.accept(cols);
-				endingStack.addAll(0,cols);
-			}
-			t.pushToBase(endingStack, clearBase);
+			t.insertAtTop(t.takeTop().stream().map(c -> { 
+				colsFunction.accept(c);	
+				return c;
+			}).collect(Collectors.toList()));
 		};
 	}
 
@@ -203,27 +193,12 @@ public class Pinto {
 		return name;
 	}
 	
-	
-//	private String parseBlock(Scanner scanner, String closing) throws PintoSyntaxException {
-//		StringBuilder sb = new StringBuilder();
-//		String next = null;
-//		do {
-//			if (!scanner.hasNext()) {
-//				throw new PintoSyntaxException("Missing " + closing);
-//			}
-//			next = next == null ? scanner.next().replaceAll("^" + closing, "") : " " + scanner.next();
-//			sb.append(next);
-//		} while (!Pattern.matches(".*?" + closing, next));
-//		return sb.toString();
-//	}
-	
 	public static class State {
 		
 		private final boolean isSubExpression;
 		private boolean expressionStart = true;
 		private boolean inline = false;
 		private boolean inlineStart = false;
-		private boolean inlineEnd = false;
 		private Consumer<Table> current = t -> {};
 		private Consumer<Table> previous = t -> {};
 		private List<String> dependencies = new ArrayList<>();
@@ -238,10 +213,13 @@ public class Pinto {
 		public void reset() {
 			expressionStart = true;
 			current = t -> {};
+			previous = t -> {};
 			dependencies = new ArrayList<>();
 			expression = Optional.empty();
 			nameLiteral = Optional.empty();
 			nameIndexer = Optional.empty();
+			inline = false;
+			inlineStart = false;
 		}
 		
 		public void startInline() {
@@ -249,16 +227,6 @@ public class Pinto {
 			inlineStart = true;
 		}
 		
-		public void setInlineEnd() {
-			inlineEnd = true;
-		}
-
-		public boolean isInlineEnd() {
-			boolean b = inlineEnd;
-			inlineEnd = false;
-			return b;
-		}
-
 		public boolean isInlineStart() {
 			boolean b = inlineStart;
 			inlineStart = false;
@@ -320,34 +288,6 @@ public class Pinto {
 		}
 	}
 	
-	public static void main(String[] x) {
-		Stream.of(
-			"nope nope { yes {notreally} yes } nope",
-			"nope nope {yes {notreally} yes } nope",
-			"nope nope [ yes [notreally] yes ] nope",
-			"nope nope [yes [notreally] yes] nope",
-			"nope nope \"yes [notreally] yes\" nope",
-			"nope nope \" yes [notreally] yes \" nope",
-			"nope nope $yes [notreally] yes$ nope",
-			"nope nope $ yes [notreally] yes $ nope"
-		).forEach(s -> {
-			Scanner sc = new Scanner(s);
-			while(sc.hasNext()) {
-				if(sc.hasNext(Pattern.compile("\\{.*?"))) {
-					System.out.println("Curly block: " + parseBlock(sc,"\\{","\\}"));
-				} else if(sc.hasNext(Pattern.compile("\\[.*?"))) {
-					System.out.println("Square block: " + parseBlock(sc,"\\[","\\]"));
-				} else if(sc.hasNext(Pattern.compile("\".*?"))) {
-					System.out.println("Quote block: " + parseBlock(sc,"\"","\""));
-				} else if(sc.hasNext(Pattern.compile("\\$.*?"))) {
-					System.out.println("Dollar block: " + parseBlock(sc,"\\$","\\$"));
-				} else {
-					sc.next();
-				}
-			}
-		});
-		
-	}
 	
 	public static String parseBlock(Scanner scanner, String opening, String closing) throws PintoSyntaxException {
 		StringBuilder sb = new StringBuilder();
