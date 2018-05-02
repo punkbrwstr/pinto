@@ -27,7 +27,7 @@ The Pinto interpreter is built in Java.
 
 Running Pinto requires:
 
- - [Java 8](https://java.com/download)
+ - [Java 8+](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
  
 Building Pinto also requires:
 
