@@ -14,6 +14,7 @@ import jline.TerminalFactory;
 import tech.pinto.MarketData;
 import tech.pinto.Namespace;
 import tech.pinto.Pinto;
+import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
 
 public class Main extends tech.pinto.Main {
@@ -57,7 +58,7 @@ public class Main extends tech.pinto.Main {
 		@Provides
 		@Singleton
 		Vocabulary provideVocabulary() {
-			return new ExtraVocabulary();
+			return new StandardVocabulary();
 		}
 
 		@Provides

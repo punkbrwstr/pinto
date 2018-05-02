@@ -70,7 +70,7 @@
 					<doUpdate>true</doUpdate>
 				</configuration>
 			</plugin>
-    			<plugin>
+    		<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<executions>
 					<execution>
@@ -85,8 +85,7 @@
 							<descriptorRefs>
 								<descriptorRef>jar-with-dependencies</descriptorRef>
 							</descriptorRefs>
-                            <!--<finalName>extras-${buildNumber}</finalName>-->
-                            <finalName>extras</finalName>
+                            <finalName>pinto-bbg</finalName>
 						</configuration>
 						<phase>package</phase>
 						<goals>
