@@ -39,7 +39,7 @@ Building Pinto also requires:
 The easiest way to get up and running with the Pinto console is to download a [release jar](https://github.com/punkbrwstr/pinto/releases) and run:
 
 ```
-java -jar extras.jar
+java -jar pinto-iex.jar
 ```
 
 To build and run Pinto from source:
