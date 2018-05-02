@@ -34,7 +34,7 @@ Building Pinto also requires:
  - [Maven](https://maven.apache.org/download.cgi)
 
 
-## How to get up and running locally
+## How to get up and running
 
 The easiest way to get up and running with the Pinto console is to download a [release jar](https://github.com/punkbrwstr/pinto/releases) and run:
 
