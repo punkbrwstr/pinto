@@ -14,7 +14,6 @@ import tech.pinto.time.Periodicity;
 
 public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 	
-	protected Optional<PeriodicRange<?>> range = Optional.empty();
 	protected Column<?,?>[] inputs;
 	protected Function<Column<?,?>[],String> headerFunction = columns -> "";
 	final private Function<Column<?,?>[],Function<PeriodicRange<?>,S>> rowsFunction;
@@ -29,17 +28,6 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		this.rowsFunction = rowsFunction;
 		this.rowsAsTextFunction = rowsAsTextFunction;
 	}
-	
-	public void setRange(PeriodicRange<?> range) {
-		this.range = Optional.of(range);
-		for(Column<?,?> c : inputs) {
-			c.setRange(range);
-		}
-	}
-	
-	public Optional<PeriodicRange<?>> getRange() {
-		return range;
-	}
 
 	public String getHeader() {
 		return headerFunction.apply(inputs);	
@@ -49,16 +37,16 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		this.headerFunction = headerFunction;
 	}
 	
-	public <P extends Period> S rows() {
-		 return rowsFunction.apply(inputs).apply(range.get());
+	public <P extends Period> S rows(PeriodicRange<?> range) {
+		 return rowsFunction.apply(inputs).apply(range);
 	}
 
-	public <P extends Period> Stream<String> rowsAsText(NumberFormat nf) {
-		return rowsAsTextFunction.apply(inputs).apply(nf).apply(range.get());
+	public <P extends Period> Stream<String> rowsAsText(PeriodicRange<?> range, NumberFormat nf) {
+		return rowsAsTextFunction.apply(inputs).apply(nf).apply(range);
 	}
 	
-	public <P extends Period> Stream<String> rowsAsText() {
-		return rowsAsText(NumberFormat.getInstance());
+	public <P extends Period> Stream<String> rowsAsText(PeriodicRange<?> range) {
+		return rowsAsText(range, NumberFormat.getInstance());
 	}
 	
 	public Column<?,?>[] getInputs() {

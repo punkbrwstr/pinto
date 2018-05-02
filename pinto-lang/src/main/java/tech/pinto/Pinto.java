@@ -66,8 +66,7 @@ public class Pinto {
 					String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
 					state.setCurrent(state.getCurrent().andThen(
 							new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true)));
-				}
-				if (sc.hasNext(Pattern.compile(".*?\\)"))) { // end inline function
+				} else if (sc.hasNext(Pattern.compile(".*?\\)"))) { // end inline function
 					if(!state.isInline()) {
 						throw new PintoSyntaxException("Closing inline function that had not been opened in \"" + expression + "\"");
 					}
@@ -75,8 +74,7 @@ public class Pinto {
 					state.setCurrent(state.getCurrent().andThen(t2 -> {
 						t2.collapseFunction();
 					}));
-				}
-				if (sc.hasNext(Pattern.compile("\\(.*?"))) { // start inline function
+				} else if (sc.hasNext(Pattern.compile("\\(.*?"))) { // start inline function
 					sc.next();
 					state.startInline();
 				} else if (sc.hasNextDouble()) { // double literal

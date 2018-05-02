@@ -31,6 +31,8 @@ public class Table {
 
 	private final LinkedList<Level> levels = new LinkedList<>();
 	private Optional<String> status = Optional.empty();
+	private Optional<PeriodicRange<?>> range = Optional.empty();
+	private Optional<LinkedList<Column<?,?>>> evaluatedStack = Optional.empty();
 
 	public Table() {
 		levels.add(new Level(true));
@@ -77,18 +79,12 @@ public class Table {
 		levels.peekFirst().clearStacks();
 	}
 	
-	public void collapse() {
-		while(!levels.peekFirst().isFunctionLevel()) {
-			insertAtTop(levels.removeFirst().getStacks());
-		}
-	}
-	
 	public void collapseFunction() {
 		boolean foundFunction = false;
 		while(!foundFunction) {
 			foundFunction = levels.peekFirst().isFunctionLevel();
-			List<Column<?,?>> collapsed = levels.removeFirst().getStacks().stream().flatMap(LinkedList::stream).collect(Collectors.toList());
-			levels.peekFirst().getStacks().get(0).addAll(0,collapsed);
+			List<LinkedList<Column<?,?>>> functionReturn = levels.removeFirst().getStacks();
+			insertAtTop(functionReturn);
 		}
 	}
 	
@@ -99,9 +95,19 @@ public class Table {
 		}
 		return levels.peekFirst().getStacks().get(0);
 	}
+
+	public void evaluate(PeriodicRange<?> range) {
+		this.range = Optional.of(range);
+		evaluatedStack = Optional.of(flatten());
+	}
+
 	
-	public Optional<PeriodicRange<?>> getRange() {
-		return flatten().isEmpty() ? Optional.empty() : flatten().getFirst().getRange(); 
+	public PeriodicRange<?> getRange() {
+		return range.orElseThrow(() -> new PintoSyntaxException("Cannot access table range before evaluating."));
+	}
+	
+	public LinkedList<Column<?,?>> getStack() {
+		return evaluatedStack.orElseThrow(() -> new PintoSyntaxException("Cannot access stack before evaluating."));
 	}
 	
 	public void setStatus(String s) {
@@ -113,21 +119,21 @@ public class Table {
 	}
 
 	public List<String> getHeaders(boolean reverse) {
-		return (reverse ? streamInReverse(flatten()) : flatten().stream())
+		return (reverse ? streamInReverse(getStack()) : getStack().stream())
 				.map(Column::getHeader).collect(Collectors.toList());
 	}
 
 	public int getColumnCount() {
-		return flatten().size();
+		return getStack().size();
 	}
 
 	public int getRowCount() {
-		return getRange().isPresent() ? (int) getRange().get().size() : 0;
+		return (int) getRange().size();
 	}
 
 	public DoubleStream getSeries(int index, boolean reverse) {
-		int i = reverse ? flatten().size() - index - 1 : index;
-		return getRange().isPresent() ? (DoubleStream) flatten().get(i).rows() : DoubleStream.empty();
+		int i = reverse ? getStack().size() - index - 1 : index;
+		return (DoubleStream) getStack().get(i).rows(getRange());
 	}
 
 	public String toCsv() {
@@ -143,17 +149,15 @@ public class Table {
 
 	public String toCsv(DateTimeFormatter dtf, NumberFormat nf) {
 		StringBuilder sb = new StringBuilder();
-		sb.append(streamInReverse(flatten()).map(Column::getHeader).collect(Collectors.joining(",","Date,","\n")));
-		if(getRange().isPresent()) {
-			List<LocalDate> d = getRange().get().dates();
-			List<OfDouble> s = flatten().stream().map(c -> (Column.OfDoubles) c).map(c -> c.rows())
-					.map(DoubleStream::iterator).collect(Collectors.toList());
-			for(int row = 0; row < getRange().get().size(); row++) {
-				sb.append(d.get(row).format(dtf)).append(",");
-				for (int col = flatten().size() - 1; col > -1; col--) {
-					sb.append(nf.format(s.get(col).nextDouble()));
-					sb.append(col > 0 ? "," : "\n");
-				}
+		sb.append(streamInReverse(getStack()).map(Column::getHeader).collect(Collectors.joining(",","Date,","\n")));
+		List<LocalDate> d = getRange().dates();
+		List<OfDouble> s = getStack().stream().map(c -> (Column.OfDoubles) c).map(c -> c.rows(getRange()))
+				.map(DoubleStream::iterator).collect(Collectors.toList());
+		for(int row = 0; row < getRange().size(); row++) {
+			sb.append(d.get(row).format(dtf)).append(",");
+			for (int col = getStack().size() - 1; col > -1; col--) {
+				sb.append(nf.format(s.get(col).nextDouble()));
+				sb.append(col > 0 ? "," : "\n");
 			}
 		}
 		return sb.toString();
@@ -164,79 +168,65 @@ public class Table {
 	public Map<String,Object> toMap(boolean omitDates, boolean numbersAsStrings) {
 		ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
 		builder.put("header", getHeaders(true));
-		if (getRange().isPresent()) {
-			builder.put("date_range", getRange().get().asStringMap());
-			if (!omitDates) {
-				builder.put("index", getRange().get().dates().stream().map(LocalDate::toString)
-						.collect(toList()));
-			}
-			builder.put("series", !numbersAsStrings ? toColumnMajorArray().get() :
-					Stream.of(toColumnMajorArray().get()).map(DoubleStream::of)
-						.map(ds -> ds.mapToObj(Double::toString).collect(toList())).collect(toList()));
+		builder.put("date_range", getRange().asStringMap());
+		if (!omitDates) {
+			builder.put("index", getRange().dates().stream().map(LocalDate::toString)
+					.collect(toList()));
 		}
+		builder.put("series", !numbersAsStrings ? toColumnMajorArray().get() :
+				Stream.of(toColumnMajorArray().get()).map(DoubleStream::of)
+					.map(ds -> ds.mapToObj(Double::toString).collect(toList())).collect(toList()));
 		return builder.build();
 	}
 
 	public Optional<double[][]> toColumnMajorArray() {
-		if (!getRange().isPresent()) {
-			return Optional.empty();
-		}
-		double[][] series = new double[flatten().size()][];
-		for (int i = flatten().size() - 1; i > -1; i--) {
-			series[flatten().size() - i - 1] = ((Column.OfDoubles)flatten().get(i)).rows().toArray();
+		double[][] series = new double[getStack().size()][];
+		for (int i = getStack().size() - 1; i > -1; i--) {
+			series[getStack().size() - i - 1] = ((Column.OfDoubles)getStack().get(i)).rows(getRange()).toArray();
 		}
 		return Optional.of(series);
 	}
 
 	public Optional<double[][]> toRowMajorArray() {
-		if (!getRange().isPresent()) {
-			return Optional.empty();
-		}
 		double[][] table = new double[getRowCount()][getColumnCount()];
-		for (int col = flatten().size() - 1; col > -1; col--) {
+		for (int col = getStack().size() - 1; col > -1; col--) {
 			final int thisCol = col;
 			AtomicInteger row = new AtomicInteger(0);
-			((Column.OfDoubles)flatten().get(col)).rows()
-					.forEach(d -> table[row.getAndIncrement()][flatten().size() - thisCol - 1] = d);
+			((Column.OfDoubles)getStack().get(col)).rows(getRange())
+					.forEach(d -> table[row.getAndIncrement()][getStack().size() - thisCol - 1] = d);
 		}
 		return Optional.of(table);
 	}
 
 	public String[] headerToText() {
 		List<String> l = getHeaders(true);
-		l.add(0, getRange().isPresent() ? "Date" : " ");
+		l.add(0, range.isPresent() ? "Date" : " ");
 		return l.toArray(new String[] {});
 	}
 
 	public String[][] seriesToText(NumberFormat nf) {
-		if (getRange().isPresent()) {
-			List<LocalDate> dates = getRange().get().dates();
-			String[][] table = new String[(int) getRange().get().size()][flatten().size() + 1];
-			for (int row = 0; row < getRange().get().size(); row++) {
+		if (range.isPresent()) {
+			List<LocalDate> dates = getRange().dates();
+			String[][] table = new String[(int) getRange().size()][getStack().size() + 1];
+			for (int row = 0; row < getRange().size(); row++) {
 				table[row][0] = dates.get(row).toString();
 			}
-			for (int col = 0; col < flatten().size(); col++) {
+			for (int col = 0; col < getStack().size(); col++) {
 				final int thisCol = col;
 				AtomicInteger row = new AtomicInteger(0);
-				flatten().get(col).rowsAsText()
-						.forEach(s -> table[row.getAndIncrement()][flatten().size() - thisCol] = s);
+				getStack().get(col).rowsAsText(getRange())
+						.forEach(s -> table[row.getAndIncrement()][getStack().size() - thisCol] = s);
 			}
 			return table;
 		} else {
-			String[][] table = new String[1][flatten().size() + 1];
+			String[][] table = new String[1][getStack().size() + 1];
 			Arrays.fill(table[0], " ");
 			return table;
 		}
 	}
 	
-	@Override
-	public String toString() {
-		return getConsoleText(NumberFormat.getInstance());
-		
-	}
-	
 	public String getConsoleText(NumberFormat nf) {
-		if(getRange().isPresent()) {
+		if(range.isPresent()) {
 			return FlipTable.of(headerToText(), seriesToText(nf));
 		} else {
 			return getHeaders(true).stream().collect(Collectors.joining("\\t"));
@@ -279,6 +269,11 @@ public class Table {
 				stacks.add(new LinkedList<>());
 			}
 			return l;
+		}
+		
+		@Override
+		public String toString() {
+			return "functionLevel: " + Boolean.toString(functionLevel) + ", stacks: " + stacks.toString();
 		}
 			
 	}

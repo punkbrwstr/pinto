@@ -59,6 +59,14 @@ public class IndexTester {
 		assertEquals("Repeat a defined that copies", first(1,t),99, 0.1);
 	}
 	
+	@Test
+	public void repeatWithNested() throws Exception {
+		pinto.eval(":test [0] ([0&] ) + def");
+		Table t = pinto.eval("1 2 [0+] test eval").get(0);
+		assertEquals("Repeat a defined with nested inline", t.getColumnCount(),2);
+		assertEquals("Repeat a defined with nested inline", first(0,t),4, 0.1);
+	}
+	
 	private double first(int column, Table t) {
 		return t.getSeries(column, false).limit(1).sum();
 	}

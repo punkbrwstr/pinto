@@ -94,9 +94,9 @@ public class ExtraVocabulary extends StandardVocabulary {
     		NumberFormat nf = ((Column.OfConstantStrings)s.removeFirst()).getValue().equals("percent") ? NumberFormat.getPercentInstance() :
     								NumberFormat.getNumberInstance();
     		nf.setGroupingUsed(false);
-    		s.stream().forEach(c -> c.setRange(range));
     		Table t = new Table();
     		t.insertAtTop(s);
+    		t.evaluate(range);
     		String[] lines = t.toCsv(nf).split("\n");
     		s.clear();
     		StringBuilder sb = new StringBuilder();
@@ -130,9 +130,8 @@ public class ExtraVocabulary extends StandardVocabulary {
 			String dates = range.dates().stream().map(LocalDate::toString).collect(Collectors.joining("', '","['x', '","']"));
 			StringBuilder data = new StringBuilder();
 			for(int i = s.size()-1; i >= 0; i--) {
-				s.get(i).setRange(range);
 				data.append("['").append(s.get(i).getHeader()).append("',");
-				data.append(((Column.OfDoubles)s.get(i)).rows().mapToObj(String::valueOf).collect(Collectors.joining(", ","","]")));
+				data.append(((Column.OfDoubles)s.get(i)).rows(range).mapToObj(String::valueOf).collect(Collectors.joining(", ","","]")));
 				data.append(i > 0 ? "," : "");
 			}
 			String html = chartHTML.get().format(new Object[] {getId(), dates, data, title}, new StringBuffer(), null).toString();
@@ -187,11 +186,10 @@ public class ExtraVocabulary extends StandardVocabulary {
     			}
     			double[][] values = new double[l.size()][2];
     			for(int j = 0; j < l.size(); j++) {
-    				l.get(j).setRange(pr);
     				if(i == 0) {
     					labels[j] = l.get(j).getHeader();
     				}
-    				values[j][0] =  ((Column.OfDoubles) l.get(j)).rows().collect(dc[Math.min(i, dc.length - 1)], (v,d) -> v.add(d), (v,v1) -> v.combine(v1)).finish();
+    				values[j][0] =  ((Column.OfDoubles) l.get(j)).rows(pr).collect(dc[Math.min(i, dc.length - 1)], (v,d) -> v.add(d), (v,v1) -> v.combine(v1)).finish();
     				values[j][1] = (int) j;
     			}
     			Arrays.sort(values, (c1, c2) ->  c1[0] == c2[0] ? 0 : c1[0] < c2[0] ? 1 : -1);

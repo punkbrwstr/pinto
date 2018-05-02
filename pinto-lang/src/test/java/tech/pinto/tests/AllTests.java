@@ -71,8 +71,7 @@ public class AllTests {
 				s.addFirst(new Column.OfDoubles(inputs -> "", inputs -> range -> {
 					return Cache.getCachedValues("counter", range, 0, 1, r -> {
 						Column.OfConstantDoubles col = new Column.OfConstantDoubles(count.getAndIncrement());
-						col.setRange(r);
-						return new double[][] {col.rows().toArray()};
+						return new double[][] {col.rows(r).toArray()};
 					});
 					
 				}));
