@@ -2,7 +2,7 @@
 
 Pinto is a domain-specific programming language for working with time series data. Pinto expressions produce one thing: tables of data with rows that correspond to periodic points in time.  Each table column contains a consistent type of data, but the values could be constant or time-varying.  Columns also have a text header for identifying metadata.  Pinto expressions can be evaluated to produce values for any periodicity over any range of time.  As a [concatenative](https://en.wikipedia.org/wiki/Concatenative_programming_language) language that uses [postfix](https://en.wikipedia.org/wiki/Reverse_Polish_notation) notation, Pinto expressions are comprised of a sequence of functions that operate on the the same table in left-to-right order.  The table is set up as a [stack](https://en.wikipedia.org/wiki/Stack_(abstract_data_type)), with new columns added to the right and functions operating on the rightmost column first.  Pinto indexing expressions allow convenient filtering of the table--passing only selected columns to the next function by referencing a column's header value or position in the table.   
 
-For language details see the [Pinto Language Reference](./pinto_reference.md).
+For language details please see the [Pinto Language Reference](./pinto_reference.md) and for code examples take a look at our [wiki](/punkbrwstr/pinto/wiki).
 
 ## Key features
 
