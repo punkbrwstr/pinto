@@ -127,10 +127,12 @@ public class StandardVocabulary extends Vocabulary {
 			for(LinkedList<Column<?,?>> s : t.takeTop()) {
 				while(!s.isEmpty()) {
 					String filename = ((Column.OfConstantStrings)s.removeFirst()).getValue();
+					int lineNumber = 0;
 					try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
 						String line = null;
 						p.engineState.reset();
 						while ((line = reader.readLine()) != null) {
+							lineNumber++;
 							p.eval(line);
 						}
 					} catch (FileNotFoundException e) {
@@ -138,7 +140,7 @@ public class StandardVocabulary extends Vocabulary {
 					} catch (IOException e1) {
 						throw new IllegalArgumentException("IO error for pinto file \"" + filename + "\" in execute");
 					} catch (PintoSyntaxException e) {
-						throw new IllegalArgumentException("Pinto syntax error in  file \"" + filename + "\"", e);
+						throw new IllegalArgumentException("Pinto syntax error in  file \"" + filename + "\" at line: " + Integer.toString(lineNumber), e);
 					}
 				}
 			}
@@ -215,10 +217,11 @@ public class StandardVocabulary extends Vocabulary {
     		}));
     	}),"[]","Creates a double column with values corresponding the phase of the moon."));
     	names.put("range", new Name("range", toTableConsumer(s -> {
-    		int n = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
-    		IntStream.range(1,n+1).mapToDouble(i -> (double)i).mapToObj(
+    		int start = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
+    		int end = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
+    		IntStream.range(start,end).mapToDouble(i -> (double)i).mapToObj(
     				value -> new Column.OfConstantDoubles(value)).forEach(s::addFirst);
-    	}),"[n=3]", "Creates double columns corresponding to the first *n* positive integers."));
+    	}),"[start=1,end=5]", "Creates double columns corresponding to integers between *start* (inclusive) and *end* exclusive."));
     	names.put("read_csv", new Name("read_csv", toTableConsumer(s -> {
     		String source = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		boolean includesHeader = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
@@ -402,13 +405,15 @@ public class StandardVocabulary extends Vocabulary {
     		}, i -> Optional.of(new int[]{i.length}),a));
     	}),"[:]", "Creates a double array column with each row containing values of input columns."));
     	names.put("expanding", new Name("expanding", toTableConsumer(s-> {
-    		String startString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-    		String freqString = ((Column.OfConstantStrings)s.removeFirst()).getValue();
+    		Column<?,?> col = s.removeFirst();
+    		Optional<LocalDate> start = col instanceof Column.OfConstantDates ? Optional.of(((Column.OfConstantDates)col).getValue()) : Optional.empty();
+    		col = s.removeFirst();
+    		Optional<Periodicity<?>> periodicity = col instanceof Column.OfConstantPeriodicities ? Optional.of(((Column.OfConstantPeriodicities) col).getValue()) : Optional.empty();
     		boolean initialZero = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
     		s.replaceAll(c -> {
     			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader() + " expanding", inputs -> range -> {
-    				LocalDate startDate = startString.equals("range") ? range.start().endDate() : LocalDate.parse(startString);
-    				Periodicity<Period> wf = freqString.equals("range") ? (Periodicity<Period>) range.periodicity() : Periodicities.get(freqString);
+    				LocalDate startDate = start.orElse(range.start().endDate());
+    				Periodicity<Period> wf = (Periodicity<Period>) periodicity.orElse(range.periodicity());
     				Period windowStart = wf.from(startDate);
     				Period windowEnd = wf.from(range.end().endDate());
     				windowEnd = windowEnd.isBefore(windowStart) ? windowStart : windowEnd;
@@ -430,7 +435,7 @@ public class StandardVocabulary extends Vocabulary {
     				return b.build();
     			},c);
     		});
-    	}),"[start=\"range\",freq=\"range\",initial_zero=\"false\",:]", "Creates double array columns for each input column with rows " +
+    	}),"[date=\"range\",periodicity=\"range\",initial_zero=\"false\",:]", "Creates double array columns for each input column with rows " +
     		"containing values from an expanding window of past data with periodicity *freq* that starts on date *start*."));
 
 /* array operators */
@@ -636,8 +641,8 @@ public class StandardVocabulary extends Vocabulary {
 			String[] headers = new String[columns];
 			String[][] cells = new String[rows][columns];
 			for (int i = 0; i < columns; i++) {
-				LocalDate start = starts.get(Math.min(i, columns - 1));
-				LocalDate end = ends.get(Math.min(i, columns - 1));
+				LocalDate start = starts.get(i);
+				LocalDate end = i < ends.size() ? ends.get(i) : LocalDate.now();
 				PeriodicRange<?> pr = periodicities.get(Math.min(i, periodicities.size() - 1)).range(start, end, false);
 				String columnLabel = i >= columnLabels.size() ? "" : columnLabels.get(i);
 				headers[i] = columnLabel.equals("") ? start + " - " + end : columnLabel;

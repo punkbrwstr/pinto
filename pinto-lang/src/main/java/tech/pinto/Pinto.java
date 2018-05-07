@@ -61,8 +61,7 @@ public class Pinto {
 						state.reset();
 						continue;
 					}
-				}
-				if(state.isInlineStart()) {
+				} else if(state.isInlineStart()) {
 					String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
 					state.setCurrent(state.getCurrent().andThen(
 							new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true)));
