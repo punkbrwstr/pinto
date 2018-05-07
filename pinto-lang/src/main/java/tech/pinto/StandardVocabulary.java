@@ -221,7 +221,7 @@ public class StandardVocabulary extends Vocabulary {
     		int end = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
     		IntStream.range(start,end).mapToDouble(i -> (double)i).mapToObj(
     				value -> new Column.OfConstantDoubles(value)).forEach(s::addFirst);
-    	}),"[start=1,end=5]", "Creates double columns corresponding to integers between *start* (inclusive) and *end* exclusive."));
+    	}),"[start=1,end=4]", "Creates double columns corresponding to integers between *start* (inclusive) and *end* exclusive."));
     	names.put("read_csv", new Name("read_csv", toTableConsumer(s -> {
     		String source = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		boolean includesHeader = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
