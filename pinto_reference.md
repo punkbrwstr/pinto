@@ -155,10 +155,9 @@ These commands add columns to the stack.
 
 Function name | Default indexer|Description
 :---:|:---|:---
-today|[]|Adds a *constant date* column with today's date to the table.
 moon|[]|Creates a double column with values corresponding the phase of the moon.
 pi|[]|Creates a constant double column with the value pi.
-range|[n=3]|Creates double columns corresponding to the first *n* positive integers.
+range|[start=1,end=4]|Creates double columns corresponding to integers between *start* (inclusive) and *end* exclusive.
 read_csv|[source,includes_header="true"]|Reads CSV formatted table from file or URL specified as *source*.
 
 ### Data cleaning functions
@@ -166,7 +165,7 @@ read_csv|[source,includes_header="true"]|Reads CSV formatted table from file or 
 Function name | Default indexer |Description
 :---:|:---|:---
 fill|[periodicity=BQ-DEC,lookback="true",:]|Fills missing values with last good value, looking back one period of *periodicity* if *lookback* is true.
-join|[dates,:]|Joins columns over time, switching between columns on dates supplied in ";" denominated list *dates*.
+join|[dates,:]|Joins columns over time, switching between columns on dates in *dates* columns.
 resample|[periodicity=BM,:]|Sets frequency of prior columns to periodicity *periodicity*, carrying values forward if evaluation periodicity is more frequent.
 
 ### Date functions
@@ -237,8 +236,8 @@ ulp|[:]|Unary double operator for ulp.
 Function name | Default indexer |Description
 :---:|:---|:---
 cross|[:]|Creates a double array column with each row containing values of input columns.
-expanding|[start="range",freq="range",initial_zero="false",:]|Creates double array columns for each input column with rows containing values from an expanding window of past data with periodicity *freq* that starts on date *start*.
-rolling|[size=2,freq="B",:]|Creates double array columns for each input column with rows containing values from rolling window of past data where the window is *size* periods of periodicity *freq*.
+expanding|[start="range",periodicity="range",initial_zero="false",:]|Creates double array columns for each input column with rows containing values from an expanding window of past data with periodicity *periodicity* that starts on date *start*.  Defaults to the start and periodicity of the evaluated range. 
+rolling|[size=2,periodicity="B",:]|Creates double array columns for each input column with rows containing values from rolling window of past data where the window is *size* periods of periodicity *freq*.
 
 ### Double array aggregators (double array to double functions)
 Function name | Default indexer |Description
@@ -260,13 +259,14 @@ varp|[:]|Aggregates row values in double array columns to a double value by popu
 zscore|[:]|Aggregates row values in double array columns to a double value by zscore.
 zscorep|[:]|Aggregates row values in double array columns to a double value by zscorep.
 
-### Extra functions (requires additional libraries, see wiki)
-
+### Visualization functions
 Function name | Default indexer |Description
 :---:|:---|:---
-bbg|[tickers,fields="PX_LAST"]|Downloads Bloomberg history for each *fields* for each *tickers*
 chart|[start="today",end="today",freq="B",title="none",:]|Creates a const string column with code for an HTML chart.
+grid|[columns=3,HTML]|Creates a grid layout in a report with all input columns labelled HTML as cells in the grid.
 report|[title="Pinto report",HTML]|Creates a new HTML report containing all *HTML* columns
+rt|[starts=[periodicity=BA-DEC] offset,ends=today,labels="YTD",periodicities=B,functions="pct_change",format="percent",digits=2,:]|Creates a const string column with code for an HTML table that ranks columns by the value of *functions* as calculated over date ranges between *starts* and *ends*.
+table|[periodicity=B, date=[count=-20] offset today,format="decimal",:]|Creates a const string column with code for an HTML ranking table.
 
 
 
