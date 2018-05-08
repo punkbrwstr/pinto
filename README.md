@@ -18,6 +18,12 @@ Pinto was designed to prepare financial market data for use in models or visuali
 
 Pinto combines the efficiency of an HP-12c calculator, the simplicity of Postscript, the tersity of J, and the familiarity of Python indexing.   
 
+## Code examples
+
+[Getting started](https://github.com/punkbrwstr/pinto/wiki/Getting-started)
+
+[Market data](https://github.com/punkbrwstr/pinto/wiki/Market-data)
+
 ## Try Pinto!
 Try Pinto live [online](http://pinto.tech/)
 
