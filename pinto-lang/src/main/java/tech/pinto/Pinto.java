@@ -49,18 +49,14 @@ public class Pinto {
 		expression = expression.replaceAll("\\(", " \\( ").replaceAll("\\)", " \\) ");
 		try (Scanner sc = new Scanner(expression)) {
 			while (sc.hasNext()) {
-				if(state.isExpressionStart()) {
-					if(sc.hasNext(NAME_LITERAL)) { // name literal
-						String nl = sc.next(NAME_LITERAL).replaceAll(":", "");
-						state.setNameLiteral(checkName(nl));
-						String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
-						state.setNameIndexer(new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true));
-						state.setExpression(expression);
-					} else if(sc.hasNext(Pattern.compile("#.*"))) { // comment
-						sc.nextLine();
-						state.reset();
-						continue;
-					}
+				if(state.isExpressionStart() && sc.hasNext(NAME_LITERAL)) { // name literal
+					String nl = sc.next(NAME_LITERAL).replaceAll(":", "");
+					state.setNameLiteral(checkName(nl));
+					String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
+					state.setNameIndexer(new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true));
+					state.setExpression(expression);
+				} else if(sc.hasNext(Pattern.compile("#.*"))) { // comment
+					sc.nextLine();
 				} else if(state.isInlineStart()) {
 					String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
 					state.setCurrent(state.getCurrent().andThen(
