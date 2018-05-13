@@ -622,7 +622,10 @@ public class StandardVocabulary extends Vocabulary {
 			}
 			LinkedList<String> columnLabels = new LinkedList<>();
 			while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("labels")) {
-				columnLabels.addFirst(((Column.OfConstantStrings) s.removeFirst()).getValue());
+				String columnLabel = ((Column.OfConstantStrings) s.removeFirst()).getValue();
+				if(!columnLabel.equals("none")) {
+					columnLabels.addFirst(columnLabel);
+				}
 			}
 			LinkedList<Periodicity<?>> periodicities = new LinkedList<>();
 			while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("periodicities")) {
@@ -691,7 +694,7 @@ public class StandardVocabulary extends Vocabulary {
 			}
 			sb.append("</tbody></table>\n");
 			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
-		}), "[starts=[periodicity=BA-DEC] offset,ends=today,labels=\"YTD\",periodicities=B,functions=\"pct_change\",format=\"percent\",digits=2,:]",
+		}), "[starts=[periodicity=BA-DEC] offset,ends=today,labels=\"none\",periodicities=B,functions=\"pct_change\",format=\"percent\",digits=2,:]",
 				"Creates a const string column with code for an HTML ranking table.", false));
     	
     }
