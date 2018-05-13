@@ -43,10 +43,10 @@ public class FunctionTester {
 
 	@Test
 	public void testCopy() throws Exception {
-		Table t = pinto.eval("1 2 copy copy +" + EVAL).get(0);
+		Table t = pinto.eval("{test: 1 2} copy copy +" + EVAL).get(0);
 		assertEquals("Correct # dup outputs", 7, t.getColumnCount());
 		assertEquals("Dup output works in plus", 3.0, t.toRowMajorArray().get()[0][6], 0.001d);
-		t = pinto.eval("1 2 \"3\" copy" + EVAL).get(0);
+		t = pinto.eval("1 2 3 copy" + EVAL).get(0);
 		assertEquals("Correct # dup outputs with params", 6, t.getColumnCount());
 
 	}
@@ -68,8 +68,8 @@ public class FunctionTester {
 	
 	@Test
 	public void testNoInputsToDefined() throws Exception {
-		pinto.eval(":a [] 2 {size: 20} rolling mean def");
-		pinto.eval(":b [] 3 {size: 30} rolling mean def");
+		pinto.eval(":a [] {test: 2} 20 rolling mean def");
+		pinto.eval(":b [] {test: 3} 30 rolling mean def");
 		pinto.eval(":c a b def");
 		Table  c = pinto.eval("c eval").get(0);
 		assertEquals("defineNoInputs count",c.getColumnCount(),2);

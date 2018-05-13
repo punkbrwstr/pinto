@@ -38,10 +38,10 @@ public class SyntaxTester {
 		Table t = pinto.eval(" 1 2 3 ([0] 1 + 1 +) 4 eval").get(0);
 		assertEquals("Inline function", 5.0, t.getSeries(1, false).findFirst().getAsDouble(),0.01);
 		assertEquals("Inline function", 1.0, t.getSeries(0, true).findFirst().getAsDouble(),0.01);
-		t = pinto.eval("1 2 [1] ( [0] rolling sum) eval").get(0);
+		t = pinto.eval("{test:1 2} [1] ( [0] rolling sum) eval").get(0);
 		assertEquals("Inline with previous indexer", 2.0, t.getSeries(0, true).findFirst().getAsDouble(),0.01);
 		assertEquals("Inline with previous indexer", 2.0, t.getSeries(1, true).findFirst().getAsDouble(),0.01);
-		t = pinto.eval("1 2 [0+] ( [0] rolling sum) eval").get(0);
+		t = pinto.eval("{test: 1 2} [0+] ( [0] rolling sum) eval").get(0);
 		assertEquals("Inline with repeat", 2.0, t.getSeries(0, true).findFirst().getAsDouble(),0.01);
 		assertEquals("Inline with repeat", 4.0, t.getSeries(1, true).findFirst().getAsDouble(),0.01);
 	}
