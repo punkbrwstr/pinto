@@ -32,11 +32,11 @@ Map-style header literals define the column and set the header value at the same
 Example:
 ```
 pinto> { Column of ones: 1, Column of twos: 1 1 +  } eval
-╔════════════╤════════════════╤════════════════╗
-║ Date       │ Column of ones │ Column of twos ║
-╠════════════╪════════════════╪════════════════╣
-║ 2017-12-11 │ 1              │ 2              ║
-╚════════════╧════════════════╧════════════════╝
+â•”â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•¤â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•¤â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•—
+â•‘ Date       â”‚ Column of ones â”‚ Column of twos â•‘
+â• â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•ªâ•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•ªâ•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•£
+â•‘ 2017-12-11 â”‚ 1              â”‚ 2              â•‘
+â•šâ•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•§â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•§â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
 ```
 
 #### List-style header literals
@@ -45,11 +45,11 @@ List-style header literals set the header for columns already on the stack with 
 Example:
 ```
 pinto> 1 2 {Onesy, Twosy} eval
-╔════════════╤═══════╤═══════╗
-║ Date       │ Onesy │ Twosy ║
-╠════════════╪═══════╪═══════╣
-║ 2017-12-11 │ 1     │ 2     ║
-╚════════════╧═══════╧═══════╝
+â•”â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•¤â•�â•�â•�â•�â•�â•�â•�â•¤â•�â•�â•�â•�â•�â•�â•�â•—
+â•‘ Date       â”‚ Onesy â”‚ Twosy â•‘
+â• â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•ªâ•�â•�â•�â•�â•�â•�â•�â•ªâ•�â•�â•�â•�â•�â•�â•�â•£
+â•‘ 2017-12-11 â”‚ 1     â”‚ 2     â•‘
+â•šâ•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•§â•�â•�â•�â•�â•�â•�â•�â•§â•�â•�â•�â•�â•�â•�â•�â•�
 ```
 
 The two types of header literals may be combined within one set of curly braces.
@@ -112,11 +112,11 @@ A in-line function is a portion of an expression during which the stack remains 
 In the following example the `1 +` and `2 *` functions are applied to the stack indexed by `[0]` (containing *constant double* `3`).
 ```
 pinto> 1 2 3 ([0] 1 + 2 *) eval
-╔════════════╤═════╤═════╤═════════════════╗
-║ Date       │ 1.0 │ 2.0 │ 3.0 1.0 + 2.0 * ║
-╠════════════╪═════╪═════╪═════════════════╣
-║ 2018-04-18 │ 1   │ 2   │ 8               ║
-╚════════════╧═════╧═════╧═════════════════╝
+â•”â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•¤â•�â•�â•�â•�â•�â•¤â•�â•�â•�â•�â•�â•¤â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•—
+â•‘ Date       â”‚ 1.0 â”‚ 2.0 â”‚ 3.0 1.0 + 2.0 * â•‘
+â• â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•ªâ•�â•�â•�â•�â•�â•ªâ•�â•�â•�â•�â•�â•ªâ•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•£
+â•‘ 2018-04-18 â”‚ 1   â”‚ 2   â”‚ 8               â•‘
+â•šâ•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•§â•�â•�â•�â•�â•�â•§â•�â•�â•�â•�â•�â•§â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
 ```
 
 
@@ -143,10 +143,10 @@ These commands manipulate stack elements, but do not modify values.
 Function name | Default indexer |Description
 :---:|:---|:---
 clear|[:]|Clears indexed columns from stack.
-copy|[n=2,:]|Copies indexed columns *n* times.
+copy|[c=2,:]|Copies indexed columns *n* times.
 only|[:]|Clears stack except for indexed columns.
 rev|[:]|Reverses order of columns in stack.
-roll|[n=1,:]|Permutes columns in stack *n* times.
+roll|[c=1,:]|Permutes columns in stack *n* times.
 
 
 ### Data creation functions
@@ -157,7 +157,7 @@ Function name | Default indexer|Description
 :---:|:---|:---
 moon|[]|Creates a double column with values corresponding the phase of the moon.
 pi|[]|Creates a constant double column with the value pi.
-range|[start=1,end=4]|Creates double columns corresponding to integers between *start* (inclusive) and *end* exclusive.
+range|[c=1 4]|Creates double columns corresponding to integers between first (inclusive) and second (exclusive) columns in *c*, defaulting to 1 and 4.
 read_csv|[source,includes_header="true"]|Reads CSV formatted table from file or URL specified as *source*.
 
 ### Data cleaning functions
@@ -166,7 +166,7 @@ Function name | Default indexer |Description
 :---:|:---|:---
 fill|[periodicity=BQ-DEC,lookback="true",:]|Fills missing values with last good value, looking back one period of *periodicity* if *lookback* is true.
 join|[dates,:]|Joins columns over time, switching between columns on dates in *dates* columns.
-resample|[periodicity=BM,:]|Sets frequency of prior columns to periodicity *periodicity*, carrying values forward if evaluation periodicity is more frequent.
+resample|[periodicity=BM,:]|Sets prior columns to periodicity *periodicity*, carrying values forward if evaluation periodicity is more frequent.
 
 ### Date functions
 
@@ -185,18 +185,18 @@ hformat|[format,:]|Formats headers, setting new value to *format* and substituti
 ### Binary double operators
 Function name | Default indexer |Description
 :---:|:---|:---
-!=|[n=1,:]|Binary double operator != that operates on *n* columns at a time with fixed right-side operand.
-%|[n=1,:]|Binary double operator % that operates on *n* columns at a time with fixed right-side operand.
-*|[n=1,:]|Binary double operator * that operates on *n* columns at a time with fixed right-side operand.
-+|[n=1,:]|Binary double operator + that operates on *n* columns at a time with fixed right-side operand.
--|[n=1,:]|Binary double operator - that operates on *n* columns at a time with fixed right-side operand.
-/|[n=1,:]|Binary double operator / that operates on *n* columns at a time with fixed right-side operand.
-<|[n=1,:]|Binary double operator < that operates on *n* columns at a time with fixed right-side operand.
-<=|[n=1,:]|Binary double operator <= that operates on *n* columns at a time with fixed right-side operand.
-==|[n=1,:]|Binary double operator == that operates on *n* columns at a time with fixed right-side operand.
->|[n=1,:]|Binary double operator > that operates on *n* columns at a time with fixed right-side operand.
->=|[n=1,:]|Binary double operator >= that operates on *n* columns at a time with fixed right-side operand.
-^|[n=1,:]|Binary double operator ^ that operates on *n* columns at a time with fixed right-side operand.
+!=|[width=1,:]|Binary double operator != that operates on *width* columns at a time with fixed right-side operand.
+%|[width=1,:]|Binary double operator % that operates on *width* columns at a time with fixed right-side operand.
+*|[width=1,:]|Binary double operator * that operates on *width* columns at a time with fixed right-side operand.
++|[width=1,:]|Binary double operator + that operates on *width* columns at a time with fixed right-side operand.
+-|[width=1,:]|Binary double operator - that operates on *width* columns at a time with fixed right-side operand.
+/|[width=1,:]|Binary double operator / that operates on *width* columns at a time with fixed right-side operand.
+<|[width=1,:]|Binary double operator < that operates on *width* columns at a time with fixed right-side operand.
+<=|[width=1,:]|Binary double operator <= that operates on *width* columns at a time with fixed right-side operand.
+==|[width=1,:]|Binary double operator == that operates on *width* columns at a time with fixed right-side operand.
+>|[width=1,:]|Binary double operator > that operates on *width* columns at a time with fixed right-side operand.
+>=|[width=1,:]|Binary double operator >= that operates on *width* columns at a time with fixed right-side operand.
+^|[width=1,:]|Binary double operator ^ that operates on *width* columns at a time with fixed right-side operand.
 
 ### Unary double operators
 
@@ -237,7 +237,7 @@ Function name | Default indexer |Description
 :---:|:---|:---
 cross|[:]|Creates a double array column with each row containing values of input columns.
 expanding|[start="range",periodicity="range",initial_zero="false",:]|Creates double array columns for each input column with rows containing values from an expanding window of past data with periodicity *periodicity* that starts on date *start*.  Defaults to the start and periodicity of the evaluated range. 
-rolling|[size=2,periodicity="B",:]|Creates double array columns for each input column with rows containing values from rolling window of past data where the window is *size* periods of periodicity *freq*.
+rolling|[c=2,periodicity="range",:]|Creates double array columns for each input column with rows containing values from rolling window of past data where the window is *size* periods of periodicity *periodicity*.
 
 ### Double array aggregators (double array to double functions)
 Function name | Default indexer |Description
@@ -262,11 +262,11 @@ zscorep|[:]|Aggregates row values in double array columns to a double value by z
 ### Visualization functions
 Function name | Default indexer |Description
 :---:|:---|:---
-chart|[start="today",end="today",freq="B",title="none",:]|Creates a const string column with code for an HTML chart.
+chart|[start="today",end="today",periodicity="B",title="none",:]|Creates a const string column with code for an HTML chart.
 grid|[columns=3,HTML]|Creates a grid layout in a report with all input columns labelled HTML as cells in the grid.
 report|[title="Pinto report",HTML]|Creates a new HTML report containing all *HTML* columns
 rt|[starts=[periodicity=BA-DEC] offset,ends=today,labels="YTD",periodicities=B,functions="pct_change",format="percent",digits=2,:]|Creates a const string column with code for an HTML table that ranks columns by the value of *functions* as calculated over date ranges between *starts* and *ends*.
-table|[periodicity=B, date=[count=-20] offset today,format="decimal",:]|Creates a const string column with code for an HTML ranking table.
+table|[periodicity=B, date=-20 offset today,format="decimal",:]|Creates a const string column with code for an HTML ranking table.
 
 
 

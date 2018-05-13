@@ -132,7 +132,7 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		final double d;
 
 		public OfConstantDoubles(double d) {
-			super(inputs -> Double.toString(d),
+			super(inputs -> "c",
 					i -> range -> DoubleStream.iterate(d, r -> d).limit(range.size()),
 					new Column<?,?>[] {}
 					);

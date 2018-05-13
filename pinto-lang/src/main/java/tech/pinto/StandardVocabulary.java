@@ -180,13 +180,13 @@ public class StandardVocabulary extends Vocabulary {
             for(int j = 0; j < times - 1; j++) {
             	temp.stream().map(Column::clone).forEach(s::addFirst);
             }
-    	}), "[n=2,:]", "Copies indexed columns *n* times."));
+    	}), "[c=2,:]", "Copies indexed columns *c* times."));
     	names.put("roll", new Name("roll", toTableConsumer(s -> {
     		int times = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
     		for(int j = 0; j < times; j++) {
     			s.addFirst(s.removeLast());
     		}
-    	}), "[n=1,:]", "Permutes columns in stack *n* times."));
+    	}), "[c=1,:]", "Permutes columns in stack *n* times."));
 /* dates */
     	names.put("today", new Name("today", toTableConsumer(s -> {
     				s.addFirst(new Column.OfConstantDates(LocalDate.now()));
@@ -196,7 +196,7 @@ public class StandardVocabulary extends Vocabulary {
     		Periodicity<?> periodicity = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
     		int count = ((Column.OfConstantDoubles)s.removeFirst()).getValue().intValue();
     		s.addFirst(new Column.OfConstantDates(periodicity.offset(count, date)));
-    	}),"[date=today,periodicity=B,count=-1]", "Offset a given number of periods from today's date."));
+    	}),"[date=today,periodicity=B,c=-1]", "Offset a *c* periods of *periodicity* from *date*."));
     	
 /* data creation/testing */
     	/* constants */
@@ -217,11 +217,15 @@ public class StandardVocabulary extends Vocabulary {
     		}));
     	}),"[]","Creates a double column with values corresponding the phase of the moon."));
     	names.put("range", new Name("range", toTableConsumer(s -> {
-    		int start = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
-    		int end = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
+    		LinkedList<Integer> endpoints = new LinkedList<Integer>();
+    		while(!s.isEmpty() && endpoints.size() < 2 && s.peekFirst().getHeader().equals("c")) {
+    			endpoints.addLast((int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue());
+    		}
+    		int start = endpoints.size() == 2 ? endpoints.removeLast() : 1;
+    		int end = endpoints.removeFirst();
     		IntStream.range(start,end).mapToDouble(i -> (double)i).mapToObj(
     				value -> new Column.OfConstantDoubles(value)).forEach(s::addFirst);
-    	}),"[start=1,end=4]", "Creates double columns corresponding to integers between *start* (inclusive) and *end* exclusive."));
+    	}),"[c=1 4]", "Creates double columns corresponding to integers between *start* (inclusive) and *end* exclusive."));
     	names.put("read_csv", new Name("read_csv", toTableConsumer(s -> {
     		String source = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		boolean includesHeader = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
@@ -355,7 +359,7 @@ public class StandardVocabulary extends Vocabulary {
 					return b.build();
 				}, c);
 			});
-    	}),"[freq=\"BM\",:]", "Sets frequency of prior columns to periodicity *freq*, carrying values forward " +
+    	}),"[periodicity=\"BM\",:]", "Sets frequency of prior columns to periodicity *freq*, carrying values forward " +
 			"if evaluation periodicity is more frequent."));
     	names.put("hformat", new Name("hformat", toTableConsumer(s-> {
     		MessageFormat format = new MessageFormat(((Column.OfConstantStrings)s.removeFirst()).getValue().replaceAll("\\{\\}", "\\{0\\}"));
@@ -371,7 +375,7 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("rolling", new Name("rolling", toTableConsumer(s-> {
     		int size = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
             String wfs = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-            Optional<Periodicity<Period>> windowFreq = wfs.equals("eval") ? Optional.empty() : Optional.of(Periodicities.get(wfs));
+            Optional<Periodicity<Period>> windowFreq = wfs.equals("range") ? Optional.empty() : Optional.of(Periodicities.get(wfs));
     		s.replaceAll(c -> {
     			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader() + " rolling", inputs -> range -> {
                     Periodicity<Period> wf = windowFreq.orElse((Periodicity<Period>) range.periodicity());
@@ -387,8 +391,8 @@ public class StandardVocabulary extends Vocabulary {
     				return b.build();
     			},size,c);
     		});
-    	}),"[size=2,freq=\"eval\",:]", "Creates double array columns for each input column with rows containing values "+
-    			"from rolling window of past data where the window is *size* periods of periodicity *freq*, defaulting to the evaluation periodicity."));
+    	}),"[c=2,periodicity=\"range\",:]", "Creates double array columns for each input column with rows containing values "+
+    			"from rolling window of past data where the window is *size* periods of periodicity *periodicity*, defaulting to the evaluation periodicity."));
     	names.put("cross", new Name("cross", toTableConsumer(s-> {
     		Column.OfDoubles[] a = s.toArray(new Column.OfDoubles[]{});
     		s.clear();
@@ -574,7 +578,7 @@ public class StandardVocabulary extends Vocabulary {
 			});
 			sb.append("</tbody></table>\n");
 			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
-		}), "[periodicity=B, date=[count=-20] offset today,format=\"decimal\",:]",
+		}), "[periodicity=B, date=-20 offset today,format=\"decimal\",:]",
 				"Creates a const string column with code for an HTML ranking table.", false));
 		names.put("chart", new Name("chart", p -> toTableConsumer(s -> {
 			Periodicity<?> periodicity = ((Column.OfConstantPeriodicities) s.removeFirst()).getValue();
@@ -605,7 +609,7 @@ public class StandardVocabulary extends Vocabulary {
 					.toString();
 			s.clear();
 			s.add(new Column.OfConstantStrings(html, "HTML"));
-		}), "[periodicity=B, date=[count=-20] offset today,title=\"\",:]",
+		}), "[periodicity=B, date=-20 offset today,title=\"\",:]",
 				"Creates a const string column with code for an HTML chart.", false));
 		names.put("rt", new Name("rt", p -> toTableConsumer(s -> {
 			LinkedList<LocalDate> starts = new LinkedList<>();
@@ -756,7 +760,7 @@ public class StandardVocabulary extends Vocabulary {
 					throw new IllegalArgumentException("Operator " + dbo.toString() + " can only operate on columns of doubles or double arrays.");
 				}
 			}
-		}),"[n=1,:]", "Binary double operator " + name + " that operates on *n* columns at a time with fixed right-side operand.");
+		}),"[width=1,:]", "Binary double operator " + name + " that operates on *width* columns at a time with fixed right-side operand.");
 	}
 
 	private static Name makeOperator(String name, DoubleUnaryOperator duo) {
