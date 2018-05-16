@@ -186,7 +186,7 @@ public class StandardVocabulary extends Vocabulary {
     		for(int j = 0; j < times; j++) {
     			s.addFirst(s.removeLast());
     		}
-    	}), "[c=1,:]", "Permutes columns in stack *n* times."));
+    	}), "[c=1,:]", "Permutes columns in stack *c* times."));
 /* dates */
     	names.put("today", new Name("today", toTableConsumer(s -> {
     				s.addFirst(new Column.OfConstantDates(LocalDate.now()));
@@ -225,7 +225,7 @@ public class StandardVocabulary extends Vocabulary {
     		int end = endpoints.removeFirst();
     		IntStream.range(start,end).mapToDouble(i -> (double)i).mapToObj(
     				value -> new Column.OfConstantDoubles(value)).forEach(s::addFirst);
-    	}),"[c=1 4]", "Creates double columns corresponding to integers between *start* (inclusive) and *end* exclusive."));
+    	}),"[c=1 4]", "Creates double columns corresponding to integers between first (inclusive) and second (exclusive) in *c*."));
     	names.put("read_csv", new Name("read_csv", toTableConsumer(s -> {
     		String source = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		boolean includesHeader = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
@@ -342,7 +342,7 @@ public class StandardVocabulary extends Vocabulary {
     		}, inputStack)); 
     	}),"[date,:]", "Joins columns over time, switching between columns on dates supplied in \";\" denominated list *dates*."));
     	names.put("resample", new Name("resample", toTableConsumer(s-> {
-			Periodicity<Period> newPeriodicity = Periodicities.get(((Column.OfConstantStrings)s.removeFirst()).getValue());
+			Periodicity<Period> newPeriodicity = (Periodicity<Period>) ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
 			s.replaceAll(c -> {
 				return new Column.OfDoubles(inputs -> inputs[0].toString() + " resample",  inputs -> range -> {
 					Period newStart = newPeriodicity.roundDown(range.start().endDate());
@@ -359,7 +359,7 @@ public class StandardVocabulary extends Vocabulary {
 					return b.build();
 				}, c);
 			});
-    	}),"[periodicity=\"BM\",:]", "Sets frequency of prior columns to periodicity *freq*, carrying values forward " +
+    	}),"[periodicity=BM,:]", "Sets frequency of prior columns to periodicity *freq*, carrying values forward " +
 			"if evaluation periodicity is more frequent."));
     	names.put("hformat", new Name("hformat", toTableConsumer(s-> {
     		MessageFormat format = new MessageFormat(((Column.OfConstantStrings)s.removeFirst()).getValue().replaceAll("\\{\\}", "\\{0\\}"));
@@ -369,13 +369,14 @@ public class StandardVocabulary extends Vocabulary {
     			return c;
     		});
 
-    	}),"[format,:]", "Formats headers, setting new value to *format* and substituting and occurences of \"{}\" with previous header value."));
+    	}),"[string,:]", "Formats headers, setting new value to *format* and substituting and occurences of \"{}\" with previous header value."));
     	
 /* array creation */
     	names.put("rolling", new Name("rolling", toTableConsumer(s-> {
     		int size = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
-            String wfs = ((Column.OfConstantStrings)s.removeFirst()).getValue();
-            Optional<Periodicity<Period>> windowFreq = wfs.equals("range") ? Optional.empty() : Optional.of(Periodicities.get(wfs));
+            Optional<Periodicity<Period>> windowFreq = s.peekFirst() instanceof Column.OfConstantStrings &&
+            		((Column.OfConstantStrings)s.removeFirst()).getValue().equals("range") ? Optional.empty() :
+            			Optional.of((Periodicity<Period>)((Column.OfConstantPeriodicities)s.removeFirst()).getValue());
     		s.replaceAll(c -> {
     			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader() + " rolling", inputs -> range -> {
                     Periodicity<Period> wf = windowFreq.orElse((Periodicity<Period>) range.periodicity());
@@ -392,7 +393,7 @@ public class StandardVocabulary extends Vocabulary {
     			},size,c);
     		});
     	}),"[c=2,periodicity=\"range\",:]", "Creates double array columns for each input column with rows containing values "+
-    			"from rolling window of past data where the window is *size* periods of periodicity *periodicity*, defaulting to the evaluation periodicity."));
+    			"from rolling window of past data where the window is *c* periods of periodicity *periodicity*, defaulting to the evaluation periodicity."));
     	names.put("cross", new Name("cross", toTableConsumer(s-> {
     		Column.OfDoubles[] a = s.toArray(new Column.OfDoubles[]{});
     		s.clear();
@@ -447,24 +448,6 @@ public class StandardVocabulary extends Vocabulary {
     		names.put(dc.name(), new Name(dc.name(), makeOperator(dc.name(), dc),"[:]","Aggregates row values in double array " +
     				"columns to a double value by " + dc.name()));
     	}
-//    	names.put("rank", new Name("rank", toTableConsumer(s-> {
-//    		s.replaceAll(c -> {
-//    			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].toString() + " rank",
-//    				inputs -> range -> {
-//    					Column.OfDoubleArray1Ds col = (Column.OfDoubleArray1Ds) inputs[0];
-//    					col.setRange(range);
-//    					return col.rows().map(ds -> {
-//    						double[] d = ds.toArray();
-//    						Double[] ranks = new Double[d.length];
-//    						for(int i = 0; i < d.length; i++) {
-//    							ranks[i] = (double) i;
-//    						}
-//    						Arrays.sort(ranks, (i0,i1) -> (int) Math.signum(d[i0.intValue()] - d[i1.intValue()]));
-//    						return Arrays.stream(ranks).mapToDouble(Double::doubleValue);
-//    					});
-//    				}, c);
-//    		});
-//    	}),"[:]", "Creates a double array column with each row containing values of input columns."));
 
 /* binary operators */
     	names.put("+", makeOperator("+", (x,y) -> x + y));
@@ -510,8 +493,15 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("nextDown", makeOperator("nextDown", (DoubleUnaryOperator)Math::nextDown));
     	names.put("neg", makeOperator("neg", x -> x * -1.0d));
     	names.put("inv", makeOperator("inv", x -> 1.0 / x));
-    	names.put("acgbPrice", makeOperator("acgbPrice", quote -> {
+    	names.put("xmPrice", makeOperator("xmPrice", quote -> {
     		double TERM = 10, RATE = 6, price = 0; 
+    		for (int i = 0; i < TERM * 2; i++) {
+    			price += RATE / 2 / Math.pow(1 + (100 - quote) / 2 / 100, i + 1);
+    		}
+    		return price + 100 / Math.pow(1 + (100 - quote) / 2 / 100, TERM * 2);
+    	}));
+    	names.put("ymPrice", makeOperator("ymPrice", quote -> {
+    		double TERM = 3, RATE = 6, price = 0; 
     		for (int i = 0; i < TERM * 2; i++) {
     			price += RATE / 2 / Math.pow(1 + (100 - quote) / 2 / 100, i + 1);
     		}
@@ -612,65 +602,41 @@ public class StandardVocabulary extends Vocabulary {
 		}), "[periodicity=B, date=-20 offset today,title=\"\",:]",
 				"Creates a const string column with code for an HTML chart.", false));
 		names.put("rt", new Name("rt", p -> toTableConsumer(s -> {
-			LinkedList<LocalDate> starts = new LinkedList<>();
-			while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("starts")) {
-				starts.addFirst(((Column.OfConstantDates) s.removeFirst()).getValue());
+			LinkedList<String> functions = new LinkedList<>();
+			while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("functions")) {
+				functions.addFirst(((Column.OfConstantStrings) s.removeFirst()).getValue());
 			}
-			LinkedList<LocalDate> ends = new LinkedList<>();
-			while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("ends")) {
-				ends.addFirst(((Column.OfConstantDates) s.removeFirst()).getValue());
-			}
-			LinkedList<String> columnLabels = new LinkedList<>();
-			while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("labels")) {
-				String columnLabel = ((Column.OfConstantStrings) s.removeFirst()).getValue();
-				if(!columnLabel.equals("none")) {
-					columnLabels.addFirst(columnLabel);
-				}
-			}
-			LinkedList<Periodicity<?>> periodicities = new LinkedList<>();
-			while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("periodicities")) {
-				periodicities.addFirst(((Column.OfConstantPeriodicities) s.removeFirst()).getValue());
-			}
-			LinkedList<DoubleCollectors> collectors = new LinkedList<>();
-			while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("collectors")) {
-				collectors.addFirst(DoubleCollectors.valueOf(((Column.OfConstantStrings) s.removeFirst()).getValue()));
-			}
-			DoubleCollectors[] dc = Arrays.stream(((Column.OfConstantStrings) s.removeFirst()).getValue().split(","))
-					.map(String::trim).map(str -> DoubleCollectors.valueOf(str)).toArray(DoubleCollectors[]::new);
 			NumberFormat nf = ((Column.OfConstantStrings) s.removeFirst()).getValue().equals("percent")
-					? NumberFormat.getPercentInstance()
-					: NumberFormat.getNumberInstance();
+					? NumberFormat.getPercentInstance() : NumberFormat.getNumberInstance();
 			int digits = ((Column.OfConstantDoubles) s.removeFirst()).getValue().intValue();
 			nf.setMaximumFractionDigits(digits);
-			int columns = starts.size();
+			int columns = functions.size();
 			int rows = s.size();
 			String[] labels = new String[rows];
 			String[] headers = new String[columns];
 			String[][] cells = new String[rows][columns];
 			for (int i = 0; i < columns; i++) {
-				LocalDate start = starts.get(i);
-				LocalDate end = i < ends.size() ? ends.get(i) : LocalDate.now();
-				PeriodicRange<?> pr = periodicities.get(Math.min(i, periodicities.size() - 1)).range(start, end, false);
-				String columnLabel = i >= columnLabels.size() ? "" : columnLabels.get(i);
-				headers[i] = columnLabel.equals("") ? start + " - " + end : columnLabel;
-				List<Column<?, ?>> l = null;
-				if (i == columns - 1) {
-					l = new ArrayList<>(s);
-					s.clear();
-				} else {
-					l = new ArrayList<>();
-					s.stream().map(Column::clone).forEach(l::add);
-				}
-				double[][] values = new double[l.size()][2];
-				for (int j = 0; j < l.size(); j++) {
-					if (i == 0) {
-						labels[j] = l.get(j).getHeader();
-					}
-					values[j][0] = ((Column.OfDoubles) l.get(j)).rows(pr)
-							.collect(dc[Math.min(i, dc.length - 1)], (v, d) -> v.add(d), (v, v1) -> v.combine(v1))
-							.finish();
+				double[][] values = new double[s.size()][2];
+				for (int j = 0; j < s.size(); j++) {
+					Pinto.State state = new Pinto.State(false);
+					final int J = j;
+					state.setCurrent(t -> {
+						LinkedList<Column<?,?>> stack = new LinkedList<>();
+						stack.add(s.get(J).clone());
+						t.insertAtTop(stack);
+					});
+					Table t = p.evaluate(functions.get(i), state).get(0);
+					double[][] d = t.toColumnMajorArray().get();
+					values[j][0] = d[0][d[0].length-1]; 
 					values[j][1] = (int) j;
+					if (j == 0) {
+						headers[i] = t.getHeaders(false).get(0);
+					}
+					if(i == 0) {
+						labels[j] =  s.get(j).getHeader();
+					}
 				}
+
 				Arrays.sort(values, (c1, c2) -> c1[0] == c2[0] ? 0 : c1[0] < c2[0] ? 1 : -1);
 				for (int j = 0; j < values.length; j++) {
 					StringBuilder sb = new StringBuilder();
@@ -693,9 +659,11 @@ public class StandardVocabulary extends Vocabulary {
 				sb.append("</tr>\n");
 			}
 			sb.append("</tbody></table>\n");
+			s.clear();
 			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
-		}), "[starts=[periodicity=BA-DEC] offset,ends=today,labels=\"none\",periodicities=B,functions=\"pct_change\",format=\"percent\",digits=2,:]",
-				"Creates a const string column with code for an HTML ranking table.", false));
+		}), "[functions=\" BA-DEC offset expanding pct_change {YTD} today today eval\",format=\"percent\",digits=2,:]",
+				"Creates a const string column with code for an HTML ranking table, applying each *function* to input columns and ranking the results.", false));
+    	
     	
     }
 
@@ -725,7 +693,10 @@ public class StandardVocabulary extends Vocabulary {
 			for (int i = 0; i < lefts.size(); i++) {
 				Column<?,?> right = i >= rights.size() ? rights.getFirst().clone() : rights.getFirst();
 				rights.addLast(rights.removeFirst());
-				if(right instanceof Column.OfDoubles && lefts.get(i) instanceof Column.OfDoubles) {
+				if(right instanceof Column.OfConstantDoubles && lefts.get(i) instanceof Column.OfConstantDoubles) {
+					stack.add(new Column.OfConstantDoubles(dbo.applyAsDouble(((Column.OfConstantDoubles)lefts.get(i)).getValue(),
+							((Column.OfConstantDoubles)right).getValue())));
+				} else if(right instanceof Column.OfDoubles && lefts.get(i) instanceof Column.OfDoubles) {
 					stack.add(new Column.OfDoubles(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
 						inputs -> range -> {
 							OfDouble leftIterator = ((Column.OfDoubles)inputs[1]).rows(range).iterator();

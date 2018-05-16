@@ -131,12 +131,16 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		
 		final double d;
 
-		public OfConstantDoubles(double d) {
-			super(inputs -> "c",
+		public OfConstantDoubles(double d, String header) {
+			super(inputs -> header,
 					i -> range -> DoubleStream.iterate(d, r -> d).limit(range.size()),
 					new Column<?,?>[] {}
 					);
 			this.d = d;
+		}
+
+		public OfConstantDoubles(double d) {
+			this(d,"c");
 		}
 		
 		public Double getValue() {
@@ -149,6 +153,10 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		
 		final String value;
 		final String header;
+
+		public OfConstantStrings(String value) {
+			this(value,"string");
+		}
 
 		public OfConstantStrings(String value, String header) {
 			super(inputs -> header,
