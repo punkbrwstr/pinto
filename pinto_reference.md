@@ -173,7 +173,7 @@ resample|[periodicity=BM,:]|Sets prior columns to periodicity *periodicity*, car
 Function name | Default indexer |Description
 :---:|:---|:---
 today|[]|Returns constant date column with today's date.
-offset|[date=today,periodicity=B,count=-1]|Returns date that is *count* number of periods of *periodicity* from *date*.
+offset|[date=today,periodicity=B,c=-1]|Returns date that is *c* number of periods of *periodicity* from *date*.
 
 ### Header functions
 
@@ -265,7 +265,7 @@ Function name | Default indexer |Description
 chart|[start="today",end="today",periodicity="B",title="none",:]|Creates a const string column with code for an HTML chart.
 grid|[columns=3,HTML]|Creates a grid layout in a report with all input columns labelled HTML as cells in the grid.
 report|[title="Pinto report",HTML]|Creates a new HTML report containing all *HTML* columns
-rt|[starts=[periodicity=BA-DEC] offset,ends=today,labels="YTD",periodicities=B,functions="pct_change",format="percent",digits=2,:]|Creates a const string column with code for an HTML table that ranks columns by the value of *functions* as calculated over date ranges between *starts* and *ends*.
+rt|[functions=" BA-DEC offset expanding pct_change {YTD} today today eval",format="percent",digits=2,:]|Creates a const string column containing an HTML ranking table, applying each *function* to input columns and putting the ranked results in a table column.
 table|[periodicity=B, date=-20 offset today,format="decimal",:]|Creates a const string column with code for an HTML ranking table.
 
 
