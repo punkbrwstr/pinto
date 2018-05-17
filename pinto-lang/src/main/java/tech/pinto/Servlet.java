@@ -151,7 +151,7 @@ public class Servlet extends HttpServlet {
 			for(Table t : pinto.eval(request.getParameter("p"))) {
 				ImmutableMap.Builder<String,Object> b = new ImmutableMap.Builder<String, Object>();
 				if(!t.getStatus().isPresent()) {
-					b.put("output","<code>" + t.toString().replaceAll(" ", "&nbsp;") + "</code>");
+					b.put("output","<code>" + t.getConsoleText().replaceAll(" ", "&nbsp;") + "</code>");
 				} else {
 					b.put("output","<code>" + t.getStatus().orElse("").replaceAll(" ", "&nbsp;") + "</code>");
 				}

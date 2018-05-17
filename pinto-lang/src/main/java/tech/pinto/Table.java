@@ -226,13 +226,12 @@ public class Table {
 	}
 	
 	public String getConsoleText(NumberFormat nf) {
-		if(range.isPresent()) {
-			return FlipTable.of(headerToText(), seriesToText(nf));
-		} else {
-			return getHeaders(true).stream().collect(Collectors.joining("\\t"));
-		}
+		return FlipTable.of(headerToText(), seriesToText(nf));
 	}
 	
+	public String getConsoleText() {
+		return FlipTable.of(headerToText(), seriesToText(NumberFormat.getInstance()));
+	}
 
 	private static <T> Stream<T> streamInReverse(LinkedList<T> input) {
 		Iterator<T> descendingIterator = input.descendingIterator();

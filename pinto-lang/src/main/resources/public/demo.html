@@ -34,7 +34,7 @@
         </div>
         <h3>Pinto by example</h3>
         <pre><code>
-        # Here are examples of Pinto code that you can run in the interpreter window above 
+        # Here are examples of Pinto code to run in the interpreter window above 
         # Historical market data is provided by IEX and available for US stocks
 
         # First let's define a function that returns a date range
@@ -53,11 +53,11 @@
         # Next, define a function to return the stock prices with labels
         :my_portfolio $cmg,loco,yum:CLOSE$ {Chipotle,El Pollo,Yum} def
         
-        # Using a the rolling function we can compute a moving averages for our portfolio
-        my_portfolio ([:&] {size: 20} rolling mean) my_range eval
+        # Using a the rolling function we can compute moving averages for our portfolio
+        my_portfolio ([:&] 20 rolling mean) my_range eval
         
-        # This will compute the difference between two moving averages
-        my_portfolio ([:&] {size: 20} rolling mean) ([:3] {size: 200} rolling mean) {n:3} - my_range eval
+        # And calculate the difference between two moving averages
+        my_portfolio ([:&] 20 rolling mean) ([3:] 200 rolling mean) {width:3} - my_range eval
         
         
         
