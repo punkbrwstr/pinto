@@ -193,10 +193,10 @@ Function name | Default indexer |Description
 /|[width=1,:]|Binary double operator / that operates on *width* columns at a time with fixed right-side operand.
 <|[width=1,:]|Binary double operator < that operates on *width* columns at a time with fixed right-side operand.
 <=|[width=1,:]|Binary double operator <= that operates on *width* columns at a time with fixed right-side operand.
-==|[width=1,:]|Binary double operator == that operates on *width* columns at a time with fixed right-side operand.
->|[width=1,:]|Binary double operator > that operates on *width* columns at a time with fixed right-side operand.
->=|[width=1,:]|Binary double operator >= that operates on *width* columns at a time with fixed right-side operand.
-^|[width=1,:]|Binary double operator ^ that operates on *width* columns at a time with fixed right-side operand.
+==|[width=1,:] |Binary double operator == that operates on *width* columns at a time with fixed right-side operand.
+\> |[width=1,:]| Binary double operator > that operates on *width* columns at a time with fixed right-side operand.
+\>=|[width=1,:]| Binary double operator >= that operates on *width* columns at a time with fixed right-side operand.
+\^|[width=1,:]| Binary double operator ^ that operates on *width* columns at a time with fixed right-side operand.
 
 ### Unary double operators
 
