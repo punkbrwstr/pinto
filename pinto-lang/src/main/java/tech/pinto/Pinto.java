@@ -62,9 +62,6 @@ public class Pinto {
 					state.setCurrent(state.getCurrent().andThen(
 							new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true)));
 				} else if (sc.hasNext(Pattern.compile(".*?\\)"))) { // end inline function
-					if(!state.isInline()) {
-						throw new PintoSyntaxException("Closing inline function that had not been opened in \"" + expression + "\"");
-					}
 					sc.next();
 					state.setCurrent(state.getCurrent().andThen(t2 -> {
 						t2.collapseFunction();
@@ -223,12 +220,6 @@ public class Pinto {
 		public boolean isInlineStart() {
 			boolean b = inlineStart;
 			inlineStart = false;
-			return b;
-		}
-		
-		public boolean isInline() {
-			boolean b = inline;
-			inline = false;
 			return b;
 		}
 		
