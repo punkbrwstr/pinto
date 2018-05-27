@@ -197,6 +197,9 @@ public class StandardVocabulary extends Vocabulary {
     		int count = ((Column.OfConstantDoubles)s.removeFirst()).getValue().intValue();
     		s.addFirst(new Column.OfConstantDates(periodicity.offset(count, date)));
     	}),"[date=today,periodicity=B,c=-1]", "Offset a *c* periods of *periodicity* from *date*."));
+    	names.put("day_count", new Name("day_count", toTableConsumer(s -> {
+    		s.addFirst(new Column.OfDoubles(c -> "day_count", c -> range -> range.values().stream().mapToDouble(Period::dayCount)));
+    	}),"[]", "Creates a column with count of days in each period."));
     	
 /* data creation/testing */
     	/* constants */
