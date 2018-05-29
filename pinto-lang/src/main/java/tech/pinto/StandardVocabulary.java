@@ -200,6 +200,9 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("day_count", new Name("day_count", toTableConsumer(s -> {
     		s.addFirst(new Column.OfDoubles(c -> "day_count", c -> range -> range.values().stream().mapToDouble(Period::dayCount)));
     	}),"[]", "Creates a column with count of days in each period."));
+    	names.put("annualization_factor", new Name("annualization_factor", toTableConsumer(s -> {
+    		s.addFirst(new Column.OfDoubles(c -> "annualization_factor", c -> range -> DoubleStream.iterate(range.periodicity().annualizationFactor(), r -> range.periodicity().annualizationFactor()).limit(range.size())));
+    	}),"[]", "Creates a column with simply annualization factor for evaluated periodicity."));
     	
 /* data creation/testing */
     	/* constants */
@@ -734,7 +737,7 @@ public class StandardVocabulary extends Vocabulary {
 							});
 						}, right, lefts.get(i)));
 				} else {
-					throw new IllegalArgumentException("Operator " + dbo.toString() + " can only operate on columns of doubles or double arrays.");
+					throw new IllegalArgumentException("Operator " + name + " can only operate on columns of doubles or double arrays.");
 				}
 			}
 		}),"[width=1,:]", "Binary double operator " + name + " that operates on *width* columns at a time with fixed right-side operand.");

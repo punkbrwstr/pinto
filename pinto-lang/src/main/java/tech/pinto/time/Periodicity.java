@@ -16,6 +16,8 @@ public abstract class Periodicity<P extends Period> extends DiscreteDomain<P> {
 
 	public abstract String bloombergCode();
 	
+	public abstract double annualizationFactor();
+	
 
 	@Override
 	public P next(P arg0) {

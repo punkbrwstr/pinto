@@ -18,4 +18,9 @@ public class BusinessDaily extends Periodicity<BusinessDay> {
 		return new BusinessDay(date);
 	}
 
+	@Override
+	public double annualizationFactor() {
+		return 252;
+	}
+
 }

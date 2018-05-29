@@ -20,6 +20,11 @@ public class WeeklyEndingWednesdays extends Periodicity<WeekEndingWednesday> {
 		return new WeekEndingWednesday(date);
 	}
 
+	@Override
+	public double annualizationFactor() {
+		return 52;
+	}
+
 
 
 

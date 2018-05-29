@@ -95,8 +95,7 @@ public class Indexer implements Consumer<Table>, Cloneable {
 			for (StackOperation op : l) {
 				if (!op.isAlternative()) {
 					if (opsByOrdinal[op.getOrdinal()] != null) {
-						if(opsByOrdinal[op.getOrdinal()].getLast().isHeader() &&
-								!opsByOrdinal[op.getOrdinal()].getLast().isHeader()) {
+						if(opsByOrdinal[op.getOrdinal()].getLast().isHeader() && ! op.isHeader()) {
 							op.setSkip(true); // don't include cols index by indexString in subsequent ordinal indexes
 						} else {
 							opsByOrdinal[op.getOrdinal()].getLast().setNeedsCloning(true);

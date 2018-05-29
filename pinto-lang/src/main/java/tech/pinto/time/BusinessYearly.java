@@ -18,5 +18,10 @@ public class BusinessYearly extends Periodicity<BusinessYear> {
 
 	@Override public String bloombergCode() { return "YEARLY"; }
 
+	@Override
+	public double annualizationFactor() {
+		return 1;
+	}
+
 	
 }
