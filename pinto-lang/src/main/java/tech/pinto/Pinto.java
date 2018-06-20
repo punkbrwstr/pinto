@@ -187,7 +187,6 @@ public class Pinto {
 		
 		private final boolean isSubExpression;
 		private boolean expressionStart = true;
-		private boolean inline = false;
 		private boolean inlineStart = false;
 		private Consumer<Table> current = t -> {};
 		private Consumer<Table> previous = t -> {};
@@ -208,12 +207,10 @@ public class Pinto {
 			expression = Optional.empty();
 			nameLiteral = Optional.empty();
 			nameIndexer = Optional.empty();
-			inline = false;
 			inlineStart = false;
 		}
 		
 		public void startInline() {
-			inline = true;
 			inlineStart = true;
 		}
 		

@@ -292,7 +292,7 @@ public class Indexer implements Consumer<Table>, Cloneable {
 					if (or.isPresent()) {
 						ops.add(new StackOperation(or.get(), checkString, checkConstant));
 					} else {
-						throw new IllegalArgumentException("Missing required indexString \"" + query + "\"");
+						throw new IllegalArgumentException("Missing required header \"" + query + "\"");
 					}
 				}
 			}

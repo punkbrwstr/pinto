@@ -33,6 +33,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.PrimitiveIterator.OfDouble;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.DoubleBinaryOperator;
@@ -171,8 +172,9 @@ public class StandardVocabulary extends Vocabulary {
     		t.clearTop();
     		t.insertAtTop(indexed);
     	},"[:]", "Clears stack except for indexed columns."));
-    	names.put("clear", new Name("clear", toTableConsumer(s -> s.clear()),"[:]", "Clears indexed columns from stack."));
-    	names.put("rev", new Name("rev", toTableConsumer(s -> Collections.reverse(s)),"[:]","Reverses order of columns in stack."));
+    	names.put("clear", new Name("clear", toTableConsumer(s -> s.clear()),"[:]", "Clears indexed columns from table."));
+    	names.put("rev", new Name("rev", toTableConsumer(s -> Collections.reverse(s)),"[:]","Reverses order of input columns."));
+    	names.put("pull", new Name("pull", toTableConsumer(s -> {return;}),"[:]","Brings input columns to the front."));
     	names.put("copy", new Name("copy", toTableConsumer(s -> {
     		int times = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
     		LinkedList<Column<?,?>> temp = new LinkedList<>();
@@ -184,9 +186,12 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("roll", new Name("roll", toTableConsumer(s -> {
     		int times = (int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue();
     		for(int j = 0; j < times; j++) {
-    			s.addFirst(s.removeLast());
+    			s.addLast(s.removeFirst());
     		}
     	}), "[c=1,:]", "Permutes columns in stack *c* times."));
+    	names.put("columns", new Name("columns", toTableConsumer(s -> {
+    				s.addFirst(new Column.OfConstantDoubles(s.size()));
+    	}),"[:]", "Adds a constant double column with the number of input columns."));
 /* dates */
     	names.put("today", new Name("today", toTableConsumer(s -> {
     				s.addFirst(new Column.OfConstantDates(LocalDate.now()));
@@ -367,6 +372,24 @@ public class StandardVocabulary extends Vocabulary {
 			});
     	}),"[periodicity=BM,:]", "Sets frequency of prior columns to periodicity *freq*, carrying values forward " +
 			"if evaluation periodicity is more frequent."));
+/* header manipulation */
+    	names.put("hcopy", new Name("hcopy", toTableConsumer(s-> {
+    		List<String> headers = s.stream().map(Column::getHeader).collect(Collectors.toList());
+    		Collections.reverse(headers);
+    		s.addFirst(new Column.OfConstantStrings(headers.stream().collect(Collectors.joining(","))));
+    	}),"[:]", "Copies headers to a comma-delimited constant string column."));
+    	names.put("hpaste", new Name("hpaste", toTableConsumer(s-> {
+    		String[] headers = ((Column.OfConstantStrings)s.removeFirst()).getValue().split(",");
+    		boolean repeat = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
+    		AtomicInteger i = new AtomicInteger(headers.length-1);
+    		s.replaceAll(c -> {
+    			int index = i.getAndDecrement();
+    			if(index >= 0 || repeat) {
+    				c.setHeaderFunction(inputs -> headers[index <= 0 ? 0 : index]);
+    			}
+    			return c;
+    		});
+    	}),"[string,repeat=\"true\",:]", "Sets headers of other input columns to the values in comma-delimited constant string column."));
     	names.put("hformat", new Name("hformat", toTableConsumer(s-> {
     		MessageFormat format = new MessageFormat(((Column.OfConstantStrings)s.removeFirst()).getValue().replaceAll("\\{\\}", "\\{0\\}"));
     		s.replaceAll(c -> {
