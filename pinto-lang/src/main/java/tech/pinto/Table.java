@@ -118,9 +118,9 @@ public class Table {
 		return status;
 	}
 
-	public List<String> getHeaders(boolean reverse) {
+	public List<String> getHeaders(boolean reverse, boolean trace) {
 		return (reverse ? streamInReverse(getStack()) : getStack().stream())
-				.map(Column::getHeader).collect(Collectors.toList());
+				.map(trace ? Column::getTrace : Column::getHeader).collect(Collectors.toList());
 	}
 
 	public int getColumnCount() {
@@ -167,7 +167,7 @@ public class Table {
 	
 	public Map<String,Object> toMap(boolean omitDates, boolean numbersAsStrings) {
 		ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
-		builder.put("header", getHeaders(true));
+		builder.put("header", getHeaders(true, false));
 		builder.put("date_range", getRange().asStringMap());
 		if (!omitDates) {
 			builder.put("index", getRange().dates().stream().map(LocalDate::toString)
@@ -198,8 +198,8 @@ public class Table {
 		return Optional.of(table);
 	}
 
-	public String[] headerToText() {
-		List<String> l = getHeaders(true);
+	public String[] headerToText(boolean trace) {
+		List<String> l = getHeaders(true, trace);
 		l.add(0, range.isPresent() ? "Date" : " ");
 		return l.toArray(new String[] {});
 	}
@@ -214,7 +214,7 @@ public class Table {
 			for (int col = 0; col < getStack().size(); col++) {
 				final int thisCol = col;
 				AtomicInteger row = new AtomicInteger(0);
-				getStack().get(col).rowsAsText(getRange())
+				getStack().get(col).rowsAsText(getRange(), nf)
 						.forEach(s -> table[row.getAndIncrement()][getStack().size() - thisCol] = s);
 			}
 			return table;
@@ -225,12 +225,12 @@ public class Table {
 		}
 	}
 	
-	public String getConsoleText(NumberFormat nf) {
-		return FlipTable.of(headerToText(), seriesToText(nf));
+	public String getConsoleText(NumberFormat nf, boolean trace) {
+		return FlipTable.of(headerToText(trace), seriesToText(nf));
 	}
 	
-	public String getConsoleText() {
-		return FlipTable.of(headerToText(), seriesToText(NumberFormat.getInstance()));
+	public String getConsoleText(boolean trace) {
+		return FlipTable.of(headerToText(trace), seriesToText(NumberFormat.getInstance()));
 	}
 
 	private static <T> Stream<T> streamInReverse(LinkedList<T> input) {

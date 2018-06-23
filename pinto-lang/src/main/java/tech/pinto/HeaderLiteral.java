@@ -72,7 +72,7 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?,?>>>{
 				unlabeled.addAll(pinto.parseSubExpression(headers.get(i)[1]));
 			}
 			for(Column<?,?> c : unlabeled) {
-				c.setHeaderFunction(inputs -> label);
+				c.setHeader(label);
 				newStack.addLast(c);
 			}
 		}

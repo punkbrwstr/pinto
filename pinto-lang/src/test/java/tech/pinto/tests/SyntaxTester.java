@@ -29,7 +29,7 @@ public class SyntaxTester {
 	@Test
 	public void nestedIndex() throws Exception {
 		Table t = pinto.eval(" [n=10] range [3,2,z= 99 .5 [1] only ] only eval").get(0);
-		assertEquals("Nested index in index text", "z", t.getHeaders(true).get(0));
+		assertEquals("Nested index in index text", "z", t.getHeaders(true,false).get(0));
 		assertEquals("Nested index in index value", 99.0, t.getSeries(0, true).findFirst().getAsDouble(),0.01);
 	}
 
@@ -51,8 +51,8 @@ public class SyntaxTester {
 	public void extraCommasInHeaderLiteral() throws Exception {
 		Table t = pinto.eval("{x : 1 2 3 [0,1] only, y : 5} eval").get(0);
 		assertEquals("Extra commas in header literal", 3, t.getColumnCount());
-		assertEquals("Extra commas in header literal", "x", t.getHeaders(true).get(0));
-		assertEquals("Extra commas in header literal", "y", t.getHeaders(false).get(0));
+		assertEquals("Extra commas in header literal", "x", t.getHeaders(true,false).get(0));
+		assertEquals("Extra commas in header literal", "y", t.getHeaders(false,false).get(0));
 		assertEquals("Inline function", 5.0, t.getSeries(0, false).findFirst().getAsDouble(),0.01);
 		assertEquals("Inline function", 2.0, t.getSeries(0, true).findFirst().getAsDouble(),0.01);
 	}

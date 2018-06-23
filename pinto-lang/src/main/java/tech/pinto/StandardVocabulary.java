@@ -192,6 +192,19 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("columns", new Name("columns", toTableConsumer(s -> {
     				s.addFirst(new Column.OfConstantDoubles(s.size()));
     	}),"[:]", "Adds a constant double column with the number of input columns."));
+    	names.put("index", new Name("index", p -> t -> {
+    		LinkedList<Column<?,?>> s = t.takeTop().get(0);
+    		List<String> endpoints = new LinkedList<>();
+    		while(!s.isEmpty() && endpoints.size() < 2 && s.peekFirst().getHeader().equals("c")) {
+    			endpoints.add(Integer.toString((int) ((Column.OfConstantDoubles) s.removeFirst()).getValue().doubleValue()));
+    		}
+    		t.insertAtTop(s);
+    		String index = endpoints.size() == 1 ? ":" + endpoints.get(0) :
+    			endpoints.get(1) + ":" + endpoints.get(0);
+    		new Indexer(p, index, false).accept(t);
+    	},"[c]", "Indexes by constant double ordinals in c (start inclusive, end exclusive).  Assumes 0 for start if c is one constant.", false));
+    	
+    	
 /* dates */
     	names.put("today", new Name("today", toTableConsumer(s -> {
     				s.addFirst(new Column.OfConstantDates(LocalDate.now()));
@@ -206,9 +219,15 @@ public class StandardVocabulary extends Vocabulary {
     		s.addFirst(new Column.OfDoubles(c -> "day_count", c -> range -> range.values().stream().mapToDouble(Period::dayCount)));
     	}),"[]", "Creates a column with count of days in each period."));
     	names.put("annualization_factor", new Name("annualization_factor", toTableConsumer(s -> {
-    		s.addFirst(new Column.OfDoubles(c -> "annualization_factor", c -> range -> DoubleStream.iterate(range.periodicity().annualizationFactor(), r -> range.periodicity().annualizationFactor()).limit(range.size())));
-    	}),"[]", "Creates a column with simply annualization factor for evaluated periodicity."));
+            Optional<Periodicity<Period>> periodicity = s.peekFirst() instanceof Column.OfConstantStrings &&
+            		((Column.OfConstantStrings)s.removeFirst()).getValue().equals("range") ? Optional.empty() :
+            			Optional.of((Periodicity<Period>)((Column.OfConstantPeriodicities)s.removeFirst()).getValue());
+    		s.addFirst(new Column.OfDoubles(c -> "annualization_factor", c -> range ->
+    					DoubleStream.iterate(periodicity.orElse((Periodicity<Period>) range.periodicity()).annualizationFactor(),
+    							r -> range.periodicity().annualizationFactor()).limit(range.size())));
+    	}),"[periodicity=\"range\"]", "Creates a column with annualization factor for the specified or evaluated range's periodicity."));
     	
+
 /* data creation/testing */
     	/* constants */
     	for(Entry<String, Supplier<Periodicity<?>>> e : Periodicities.map.entrySet()) {
@@ -291,7 +310,7 @@ public class StandardVocabulary extends Vocabulary {
 			Periodicity p = ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
     		boolean lookBack = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
     		s.replaceAll(function -> {
-    			return new Column.OfDoubles(inputs -> inputs[0].toString() + " fill", inputs -> range -> {
+    			return new Column.OfDoubles(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " fill", inputs -> range -> {
     				DoubleStream input = null;
     				int skip = 0;
     				PeriodicRange<Period> r = (PeriodicRange<Period>) range;
@@ -320,7 +339,8 @@ public class StandardVocabulary extends Vocabulary {
     		}
     		Column.OfDoubles[] inputStack = s.toArray(new Column.OfDoubles[] {});
     		s.clear();
-    		s.add(new Column.OfDoubles(i -> "join", inputArray -> range -> {
+    		s.add(new Column.OfDoubles(i -> i[0].getHeader(), i -> Arrays.stream(i).map(Column::getTrace).collect(Collectors.joining(" ")) + " join",
+    		inputArray -> range -> {
     			LinkedList<Column<?,?>> inputs = new LinkedList<>(Arrays.asList(inputArray));
     			Collections.reverse(inputs);
     			DoubleStream ds = DoubleStream.empty().sequential();
@@ -355,23 +375,26 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("resample", new Name("resample", toTableConsumer(s-> {
 			Periodicity<Period> newPeriodicity = (Periodicity<Period>) ((Column.OfConstantPeriodicities)s.removeFirst()).getValue();
 			s.replaceAll(c -> {
-				return new Column.OfDoubles(inputs -> inputs[0].toString() + " resample",  inputs -> range -> {
-					Period newStart = newPeriodicity.roundDown(range.start().endDate());
-					if(newStart.endDate().isAfter(range.start().endDate())) {
-						newStart = newStart.previous();
-					}
-					Period newEnd = newPeriodicity.from(range.end().endDate());
-					PeriodicRange<Period> newDr = newPeriodicity.range(newStart, newEnd, range.clearCache());
-					double[] d = ((DoubleStream) inputs[0].rows(newDr)).toArray();
-					DoubleStream.Builder b = DoubleStream.builder();
-					range.values().stream().map(Period::endDate).forEach( ed -> {
-							b.accept(d[(int) newDr.indexOf(newPeriodicity.roundDown(ed))]);
-					});
-					return b.build();
-				}, c);
+				return new Column.OfDoubles(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + newPeriodicity.code() + " resample",
+					inputs -> range -> {
+						Period newStart = newPeriodicity.roundDown(range.start().endDate());
+						if(newStart.endDate().isAfter(range.start().endDate())) {
+							newStart = newStart.previous();
+						}
+						Period newEnd = newPeriodicity.from(range.end().endDate());
+						PeriodicRange<Period> newDr = newPeriodicity.range(newStart, newEnd, range.clearCache());
+						double[] d = ((DoubleStream) inputs[0].rows(newDr)).toArray();
+						DoubleStream.Builder b = DoubleStream.builder();
+						range.values().stream().map(Period::endDate).forEach( ed -> {
+								b.accept(d[(int) newDr.indexOf(newPeriodicity.roundDown(ed))]);
+						});
+						return b.build();
+					}, c);
 			});
     	}),"[periodicity=BM,:]", "Sets frequency of prior columns to periodicity *freq*, carrying values forward " +
 			"if evaluation periodicity is more frequent."));
+    	
+    	
 /* header manipulation */
     	names.put("hcopy", new Name("hcopy", toTableConsumer(s-> {
     		List<String> headers = s.stream().map(Column::getHeader).collect(Collectors.toList());
@@ -385,7 +408,7 @@ public class StandardVocabulary extends Vocabulary {
     		s.replaceAll(c -> {
     			int index = i.getAndDecrement();
     			if(index >= 0 || repeat) {
-    				c.setHeaderFunction(inputs -> headers[index <= 0 ? 0 : index]);
+    				c.setHeader(headers[index <= 0 ? 0 : index]);
     			}
     			return c;
     		});
@@ -394,11 +417,22 @@ public class StandardVocabulary extends Vocabulary {
     		MessageFormat format = new MessageFormat(((Column.OfConstantStrings)s.removeFirst()).getValue().replaceAll("\\{\\}", "\\{0\\}"));
     		s.replaceAll(c -> {
     			String header = format.format(new Object[]{c.getHeader()});
-    			c.setHeaderFunction(inputs -> header);
+    			c.setHeader(header);
     			return c;
     		});
 
     	}),"[string,:]", "Formats headers, setting new value to *format* and substituting and occurences of \"{}\" with previous header value."));
+    	
+    	
+/* string manipulation */
+    	names.put("scat", new Name("scat", toTableConsumer(s-> {
+    		String sep = ((Column.OfConstantStrings)s.removeFirst()).getValue();
+    		List<String> l = new ArrayList<>();
+    		while(!s.isEmpty()) {
+    			l.add(((Column.OfConstantStrings)s.removeFirst()).getValue());
+    		}
+   			s.addFirst(new Column.OfConstantStrings(l.stream().collect(Collectors.joining(sep))));
+    	}),"[sep=\"\",string]", "Concatenates values of constant string columns."));
     	
 /* array creation */
     	names.put("rolling", new Name("rolling", toTableConsumer(s-> {
@@ -407,26 +441,27 @@ public class StandardVocabulary extends Vocabulary {
             		((Column.OfConstantStrings)s.removeFirst()).getValue().equals("range") ? Optional.empty() :
             			Optional.of((Periodicity<Period>)((Column.OfConstantPeriodicities)s.removeFirst()).getValue());
     		s.replaceAll(c -> {
-    			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader() + " rolling", inputs -> range -> {
-                    Periodicity<Period> wf = windowFreq.orElse((Periodicity<Period>) range.periodicity());
-    				Stream.Builder<DoubleStream> b = Stream.builder();
-    				Period expandedWindowStart = wf.offset(-1 * (size - 1), wf.from(range.start().endDate()));
-    				Period windowEnd = wf.from(range.end().endDate());
-    				PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
-    				double[] data = ((Column.OfDoubles)inputs[0]).rows(expandedWindow).toArray();
-    				for(Period p : range.values()) {
-    					long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - size + 1;
-    					b.accept(Arrays.stream(data, (int) windowStartIndex, (int) windowStartIndex + size));
-    				}
-    				return b.build();
-    			},size,c);
+    			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " rolling",
+    				inputs -> range -> {
+						Periodicity<Period> wf = windowFreq.orElse((Periodicity<Period>) range.periodicity());
+						Stream.Builder<DoubleStream> b = Stream.builder();
+						Period expandedWindowStart = wf.offset(-1 * (size - 1), wf.from(range.start().endDate()));
+						Period windowEnd = wf.from(range.end().endDate());
+						PeriodicRange<Period> expandedWindow = wf.range(expandedWindowStart, windowEnd, range.clearCache());
+						double[] data = ((Column.OfDoubles)inputs[0]).rows(expandedWindow).toArray();
+						for(Period p : range.values()) {
+							long windowStartIndex = wf.distance(expandedWindowStart, wf.from(p.endDate())) - size + 1;
+							b.accept(Arrays.stream(data, (int) windowStartIndex, (int) windowStartIndex + size));
+						}
+						return b.build();
+					},size,c);
     		});
     	}),"[c=2,periodicity=\"range\",:]", "Creates double array columns for each input column with rows containing values "+
     			"from rolling window of past data where the window is *c* periods of periodicity *periodicity*, defaulting to the evaluation periodicity."));
     	names.put("cross", new Name("cross", toTableConsumer(s-> {
     		Column.OfDoubles[] a = s.toArray(new Column.OfDoubles[]{});
     		s.clear();
-    		s.add(new Column.OfDoubleArray1Ds(inputs -> "cross", inputs -> range -> {
+    		s.add(new Column.OfDoubleArray1Ds(inputs -> "cross", inputs -> "cross", inputs -> range -> {
 				Stream.Builder<DoubleStream> b = Stream.builder();
 				List<OfDouble> l = Stream.of(inputs).map(c -> ((Column.OfDoubles) c).rows(range))
 						.map(DoubleStream::iterator).collect(Collectors.toList());
@@ -445,38 +480,41 @@ public class StandardVocabulary extends Vocabulary {
     		Optional<Periodicity<?>> periodicity = col instanceof Column.OfConstantPeriodicities ? Optional.of(((Column.OfConstantPeriodicities) col).getValue()) : Optional.empty();
     		boolean initialZero = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
     		s.replaceAll(c -> {
-    			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader() + " expanding", inputs -> range -> {
-    				LocalDate startDate = start.orElse(range.start().endDate());
-    				Periodicity<Period> wf = (Periodicity<Period>) periodicity.orElse(range.periodicity());
-    				Period windowStart = wf.from(startDate);
-    				Period windowEnd = wf.from(range.end().endDate());
-    				windowEnd = windowEnd.isBefore(windowStart) ? windowStart : windowEnd;
-    				PeriodicRange<Period> window = wf.range(windowStart, windowEnd, range.clearCache());
-    				Stream.Builder<DoubleStream> b = Stream.builder();
-    				double[] data = ((Column.OfDoubles)inputs[0]).rows(window).toArray();
-    				if(initialZero) {
-    					data[0] = 0.0d;
-    				}
-    				List<LocalDate> rangeDates = range.dates();
-    				for(int i = 0; i < range.size(); i++) {
-    					int index = (int) window.indexOf(rangeDates.get(i));
-    					if (index >= 0) {
-    						b.accept(Arrays.stream(data, 0, index + 1));
-    					} else {
-    						b.accept(DoubleStream.iterate(Double.NaN, r -> Double.NaN).limit(range.size() + 1));
-    					}
-    				}
-    				return b.build();
-    			},c);
+    			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " expanding",
+    				inputs -> range -> {
+						LocalDate startDate = start.orElse(range.start().endDate());
+						Periodicity<Period> wf = (Periodicity<Period>) periodicity.orElse(range.periodicity());
+						Period windowStart = wf.from(startDate);
+						Period windowEnd = wf.from(range.end().endDate());
+						windowEnd = windowEnd.isBefore(windowStart) ? windowStart : windowEnd;
+						PeriodicRange<Period> window = wf.range(windowStart, windowEnd, range.clearCache());
+						Stream.Builder<DoubleStream> b = Stream.builder();
+						double[] data = ((Column.OfDoubles)inputs[0]).rows(window).toArray();
+						if(initialZero) {
+							data[0] = 0.0d;
+						}
+						List<LocalDate> rangeDates = range.dates();
+						for(int i = 0; i < range.size(); i++) {
+							int index = (int) window.indexOf(rangeDates.get(i));
+							if (index >= 0) {
+								b.accept(Arrays.stream(data, 0, index + 1));
+							} else {
+								b.accept(DoubleStream.iterate(Double.NaN, r -> Double.NaN).limit(range.size() + 1));
+							}
+						}
+						return b.build();
+					},c);
     		});
     	}),"[date=\"range\",periodicity=\"range\",initial_zero=\"false\",:]", "Creates double array columns for each input column with rows " +
     		"containing values from an expanding window of past data with periodicity *freq* that starts on date *start*."));
+
 
 /* array operators */
     	for(DoubleCollectors dc : DoubleCollectors.values()) {
     		names.put(dc.name(), new Name(dc.name(), makeOperator(dc.name(), dc),"[:]","Aggregates row values in double array " +
     				"columns to a double value by " + dc.name()));
     	}
+
 
 /* binary operators */
     	names.put("+", makeOperator("+", (x,y) -> x + y));
@@ -579,11 +617,25 @@ public class StandardVocabulary extends Vocabulary {
 			NumberFormat nf = ((Column.OfConstantStrings) s.removeFirst()).getValue().equals("percent")
 					? NumberFormat.getPercentInstance()
 					: NumberFormat.getNumberInstance();
+			nf.setMinimumFractionDigits(2);
+			nf.setMaximumFractionDigits(4);
 			nf.setGroupingUsed(false);
+			String rowHeader = ((Column.OfConstantStrings) s.removeFirst()).getValue();
+			boolean colHeaders = Boolean.parseBoolean(((Column.OfConstantStrings) s.removeFirst()).getValue());
 			Table t = new Table();
 			t.insertAtTop(s);
 			t.evaluate(range);
 			String[] lines = t.toCsv(nf).split("\n");
+			if(!rowHeader.equals("date")) {
+				for(int i = 0; i < lines.length; i++) {
+					String[] cols = lines[i].split(",");
+					cols[0] = i == 0 ? "" : rowHeader;
+					lines[i] = Arrays.stream(cols).collect(Collectors.joining(","));
+				}
+			}
+			if(!colHeaders) {
+				lines[0] = lines[0].replaceAll("[^,]", "&nbsp;");
+			}
 			s.clear();
 			StringBuilder sb = new StringBuilder();
 			sb.append("<table class=\"pintoTable\">\n<thead>\n");
@@ -597,7 +649,7 @@ public class StandardVocabulary extends Vocabulary {
 			});
 			sb.append("</tbody></table>\n");
 			s.add(new Column.OfConstantStrings(sb.toString(), "HTML"));
-		}), "[periodicity=B, date=-20 offset today,format=\"decimal\",:]",
+		}), "[periodicity=B, date=-20 offset today,format=\"decimal\",row_header=\"date\",col_headers=\"true\",:]",
 				"Creates a const string column with code for an HTML ranking table.", false));
 		names.put("chart", new Name("chart", p -> toTableConsumer(s -> {
 			Periodicity<?> periodicity = ((Column.OfConstantPeriodicities) s.removeFirst()).getValue();
@@ -659,7 +711,7 @@ public class StandardVocabulary extends Vocabulary {
 					values[j][0] = d[0][d[0].length-1]; 
 					values[j][1] = (int) j;
 					if (j == 0) {
-						headers[i] = t.getHeaders(false).get(0);
+						headers[i] = t.getHeaders(false, false).get(0);
 					}
 					if(i == 0) {
 						labels[j] =  s.get(j).getHeader();
@@ -726,13 +778,13 @@ public class StandardVocabulary extends Vocabulary {
 					stack.add(new Column.OfConstantDoubles(dbo.applyAsDouble(((Column.OfConstantDoubles)lefts.get(i)).getValue(),
 							((Column.OfConstantDoubles)right).getValue())));
 				} else if(right instanceof Column.OfDoubles && lefts.get(i) instanceof Column.OfDoubles) {
-					stack.add(new Column.OfDoubles(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
+					stack.add(new Column.OfDoubles(inputs -> inputs[1].getHeader(), inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
 						inputs -> range -> {
 							OfDouble leftIterator = ((Column.OfDoubles)inputs[1]).rows(range).iterator();
 							return  ((Column.OfDoubles)inputs[0]).rows(range).map(r -> dbo.applyAsDouble(leftIterator.nextDouble(), r));
 						}, right, lefts.get(i)));
 				} else if(right instanceof Column.OfDoubleArray1Ds && lefts.get(i) instanceof Column.OfDoubleArray1Ds) {
-					stack.add(new Column.OfDoubleArray1Ds(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
+					stack.add(new Column.OfDoubleArray1Ds(inputs -> inputs[1].getHeader(), inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
 						inputs -> range -> {
 							Iterator<DoubleStream> leftIterator = ((Column.OfDoubleArray1Ds)inputs[1]).rows(range).iterator();
 							return  ((Column.OfDoubleArray1Ds)inputs[0]).rows(range)
@@ -742,7 +794,7 @@ public class StandardVocabulary extends Vocabulary {
 									});
 						}, right, lefts.get(i)));
 				} else if(right instanceof Column.OfDoubles && lefts.get(i) instanceof Column.OfDoubleArray1Ds) {
-					stack.add(new Column.OfDoubleArray1Ds(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
+					stack.add(new Column.OfDoubleArray1Ds(inputs -> inputs[1].getHeader(), inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
 							inputs -> range -> {
 								OfDouble leftIterator = ((Column.OfDoubles)inputs[0]).rows(range).iterator();
 								return  ((Column.OfDoubleArray1Ds)inputs[1]).rows(range).map(rstrm -> {
@@ -751,7 +803,7 @@ public class StandardVocabulary extends Vocabulary {
 								});
 						}, right, lefts.get(i)));
 				} else if(right instanceof Column.OfDoubleArray1Ds && lefts.get(i) instanceof Column.OfDoubles) {
-					stack.add(new Column.OfDoubleArray1Ds(inputs -> inputs[1].toString() + " " + inputs[0].toString() + " " + name,
+					stack.add(new Column.OfDoubleArray1Ds(inputs -> inputs[1].getHeader(), inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
 						inputs -> range -> {
 							OfDouble leftIterator = ((Column.OfDoubles)inputs[1]).rows(range).iterator();
 							return  ((Column.OfDoubleArray1Ds)inputs[0]).rows(range).map(rstrm -> {
@@ -770,10 +822,10 @@ public class StandardVocabulary extends Vocabulary {
 		return new Name(name, toTableConsumer(stack -> {
 			stack.replaceAll(c -> {
 				if(c instanceof Column.OfDoubles) {
-					return new Column.OfDoubles(inputs -> inputs[0].toString() + " " + name,
+					return new Column.OfDoubles(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " " + name,
 							inputs -> range -> ((Column.OfDoubles)inputs[0]).rows(range).map(duo), c);
 				} else if(c instanceof Column.OfDoubleArray1Ds) {
-					return new Column.OfDoubleArray1Ds(inputs -> inputs[0].toString() + " " + name,
+					return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " " + name,
 							inputs -> range -> ((Column.OfDoubleArray1Ds)inputs[0]).rows(range)
 								.map(strm -> strm.map(duo)), c);
 				} else {
@@ -786,7 +838,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static Consumer<Table> makeOperator(String name, Supplier<DoubleCollector> dc) {
 		return Pinto.toTableConsumer(stack -> {
 			stack.replaceAll(c -> {
-				return new Column.OfDoubles(inputs -> Stream.of(inputs[0].toString(), name).collect(Collectors.joining(" ")),
+				return new Column.OfDoubles(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " " + name,
 					inputs -> range -> {
 						if(!(inputs[0] instanceof Column.OfDoubleArray1Ds)) {
 							throw new IllegalArgumentException("Operator " + dc.toString() + " can only operate on columns of double arrays.");
@@ -817,7 +869,4 @@ public class StandardVocabulary extends Vocabulary {
 		}
 		return buf.toString("UTF-8");
 	}
-
-	
-
 }

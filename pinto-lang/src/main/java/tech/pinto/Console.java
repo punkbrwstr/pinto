@@ -17,6 +17,7 @@ public class Console implements Runnable {
 	private final int port;
 	private final String build;
 	private final Runnable[] shutdownCommands;
+	private boolean trace = false;
 
 	public Console(Pinto pinto, int port, String build, Runnable...shutdownCommands) {
 		this.pinto = pinto;
@@ -29,6 +30,8 @@ public class Console implements Runnable {
 	public void run() {
 		try {
 			NumberFormat nf = NumberFormat.getInstance();
+			nf.setMinimumFractionDigits(4);
+			nf.setMaximumFractionDigits(8);
 			ConsoleReader reader = new ConsoleReader();
 			reader.setPrompt("pinto> ");
 			reader.addCompleter(pinto.getNamespace());
@@ -62,11 +65,23 @@ public class Console implements Runnable {
 						} else if(nfs.length > 1 && nfs[1].equals("currency")) {
 							nf = NumberFormat.getCurrencyInstance();
 						}
-					} else if(line.startsWith("\\help")) {
-						out.println("Other console options:");
+					} else if(line.startsWith("\\digits")) {
+						try {
+							int digits = Integer.parseInt(line.split(" ")[1]);
+							nf.setMaximumFractionDigits(digits);
+							nf.setMinimumFractionDigits(digits);
+						} catch(Throwable t) {
+							out.println("Usage: \"\\digits #\" set fraction digits");
+						}
+					} else if(line.startsWith("\\trace")) {
+						trace = ! trace;
+					} else {
+						out.println("Console options:");
 						out.println("\t\"\\log\" print message log");
 						out.println("\t\"\\nf default|percent|currency\" set output number format");
+						out.println("\t\"\\digits #\" set fraction digits");
 						out.println("\t\"\\df <format string>\" set output date format");
+						out.println("\t\"\\trace\" toggle trace on/off");
 					}
 				} else {
 					try {
@@ -75,7 +90,7 @@ public class Console implements Runnable {
 				    		out.println("");
 						} else {
 							for(Table t : l) {
-								out.println(t.getStatus().isPresent() ? t.getStatus().get() : t.getConsoleText(nf));
+								out.println(t.getStatus().isPresent() ? t.getStatus().get() : t.getConsoleText(nf, trace));
 							}
 						}
 					} catch (PintoSyntaxException pse) {

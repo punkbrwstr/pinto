@@ -91,28 +91,14 @@ public class Servlet extends HttpServlet {
 	}
 	
 	private void getCSV(Pinto pinto, HttpServletRequest request, HttpServletResponse response) throws IOException {
-		try {
-			response.setContentType("text/csv");
-			response.setCharacterEncoding("UTF-8");
-			if(!request.getParameterMap().containsKey("p")) {
-				throw new Exception("Empty request.");
-			}
-			List<Table> l = pinto.eval(request.getParameter("p"));
-			if(l.size() > 0) {
-				if(!l.get(l.size() - 1).getStatus().isPresent()) {
-					response.getOutputStream().print(l.get(l.size()-1).toCsv());
-				} else {
-					response.getOutputStream().print(l.get(l.size()-1).getStatus().orElse(""));
-				}
-			}
-		} catch (Exception e) {
-			logError(e, request);
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-		}
-		
+		getCSV(pinto,request,response,"NA", 10);
 	}
 	
 	private void getSas(Pinto pinto, HttpServletRequest request, HttpServletResponse response) throws IOException {
+		getCSV(pinto,request,response,".", 10);
+	}
+
+	private void getCSV(Pinto pinto, HttpServletRequest request, HttpServletResponse response, String naLiteral, int digits ) throws IOException {
 		try {
 			response.setContentType("text/csv");
 			response.setCharacterEncoding("UTF-8");
@@ -120,7 +106,7 @@ public class Servlet extends HttpServlet {
 				throw new Exception("Empty request.");
 			}
 			DecimalFormatSymbols dfs = new DecimalFormatSymbols();
-			dfs.setNaN(".");
+			dfs.setNaN(naLiteral);
 			DecimalFormat nf = new DecimalFormat();
 			nf.setDecimalFormatSymbols(dfs);
 			nf.setGroupingUsed(false);
@@ -130,12 +116,12 @@ public class Servlet extends HttpServlet {
 				if(!l.get(l.size() - 1).getStatus().isPresent()) {
 					response.getOutputStream().print(l.get(l.size()-1).toCsv(nf));
 				} else {
-					response.getOutputStream().print("output\n" + l.get(l.size()-1).getStatus().orElse("") + "\n");
+					response.getOutputStream().print("Output\n" + l.get(l.size()-1).getStatus().orElse("") + "\n");
 				}
 			}
 		} catch (Exception e) {
 			logError(e, request);
-			response.getOutputStream().print("error\n" + e.getMessage() + "\n");
+			response.getOutputStream().print("Error\n" + e.getMessage() + "\n");
 		}
 		
 	}
@@ -151,7 +137,7 @@ public class Servlet extends HttpServlet {
 			for(Table t : pinto.eval(request.getParameter("p"))) {
 				ImmutableMap.Builder<String,Object> b = new ImmutableMap.Builder<String, Object>();
 				if(!t.getStatus().isPresent()) {
-					b.put("output","<code>" + t.getConsoleText().replaceAll(" ", "&nbsp;") + "</code>");
+					b.put("output","<code>" + t.getConsoleText(false).replaceAll(" ", "&nbsp;") + "</code>");
 				} else {
 					b.put("output","<code>" + t.getStatus().orElse("").replaceAll(" ", "&nbsp;") + "</code>");
 				}

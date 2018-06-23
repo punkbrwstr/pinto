@@ -104,8 +104,8 @@ public class Pinto {
 						for (int i = 0; i < tickersfields.size(); i++) {
 							final int index = i;
 							s.addFirst(new Column.OfDoubles(inputs -> tickersfields.get(index), inputs -> range -> {
-								return Cache.getCachedValues(key, range, index, tickersfields.size(),
-										marketdata.getFunction(tickers, fields));
+										return Cache.getCachedValues(key, range, index, tickersfields.size(),
+												marketdata.getFunction(tickers, fields));
 							}));
 						}
 					})));
