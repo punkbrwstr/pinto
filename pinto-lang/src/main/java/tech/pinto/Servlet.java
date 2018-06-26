@@ -71,6 +71,7 @@ public class Servlet extends HttpServlet {
 			throws ServletException, IOException {
 		String path = request.getPathInfo();
 		HttpSession session = request.getSession();
+		session.setMaxInactiveInterval(10*60);
 		if (session.getAttribute("pinto") == null) {
 			session.setAttribute("pinto", pintoSupplier.get());
 		}

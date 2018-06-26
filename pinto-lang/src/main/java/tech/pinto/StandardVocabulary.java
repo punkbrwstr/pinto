@@ -45,6 +45,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import tech.pinto.Column.ConstantColumn;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
@@ -425,14 +426,19 @@ public class StandardVocabulary extends Vocabulary {
     	
     	
 /* string manipulation */
-    	names.put("scat", new Name("scat", toTableConsumer(s-> {
+    	names.put("cat", new Name("cat", toTableConsumer(s-> {
     		String sep = ((Column.OfConstantStrings)s.removeFirst()).getValue();
     		List<String> l = new ArrayList<>();
     		while(!s.isEmpty()) {
-    			l.add(((Column.OfConstantStrings)s.removeFirst()).getValue());
+    			Column<?,?> c = s.removeFirst();
+    			if(c instanceof ConstantColumn) {
+    				l.add(((ConstantColumn<?,?>)c).getValue().toString());
+    			} else {
+    				throw new IllegalArgumentException("cat can only operate on constant columns."); 
+    			}
     		}
    			s.addFirst(new Column.OfConstantStrings(l.stream().collect(Collectors.joining(sep))));
-    	}),"[sep=\"\",string]", "Concatenates values of constant string columns."));
+    	}),"[sep=\"\",:]", "Concatenates values of constant string columns."));
     	
 /* array creation */
     	names.put("rolling", new Name("rolling", toTableConsumer(s-> {
@@ -473,12 +479,28 @@ public class StandardVocabulary extends Vocabulary {
     			return b.build();
     		}, i -> Optional.of(new int[]{i.length}),a));
     	}),"[:]", "Creates a double array column with each row containing values of input columns."));
+    	names.put("rev_expanding", new Name("rev_expanding", toTableConsumer(s-> {
+    		s.replaceAll(c -> {
+    			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " rev_expanding",
+    				inputs -> range -> {
+						Stream.Builder<DoubleStream> b = Stream.builder();
+						double[] data = ((Column.OfDoubles)inputs[0]).rows(range).toArray();
+						for(int i = 0; i < range.size(); i++) {
+							b.accept(Arrays.stream(data, i, data.length));
+						}
+						return b.build();
+					},c);
+    		});
+    		
+    	}),"[:]", "Creates double array columns for each input column with rows " +
+    		"containing values from the current period to the end of the range."));
     	names.put("expanding", new Name("expanding", toTableConsumer(s-> {
     		Column<?,?> col = s.removeFirst();
     		Optional<LocalDate> start = col instanceof Column.OfConstantDates ? Optional.of(((Column.OfConstantDates)col).getValue()) : Optional.empty();
     		col = s.removeFirst();
     		Optional<Periodicity<?>> periodicity = col instanceof Column.OfConstantPeriodicities ? Optional.of(((Column.OfConstantPeriodicities) col).getValue()) : Optional.empty();
     		boolean initialZero = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
+    		boolean nonZero = Boolean.parseBoolean(((Column.OfConstantStrings)s.removeFirst()).getValue());
     		s.replaceAll(c -> {
     			return new Column.OfDoubleArray1Ds(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " expanding",
     				inputs -> range -> {
@@ -497,7 +519,14 @@ public class StandardVocabulary extends Vocabulary {
 						for(int i = 0; i < range.size(); i++) {
 							int index = (int) window.indexOf(rangeDates.get(i));
 							if (index >= 0) {
-								b.accept(Arrays.stream(data, 0, index + 1));
+								int startIndex = 0;
+								if(nonZero) {
+									startIndex = index+1;
+									while(startIndex > 0 && data[startIndex-1] != 0) {
+										startIndex--;
+									}
+								}
+								b.accept(Arrays.stream(data, startIndex, index + 1));
 							} else {
 								b.accept(DoubleStream.iterate(Double.NaN, r -> Double.NaN).limit(range.size() + 1));
 							}
@@ -505,7 +534,7 @@ public class StandardVocabulary extends Vocabulary {
 						return b.build();
 					},c);
     		});
-    	}),"[date=\"range\",periodicity=\"range\",initial_zero=\"false\",:]", "Creates double array columns for each input column with rows " +
+    	}),"[date=\"range\",periodicity=\"range\",initial_zero=\"false\",non_zero=\"false\",:]", "Creates double array columns for each input column with rows " +
     		"containing values from an expanding window of past data with periodicity *freq* that starts on date *start*."));
 
 
@@ -517,18 +546,18 @@ public class StandardVocabulary extends Vocabulary {
 
 
 /* binary operators */
-    	names.put("+", makeOperator("+", (x,y) -> x + y));
-    	names.put("-", makeOperator("-", (x,y) -> x - y));
-    	names.put("*", makeOperator("*", (x,y) -> x * y));
-    	names.put("/", makeOperator("/", (x,y) -> x / y));
-    	names.put("%", makeOperator("%", (x,y) -> x % y));
-    	names.put("^", makeOperator("^", (x,y) -> Math.pow(x, y)));
-    	names.put("==", makeOperator("==", (x,y) -> x == y ? 1.0 : 0.0));
-    	names.put("!=", makeOperator("!=", (x,y) -> x != y ? 1.0 : 0.0));
-    	names.put(">", makeOperator(">", (x,y) -> x > y ? 1.0 : 0.0));
-    	names.put("<", makeOperator("<", (x,y) -> x < y ? 1.0 : 0.0));
-    	names.put(">=", makeOperator(">=", (x,y) -> x >= y ? 1.0 : 0.0));
-    	names.put("<=", makeOperator("<=", (x,y) -> x <= y ? 1.0 : 0.0));
+    	names.put("+", makeOperator("+", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x + y));
+    	names.put("-", makeOperator("-", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x - y));
+    	names.put("*", makeOperator("*", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x * y));
+    	names.put("/", makeOperator("/", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x / y));
+    	names.put("%", makeOperator("%", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x % y));
+    	names.put("^", makeOperator("^", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : Math.pow(x, y)));
+    	names.put("==", makeOperator("==", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x == y ? 1.0 : 0.0));
+    	names.put("!=", makeOperator("!=", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN :  x != y ? 1.0 : 0.0));
+    	names.put(">", makeOperator(">", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x > y ? 1.0 : 0.0));
+    	names.put("<", makeOperator("<", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x < y ? 1.0 : 0.0));
+    	names.put(">=", makeOperator(">=", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x >= y ? 1.0 : 0.0));
+    	names.put("<=", makeOperator("<=", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x <= y ? 1.0 : 0.0));
 
 
 /* unary operators */
@@ -560,6 +589,7 @@ public class StandardVocabulary extends Vocabulary {
     	names.put("nextDown", makeOperator("nextDown", (DoubleUnaryOperator)Math::nextDown));
     	names.put("neg", makeOperator("neg", x -> x * -1.0d));
     	names.put("inv", makeOperator("inv", x -> 1.0 / x));
+    	names.put("zeroToNa", makeOperator("zeroToNa", x -> x == 0 ? Double.NaN : x));
     	names.put("xmPrice", makeOperator("xmPrice", quote -> {
     		double TERM = 10, RATE = 6, price = 0; 
     		for (int i = 0; i < TERM * 2; i++) {
@@ -659,6 +689,7 @@ public class StandardVocabulary extends Vocabulary {
 			}
 			PeriodicRange<?> range = periodicity.range(d.removeLast(), d.isEmpty() ? LocalDate.now() : d.peek(), false);
 			String title = ((Column.OfConstantStrings) s.removeFirst()).getValue();
+			String options = ((Column.OfConstantStrings) s.removeFirst()).getValue();
 			if (!chartHTML.isPresent()) {
 				try {
 					chartHTML = Optional.of(new MessageFormat(readInputStreamIntoString(
@@ -676,11 +707,11 @@ public class StandardVocabulary extends Vocabulary {
 						.collect(Collectors.joining(", ", "", "]")));
 				data.append(i > 0 ? "," : "");
 			}
-			String html = chartHTML.get().format(new Object[] { getId(), dates, data, title }, new StringBuffer(), null)
+			String html = chartHTML.get().format(new Object[] { getId(), dates, data, title, options}, new StringBuffer(), null)
 					.toString();
 			s.clear();
 			s.add(new Column.OfConstantStrings(html, "HTML"));
-		}), "[periodicity=B, date=-20 offset today,title=\"\",:]",
+		}), "[periodicity=B, date=-20 offset today,title=\"\",options=\"\",:]",
 				"Creates a const string column with code for an HTML chart.", false));
 		names.put("rt", new Name("rt", p -> toTableConsumer(s -> {
 			LinkedList<String> functions = new LinkedList<>();

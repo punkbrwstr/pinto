@@ -9,7 +9,7 @@ public enum DoubleCollectors implements Supplier<DoubleCollector>{
 	change(dc -> dc.getLast() - dc.getFirst()),
 	pct_change(dc -> dc.getLast() / dc.getFirst() - 1.0d),
 	log_change(dc -> Math.log(dc.getLast()) - Math.log(dc.getFirst())),
-	
+	count(dc -> (double) dc.count()),
 	/* "true" window ones */
 	mean(dc -> dc.getSum() / (double) dc.count()),
 	geomean(dc -> Math.exp(dc.getSumOfLogs() / (double) dc.count())),
