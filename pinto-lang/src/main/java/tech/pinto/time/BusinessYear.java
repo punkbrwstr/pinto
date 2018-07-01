@@ -5,7 +5,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
 
-public class BusinessYear extends Period {
+public class BusinessYear extends Period<BusinessYear> {
 	
 	BusinessYear(long value) {
 		super(value);
@@ -25,7 +25,7 @@ public class BusinessYear extends Period {
 	}
 
 	@Override
-	protected Period makeSame(long value) {
+	protected BusinessYear makeSame(long value) {
 		return new BusinessYear(value);
 	}
 

@@ -1,37 +1,26 @@
 package tech.pinto;
 
-import java.util.Optional;
-
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import tech.pinto.Pinto.StackFunction;
+import tech.pinto.Pinto.TableFunction;
 
 public class Name implements Function<Pinto,Consumer<Table>> {
 
 	final private String name;
-	final private boolean isBuiltIn;
-	final private Function<Pinto,Consumer<Table>> function;
-	private Optional<Indexer> indexer;
-	final private Optional<String> indexString;
+	final private Pinto.TableFunction function;
+	final private Indexer indexer;
 	final private boolean isTerminal;
 	final private boolean startFromLast;
+	final private boolean isBuiltIn;
 	final private String description;
 
-
-	public Name(String name, Consumer<Table> function, String defaultIndexString, String description) {
-		this(name, p -> function,  Optional.empty(), Optional.of(defaultIndexString), description, false, false, true);
-	}
-
-	public Name(String name, Function<Pinto,Consumer<Table>> function, String indexString,
-			String description, boolean isTerminal) {
-		this(name, function,  Optional.empty(), Optional.of(indexString), description, isTerminal, false, true);
-	}
-
-	public Name(String name, Function<Pinto,Consumer<Table>> function, Optional<Indexer> indexer, Optional<String> indexString,
-			String description, boolean isTerminal, boolean startFromLast, boolean isBuiltIn) {
+	public Name(String name, Pinto.TableFunction function, Indexer indexer,
+			boolean isTerminal, boolean startFromLast, boolean isBuiltIn, String description) {
 		this.name = name;
 		this.function = function;
 		this.indexer = indexer;
-		this.indexString = indexString;
 		this.isTerminal = isTerminal;
 		this.startFromLast = startFromLast;
 		this.description = description;
@@ -40,20 +29,13 @@ public class Name implements Function<Pinto,Consumer<Table>> {
 
 
 	public Consumer<Table> getFunction(Pinto pinto) {
-		return function.apply(pinto);
-	}
-	
-	public boolean hasDefaultIndexer() {
-		return indexer.isPresent() || indexString.isPresent();
+		return t -> function.accept(pinto, t);
 	}
 	
 	public Consumer<Table> getDefaultIndexer(Pinto pinto) {
-		if(!indexer.isPresent()) {
-			indexer = Optional.of(new Indexer(pinto, indexString.get().replaceAll("^\\[|\\]$", ""), false));
-		}
 		return t -> {
 			try {
-				indexer.get().accept(t);
+				indexer.apply(pinto).accept(t);
 			} catch(Throwable e) {
 				throw new PintoSyntaxException("Indexer error for \"" + name + "\": " + e.getLocalizedMessage() , e);
 			}
@@ -77,7 +59,7 @@ public class Name implements Function<Pinto,Consumer<Table>> {
 	}
 	
 	public String getIndexString() {
-		return indexer.isPresent() ? indexer.get().toString() : indexString.get();
+		return indexer.toString();
 	}
 	
 	public String getHelp(String name) {
@@ -93,7 +75,7 @@ public class Name implements Function<Pinto,Consumer<Table>> {
 	public Consumer<Table> apply(Pinto arg0) {
 		return t -> {
 			try {
-				function.apply(arg0).accept(t);
+				function.accept(arg0, t);
 			} catch(Throwable e) {
 				throw new PintoSyntaxException("Error in \"" + name + "\"" , e);
 			}
@@ -104,5 +86,70 @@ public class Name implements Function<Pinto,Consumer<Table>> {
 	public String toString() {
         return name;
     }
+	
+	public static Builder nameBuilder(String name, StackFunction function) {
+		return new Builder(name, function.toTableFunction());
+	}
+
+	public static Builder nameBuilder(String name, TableFunction function) {
+		return new Builder(name, function);
+	}
+	
+	public static class Builder {
+		final private String name;
+		final private Pinto.TableFunction function;
+		private Indexer indexer;
+		private boolean isTerminal;
+		private boolean startFromLast;
+		private boolean isBuiltIn;
+		private String description;
+
+		public Builder(String name, TableFunction function) {
+			this.name = name;
+			this.function = function;
+			this.indexer = Indexer.ALL;
+			this.isBuiltIn = true;
+			this.isTerminal = false;
+			this.startFromLast = false;
+		}
+		
+		public Builder indexer(Indexer indexer) {
+			this.indexer = indexer;
+			return this;
+		}
+
+		public Builder indexer(String index) {
+			this.indexer = new Indexer(index.replaceAll("^\\[|\\]$", ""), false);
+			return this;
+		}
+
+		public Builder description(String description) {
+			this.description = description;
+			return this;
+		}
+
+		public Builder terminal() {
+			this.isTerminal = true;
+			return this;
+		}
+
+		public Builder defined() {
+			this.isBuiltIn = false;
+			return this;
+		}
+
+		public Builder startFromLast() {
+			this.startFromLast = true;
+			return this;
+		}
+		
+		
+		public Name build() {
+			return new Name(name, function, indexer, isTerminal, startFromLast, isBuiltIn, description);
+		}
+		
+		
+		
+	}
 
 }

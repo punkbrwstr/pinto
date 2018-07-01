@@ -1,35 +1,37 @@
 package tech.pinto;
 
+import java.lang.reflect.Array;
 import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.util.Optional;
+import java.util.Arrays;
 import java.util.function.Function;
-import java.util.stream.BaseStream;
-import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
 
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicity;
 
-public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
+public abstract class Column<T> implements Cloneable {
 	
-	protected Column<?,?>[] inputs;
-	protected Function<Column<?,?>[],String> headerFunction = columns -> "";
-	protected Function<Column<?,?>[],String> traceFunction = columns -> "";
-	final private Function<Column<?,?>[],Function<PeriodicRange<?>,S>> rowsFunction;
-	final private Function<Column<?,?>[],Function<NumberFormat,Function<PeriodicRange<?>,Stream<String>>>> rowsAsTextFunction;
+	protected Column<?>[] inputs;
+	protected Function<Column<?>[],String> headerFunction = columns -> "";
+	protected Function<Column<?>[],String> traceFunction = columns -> "";
+	final private RowsFunction<T> rowsFunction;
+	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 	
-	public Column(Function<Column<?,?>[], String> headerFunction, Function<Column<?,?>[], String> traceFunction,
-				Function<Column<?,?>[], Function<PeriodicRange<?>, S>> rowsFunction,
-				Function<Column<?,?>[], Function<NumberFormat, Function<PeriodicRange<?>, Stream<String>>>> rowsAsTextFunction,
-				Column<?,?>... inputs) {
+	protected Column(Function<Column<?>[], String> headerFunction, Function<Column<?>[], String> traceFunction,
+				RowsFunctionGeneric<T> rowsFunction, Column<?>... inputs) {
+		this(headerFunction, traceFunction, (range, columns) -> rowsFunction.getRows(range, columns, null), inputs);
+	}
+
+	protected Column(Function<Column<?>[], String> headerFunction, Function<Column<?>[], String> traceFunction,
+				RowsFunction<T> rowsFunction, Column<?>... inputs) {
 		this.inputs = inputs;
 		this.headerFunction = headerFunction;
 		this.traceFunction = traceFunction;
 		this.rowsFunction = rowsFunction;
-		this.rowsAsTextFunction = rowsAsTextFunction;
 	}
+	
+	protected abstract <P extends Period<P>> String[] rowsToStrings(T t, NumberFormat nf);
 
 	public String getHeader() {
 		return headerFunction.apply(inputs);	
@@ -41,24 +43,19 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 	
 	public void setHeader(String header) {
 		this.headerFunction = inputs -> header;
-		final Function<Column<?,?>[],String> oldTraceFunction = traceFunction;
+		final Function<Column<?>[],String> oldTraceFunction = traceFunction;
 		this.traceFunction = inputs -> oldTraceFunction.apply(inputs) + " {" + header + "}";
 	}
 	
-	public <P extends Period> S rows(PeriodicRange<?> range) {
-		 return rowsFunction.apply(inputs).apply(range);
+	public <P extends Period<P>> T rows(PeriodicRange<P> range) {
+		long start = System.nanoTime();
+		 T t = rowsFunction.getRows(range, inputs);
+		 log.info("{},  elapsed: {}ms", getTrace(), (System.nanoTime() - start) / 1000000d);
+		 return t;
 	}
 
-	public <P extends Period> Stream<String> rowsAsText(PeriodicRange<?> range, NumberFormat nf) {
-		return rowsAsTextFunction.apply(inputs).apply(nf).apply(range);
-	}
-	
-	public <P extends Period> Stream<String> rowsAsText(PeriodicRange<?> range) {
-		return rowsAsText(range, NumberFormat.getInstance());
-	}
-	
-	public Column<?,?>[] getInputs() {
-		return inputs;
+	public <P extends Period<P>> String[] rowsAsStrings(PeriodicRange<P> range, NumberFormat nf) {
+		return rowsToStrings(rowsFunction.getRows(range, inputs),nf);
 	}
 
 	@Override
@@ -71,7 +68,7 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 	public Column clone() {
 		try {
 			Column clone = (Column) super.clone();
-			clone.inputs = new Column<?,?>[inputs.length];
+			clone.inputs = new Column<?>[inputs.length];
 			for(int i = 0; i < inputs.length; i++) {
 				clone.inputs[i] = inputs[i].clone();
 			}
@@ -81,81 +78,83 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		}
 	}
 	
-	public interface ArrayColumn<T2,S2 extends BaseStream<T2,S2>>  {
-		public Optional<int[]> getDimensions();
-	}
-
-	public interface ConstantColumn<T2,S2 extends BaseStream<T2,S2>>  {
-
-		public T2 getValue();
-	}
-
-	public static class OfDoubles extends Column<Double,DoubleStream> {
-
-		public OfDoubles(Function<Column<?, ?>[], String> headerFunction, Function<Column<?, ?>[], String> traceFunction,
-				Function<Column<?, ?>[], Function<PeriodicRange<?>, DoubleStream>> rowsFunction,
-				Column<?, ?>... inputs) {
-			super(headerFunction, traceFunction, rowsFunction, i -> nf -> range -> rowsFunction.apply(i).apply(range).mapToObj(nf::format), inputs);
-		}
-
-		public OfDoubles(Function<Column<?, ?>[], String> headerFunction, 
-				Function<Column<?, ?>[], Function<PeriodicRange<?>, DoubleStream>> rowsFunction,
-				Column<?, ?>... inputs) {
-			super(headerFunction, headerFunction, rowsFunction, i -> nf -> range -> rowsFunction.apply(i).apply(range).mapToObj(nf::format), inputs);
-		}
-		
+	@FunctionalInterface
+	public interface RowsFunction<T> {
+		public T getRows(PeriodicRange<?> range, Column<?>[] columns);
 	}
 	
-	public static class OfDoubleArray1Ds extends Column<DoubleStream,Stream<DoubleStream>>
-							implements ArrayColumn<DoubleStream,Stream<DoubleStream>> {
-		
-		private final Function<Column<?,?>[],Optional<int[]>> dimensions;
+	@FunctionalInterface
+	public interface RowsFunctionGeneric<T> {
+		public <P extends Period<P>> T getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz);
+	}
 
-		public OfDoubleArray1Ds(Function<Column<?, ?>[], String> headerFunction,  Function<Column<?, ?>[], String> traceFunction,
-				Function<Column<?, ?>[], Function<PeriodicRange<?>, Stream<DoubleStream>>> rowsFunction, Function<Column<?, ?>[],Optional<int[]>> dimensions,
-				Column<?, ?>... inputs) {
-			super(headerFunction, traceFunction, rowsFunction, i -> nf -> range -> {
-				return rowsFunction.apply(i).apply(range).map(DoubleStream::toArray).map(a -> {
-					return "[" + nf.format(a[0]) + (a.length == 1 ? "" : ", ..., " + nf.format(a[a.length-1]) + "]");
-				});
-			}, inputs);
-			this.dimensions = dimensions;
+	public interface ConstantColumn<C> {
+		public C getValue();
+	}
+
+	public static class OfDoubles extends Column<double[]> {
+
+		public OfDoubles(Function<Column<?>[], String> headerFunction, Function<Column<?>[], String> traceFunction,
+				RowsFunction<double[]> rowsFunction, Column<?>... inputs) {
+			super(headerFunction, traceFunction, rowsFunction, inputs);
 		}
 
-		public OfDoubleArray1Ds(Function<Column<?, ?>[], String> headerFunction,  Function<Column<?, ?>[], String> traceFunction,
-				Function<Column<?, ?>[], Function<PeriodicRange<?>, Stream<DoubleStream>>> rowsFunction, 
-				Column<?, ?>... inputs) {
-			this(headerFunction, traceFunction, rowsFunction, i -> Optional.empty(), inputs);
+		public OfDoubles(Function<Column<?>[], String> headerFunction, RowsFunction<double[]> rowsFunction, Column<?>... inputs) {
+			this(headerFunction, headerFunction, rowsFunction, inputs);
 		}
 
-		public OfDoubleArray1Ds(Function<Column<?, ?>[], String> headerFunction,  
-				Function<Column<?, ?>[], Function<PeriodicRange<?>, Stream<DoubleStream>>> rowsFunction, 
-				Column<?, ?>... inputs) {
-			this(headerFunction, headerFunction, rowsFunction, i -> Optional.empty(), inputs);
+		public OfDoubles(Function<Column<?>[], String> headerFunction, Function<Column<?>[], String> traceFunction,
+				RowsFunctionGeneric<double[]> rowsFunction, Column<?>... inputs) {
+			super(headerFunction, traceFunction, rowsFunction, inputs);
 		}
 
-		public OfDoubleArray1Ds(Function<Column<?, ?>[], String> headerFunction, Function<Column<?, ?>[], String> traceFunction,
-				Function<Column<?, ?>[], Function<PeriodicRange<?>, Stream<DoubleStream>>> rowsFunction, int dimension,
-				Column<?, ?>... inputs) {
-			this(headerFunction, traceFunction, rowsFunction, i -> Optional.of(new int[] {dimension}), inputs);
+		public OfDoubles(Function<Column<?>[], String> headerFunction, RowsFunctionGeneric<double[]> rowsFunction, Column<?>... inputs) {
+			this(headerFunction, headerFunction, rowsFunction, inputs);
 		}
 
 		@Override
-		public Optional<int[]> getDimensions() {
-			return dimensions.apply(inputs);
+		protected <P extends Period<P>> String[] rowsToStrings(double[] d, NumberFormat nf) {
+			String[] s = new String[d.length];
+			for(int j = 0; j < d.length; j++) {
+				s[j] = nf.format(d[j]); 
+			}
+			return s;
+		}
+
+		public <P extends Period<P>> String rowsAsCsv(PeriodicRange<P> range, NumberFormat nf) {
+			StringBuilder sb = new StringBuilder();
+			double[] d = rows(range);
+			for(int j = 0; j < d.length; j++) {
+				if(j != 0) {
+					sb.append(",");
+				}
+				sb.append(nf.format(d[j])); 
+			}
+			return sb.toString();
 		}
 		
 	}
 	
-	public static class OfConstantDoubles extends OfDoubles implements ConstantColumn<Double,DoubleStream> {
+	public static class OfConstantDoubles extends OfDoubles implements ConstantColumn<Double> {
 		
 		final double d;
+		
+		private static final Function<Double,RowsFunctionGeneric<double[]>> F =
+				new Function<Double,RowsFunctionGeneric<double[]>>(){
+
+					@Override
+					public RowsFunctionGeneric<double[]> apply(Double t) {
+						return new RowsFunctionGeneric<double[]>() {
+							@Override
+							public <P extends Period<P>> double[] getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
+								double[] a = new double[(int)range.size()];
+								Arrays.fill(a, t);
+								return a;
+							}};
+					}};
 
 		public OfConstantDoubles(double d, String header) {
-			super(inputs -> header, inputs -> Double.toString(d),
-					i -> range -> DoubleStream.iterate(d, r -> d).limit(range.size()),
-					new Column<?,?>[] {}
-					);
+			super(inputs -> header, inputs -> Double.toString(d), F.apply(d));
 			this.d = d;
 		}
 
@@ -168,69 +167,84 @@ public class Column<T,S extends BaseStream<T,S>> implements Cloneable {
 		}
 
 	}
-	
-	public static class OfConstantStrings extends Column<String,Stream<String>> implements ConstantColumn<String,Stream<String>> {
-		
-		final String value;
-		final String header;
 
+	
+	public static class OfDoubleArray1Ds extends Column<double[][]> {
+
+		public OfDoubleArray1Ds(Function<Column<?>[], String> headerFunction,  Function<Column<?>[], String> traceFunction,
+				RowsFunctionGeneric<double[][]> rowsFunction, Column<?>... inputs) {
+			super(headerFunction, traceFunction, rowsFunction, inputs);
+		}
+		
+		public OfDoubleArray1Ds(Function<Column<?>[], String> headerFunction,  Function<Column<?>[], String> traceFunction,
+				RowsFunction<double[][]> rowsFunction, Column<?>... inputs) {
+			super(headerFunction, traceFunction, rowsFunction, inputs);
+		}
+
+		@Override
+		protected <P extends Period<P>> String[] rowsToStrings(double[][] d, NumberFormat nf) {
+			String[] s = new String[d.length];
+			for(int j = 0; j < d.length; j++) {
+				double[] a = d[j];
+				s[j] = "[" + nf.format(a[0]) + (a.length == 1 ? "" : ", ..., " + nf.format(a[a.length-1]) + "]"); 
+			}
+			return s;
+		}
+		
+	}
+
+	public static class ObjectConstantColumn<C> extends Column<C[]> implements ConstantColumn<C> {
+
+		private final C c;
+
+		public ObjectConstantColumn(C c, String header, Class<C> clazz, Class<C[]> arrayClazz) {
+			super(i -> header, i -> header, (range, columns) -> {
+					C[] array =  arrayClazz.cast(Array.newInstance(clazz, (int) range.size()));
+					Arrays.fill(array, c);
+					return array;
+				});
+			this.c = c;
+		}
+
+		public C getValue() {
+			return c;
+		}
+
+		@Override
+		protected <P extends Period<P>> String[] rowsToStrings(C[] t, NumberFormat nf) {
+			String[] s = new String[t.length];
+			for(int i = 0; i < t.length; i++) {
+				s[i] = t[i].toString();
+			}
+			return s;
+		}
+	}
+	
+	public static class OfConstantStrings extends ObjectConstantColumn<String> {
+		
 		public OfConstantStrings(String value) {
 			this(value,"string");
 		}
 
 		public OfConstantStrings(String value, String header) {
-			super(inputs -> header, inputs -> value,
-					i -> range -> Stream.generate(() -> value).limit(range.size()),
-					i -> nf -> range -> Stream.generate(() -> value).limit(range.size()),
-					new Column<?,?>[] {}
-					);
-			this.value = value;
-			this.header = header;
-			//headerFunction = inputs -> header;
-		}
-
-		public String getValue() {
-			return value;
+			super(value, header, String.class, String[].class);
 		}
 
 	}
 
-	public static class OfConstantDates extends Column<LocalDate,Stream<LocalDate>> implements ConstantColumn<LocalDate,Stream<LocalDate>> {
-		
-		final LocalDate value;
+	public static class OfConstantDates extends ObjectConstantColumn<LocalDate> {
 
 		public OfConstantDates(LocalDate value) {
-			super(inputs -> "date", inputs -> value.toString(),
-					i -> range -> Stream.generate(() -> value).limit(range.size()),
-					i -> nf -> range -> Stream.generate(() -> value).map(LocalDate::toString).limit(range.size()),
-					new Column<?,?>[] {}
-					);
-			this.value = value;
-		}
-
-		public LocalDate getValue() {
-			return value;
+			super(value,"date", LocalDate.class, LocalDate[].class);
 		}
 
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static class OfConstantPeriodicities extends Column<Periodicity,Stream<Periodicity>>
-					implements ConstantColumn<Periodicity,Stream<Periodicity>> {
+	public static class OfConstantPeriodicities extends ObjectConstantColumn<Periodicity> {
 		
-		final Periodicity value;
-
 		public OfConstantPeriodicities(Periodicity value) {
-			super(inputs -> "periodicity", inputs -> value.toString(),
-					i -> range -> Stream.generate(() -> value).limit(range.size()),
-					i -> nf -> range -> Stream.generate(() -> value).map(Periodicity::code).limit(range.size()),
-					new Column<?,?>[] {}
-					);
-			this.value = value;
-		}
-
-		public Periodicity<?> getValue() {
-			return value;
+			super(value, "periodicity", Periodicity.class, Periodicity[].class);
 		}
 
 	}

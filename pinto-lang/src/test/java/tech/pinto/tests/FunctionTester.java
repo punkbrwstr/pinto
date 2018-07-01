@@ -45,7 +45,7 @@ public class FunctionTester {
 	public void testCopy() throws Exception {
 		Table t = pinto.eval("{test: 1 2} copy copy +" + EVAL).get(0);
 		assertEquals("Correct # dup outputs", 7, t.getColumnCount());
-		assertEquals("Dup output works in plus", 3.0, t.toRowMajorArray().get()[0][6], 0.001d);
+		assertEquals("Dup output works in plus", 3.0, t.toRowMajorArray()[0][6], 0.001d);
 		t = pinto.eval("1 2 3 copy" + EVAL).get(0);
 		assertEquals("Correct # dup outputs with params", 6, t.getColumnCount());
 
@@ -79,7 +79,7 @@ public class FunctionTester {
 	
 	public void testRolling() throws Exception {
 		Table d = pinto.eval("moon \"10\" r_mean \"2016-09-06,2016-09-09,B\" eval").get(0);
-		assertEquals("rolling mean", 12.0096, d.toRowMajorArray().get()[3][0],0.001d);
+		assertEquals("rolling mean", 12.0096, d.toRowMajorArray()[3][0],0.001d);
 
 		d =pinto.eval("moon \"10,B\" r_mean \"2016-08-06,2016-09-02,W-FRI \"eval").get(0);
 		assertEquals("rolling mean (diff freqs window < range)", -33.2738, last(0,d),0.001d);
@@ -134,19 +134,20 @@ public class FunctionTester {
 	
 		
 	private double sumColumn(int col, Table r) {
-		return r.getSeries(col, false).sum();
+		return Arrays.stream(r.toColumnMajorArray()[col]).sum();
 	}
 
 	private double sumRow(int row, Table r) {
-		return Arrays.stream(r.toRowMajorArray().get()[0]).sum();
+		return Arrays.stream(r.toRowMajorArray()[row]).sum();
 	}
 
 	private double first(int column, Table t) {
-		return t.getSeries(column, false).limit(1).sum();
+		return t.toColumnMajorArray()[column][0];
 	}
 
 	private double last(int column, Table t) {
-		return t.getSeries(column, false).skip(t.getRowCount()-1).sum();
+		double[] d = t.toColumnMajorArray()[column];
+		return d[d.length-1];
 	}
 
 }

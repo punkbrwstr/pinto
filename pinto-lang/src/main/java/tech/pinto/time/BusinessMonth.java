@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 
-public class BusinessMonth extends Period {
+public class BusinessMonth extends Period<BusinessMonth> {
 	
 	static final private YearMonth EPOCH = YearMonth.of(1970, 1);
 
@@ -27,7 +27,7 @@ public class BusinessMonth extends Period {
 	}
 
 	@Override
-	protected Period makeSame(long value) {
+	protected BusinessMonth makeSame(long value) {
 		return new BusinessMonth(value);
 	}
 

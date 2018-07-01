@@ -38,7 +38,7 @@ public class IndexTester {
 	public void testOrdinals() throws Exception {
 		assertTrue("index by ordinal", compareRow("range [0] only eval", 3.0));
 		assertTrue("index by negative ordinal", compareRow("range [-1] only eval", 1.0d));
-		assertTrue("index by multiple ordinal", compareRow("range [-1,0] only eval", 3.0d, 1.0d));
+		assertTrue("index by multiple ordinal", compareRow("range [-1,0] only eval", 1.0d, 3.0d));
 	}
 
 	public void testSlices() throws Exception {
@@ -68,7 +68,7 @@ public class IndexTester {
 	}
 	
 	private double first(int column, Table t) {
-		return t.getSeries(column, false).limit(1).sum();
+		return t.toColumnMajorArray()[column][0];
 	}
 	
 	private boolean compareRow(String pintoExpression, double... results) throws Exception {
@@ -76,7 +76,7 @@ public class IndexTester {
 	}
 
 	private boolean compareRow(double[] target, Table t) {
-		double[] result = t.toRowMajorArray().get()[0];
+		double[] result = t.toRowMajorArray()[0];
 		for(int i = 0; i < result.length; i++) {
 			if(Math.abs(result[i] - target[i]) > 0.00001) {
 				return false;

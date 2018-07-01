@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 
-public class WeekEndingMonday extends Period {
+public class WeekEndingMonday extends Period<WeekEndingMonday> {
 	
 	static final LocalDate EPOCH = LocalDate.of(1970, 1, 5);
 	
@@ -22,7 +22,7 @@ public class WeekEndingMonday extends Period {
 	}
 
 	@Override
-	protected Period makeSame(long value) {
+	protected WeekEndingMonday makeSame(long value) {
 		return new WeekEndingMonday(value);
 	}
 	

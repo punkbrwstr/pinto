@@ -21,6 +21,7 @@ import tech.pinto.MarketData;
 import tech.pinto.Name;
 import tech.pinto.Namespace;
 import tech.pinto.Pinto;
+import tech.pinto.Pinto.StackFunction;
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
 
@@ -67,15 +68,15 @@ public class AllTests {
 		private static AtomicInteger count = new AtomicInteger();
 		
 		public TestVocabulary() {
-			names.put("counter", new Name("counter", toTableConsumer(s -> {
-				s.addFirst(new Column.OfDoubles(inputs -> "", inputs -> range -> {
+			names.add(Name.nameBuilder("counter", (StackFunction) (p,s) -> {
+				s.addFirst(new Column.OfDoubles(inputs -> "", (range, inputs) -> {
 					return Cache.getCachedValues("counter", range, 0, 1, r -> {
 						Column.OfConstantDoubles col = new Column.OfConstantDoubles(count.getAndIncrement());
-						return new double[][] {col.rows(r).toArray()};
+						return new double[][] {col.rows(r)};
 					});
 					
 				}));
-			}), "[]", "For cache testing"));
+			}).build());
 		}
 
 	}

@@ -2,7 +2,6 @@ package tech.pinto;
 
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -15,6 +14,7 @@ import javax.inject.Inject;
 import com.google.common.base.Joiner;
 
 import jline.console.completer.Completer;
+import tech.pinto.Pinto.TableFunction;
 
 public class Namespace implements Completer {
 	private final String DELIMITER = "::";	
@@ -24,14 +24,16 @@ public class Namespace implements Completer {
 
 	@Inject
 	public Namespace(Vocabulary vocabulary) {
-		names.putAll(vocabulary.getNameMap());
+		for(Name name : vocabulary.getNames()) {
+			names.put(name.toString(), name);
+		}
 	}
 	
 	public synchronized boolean contains(String name) {
 		return names.containsKey(name);
 	}
 
-	public synchronized void define(String name, Optional<Indexer> indexer, String description, List<String> dependencies, Consumer<Table> function) {
+	public synchronized void define(String name, Indexer indexer, String description, List<String> dependencies, Consumer<Table> function) {
 		if(names.containsKey(name)) {
 			for(String dependencyCode : getDependsOn(name)) {
 				dependencyGraph.remove(join(name, "dependsOn", dependencyCode));
@@ -42,7 +44,8 @@ public class Namespace implements Completer {
 			dependencyGraph.add(join(name, "dependsOn", dependencyName));
 			dependencyGraph.add(join(dependencyName, "dependedOnBy", name));
 		}
-		names.put(name, new Name(name, p -> function, indexer, Optional.empty(), description, false, false, false));
+		names.put(name, Name.nameBuilder(name, (TableFunction) (p,t) -> function.accept(t))
+							.defined().indexer(indexer).description(description).build());
 	}
 
 	public synchronized void undefine(String name) throws IllegalArgumentException {

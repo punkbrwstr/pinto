@@ -1,68 +1,74 @@
 package tech.pinto.time;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Range;
 
-public final class PeriodicRange<P extends Period> {
+public final class PeriodicRange<P extends Period<P>> {
 	
 	private final Periodicity<P> periodicity;
-	private final Range<P> range;
-	private final boolean clearCache;
+	private final P startInclusive;
+	private final P endInclusive;
 
-	PeriodicRange(Periodicity<P> periodcity, Range<P> range, boolean clearCache) {
+	PeriodicRange(Periodicity<P> periodcity, P startInclusive, P endInclusive) {
 		this.periodicity = periodcity;
-		this.range = range;
-		this.clearCache = clearCache;
+		this.startInclusive = startInclusive;
+		this.endInclusive = endInclusive;
 	}
 	
-	public ContiguousSet<P> values() {
-		return ContiguousSet.create(range, periodicity);
+	public List<P> values() {
+		List<P> l = new ArrayList<>();
+		P p = start();
+		do {
+			l.add(p);
+			p = (P) p.next();
+		} while(!p.isAfter(end()));
+		return l;
 	}
 	
 	public List<LocalDate> dates() {
-		return values().stream().map(p -> p.endDate()).collect(Collectors.toList());
+		List<LocalDate> l = new ArrayList<>();
+		P p = start();
+		do {
+			l.add(p.endDate());
+			p = p.next();
+		} while(!p.isAfter(end()));
+		return l;
 	}
 	
 	public long size() {
-		return periodicity.distance(range.lowerEndpoint(), range.upperEndpoint()) + 1;
+		return periodicity.distance(startInclusive, endInclusive) + 1;
 	}
 	
-	public long indexOf(P p) {
-		return periodicity.distance(range.lowerEndpoint(), p);
+	public long indexOf(P period) {
+		return periodicity.distance(startInclusive, (P) period);
 	}
 
 	public long indexOf(LocalDate d) {
-		return periodicity.distance(range.lowerEndpoint(), periodicity.from(d));
+		return periodicity.distance(startInclusive, periodicity.from(d));
 	}
 
 	public P start() {
-		return range.lowerEndpoint();
+		return startInclusive;
 	}
 
 	public P end() {
-		return range.upperEndpoint();
+		return endInclusive;
 	}
 	
 	public PeriodicRange<P> expand(long offset) {
 		P start = periodicity.offset(Math.min(offset, 0), start());
 		P end = periodicity.offset(Math.max(offset, 0), end());
-		return periodicity.range(start, end, clearCache);
+		return periodicity.range(start, end);
 	}
 
 	public Periodicity<P> periodicity() {
 		return periodicity;
-	}
-	
-	public boolean clearCache() {
-		return clearCache;
 	}
 	
 	public Map<String,String> asStringMap() {
@@ -78,7 +84,8 @@ public final class PeriodicRange<P extends Period> {
         if (getClass() != obj.getClass()) return false;
         final PeriodicRange<?> other = (PeriodicRange<?>) obj;
         return Objects.equals(this.periodicity, other.periodicity)
-            && Objects.equals(this.range, other.range);
+            && Objects.equals(this.startInclusive, other.startInclusive)
+            && Objects.equals(this.endInclusive, other.endInclusive);
 	}
 	
 	@Override
@@ -88,6 +95,6 @@ public final class PeriodicRange<P extends Period> {
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(periodicity.code(),range.hashCode());
+		return Objects.hash(periodicity.code(),startInclusive.hashCode(),endInclusive.hashCode());
 	}
 }

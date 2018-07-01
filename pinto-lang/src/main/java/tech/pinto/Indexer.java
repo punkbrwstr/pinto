@@ -7,67 +7,68 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class Indexer implements Consumer<Table>, Cloneable {
+public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
+
+	public static final Indexer ALL = new Indexer(":", false);
+	public static final Indexer NONE = new Indexer(":", false);
+	public static final Indexer ALL_DEFINED = new Indexer(":", true);
 
 	private final List<Index> indexes = new ArrayList<>();
-	private final Pinto pinto;
 	private final String indexString;
-	private final boolean functionIndexer;
+	private final boolean definedIndexer;
 
-	public Indexer(Pinto pinto, String indexString) {
-		this(pinto, indexString, false);
-	}
-
-	public Indexer(Pinto pinto, String indexString, boolean functionIndexer) {
-		this.pinto = pinto;
+	public Indexer(String indexString, boolean functionIndexer) {
 		this.indexString = indexString;
-		this.functionIndexer = functionIndexer;
-		
+		this.definedIndexer = functionIndexer;
+
 		StringBuilder sb = new StringBuilder();
 		final int[] open = new int[4]; // ", $, {, [
-		for(int i = 0; i < indexString.length(); i++) {
+		for (int i = 0; i < indexString.length(); i++) {
 			// first check what's open
-			switch(indexString.charAt(i)) {
-				case '"':	open[0] = open[0] == 0 ? 1 : 0;		break;
-				case '$':	open[1] = open[1] == 0 ? 1 : 0;		break;
-				case '{':	open[2]++;							break;
-				case '}':	open[2]--;							break;
-				case '[':	open[3]++;							break;
-				case ']':	open[3]--;							break;
+			switch (indexString.charAt(i)) {
+			case '"': open[0] = open[0] == 0 ? 1 : 0; break;
+			case '$': open[1] = open[1] == 0 ? 1 : 0; break;
+			case '{': open[2]++; break;
+			case '}': open[2]--; break;
+			case '[': open[3]++; break;
+			case ']': open[3]--; break;
 			}
 
-			// don't count commas if anything's open 
-			if(Arrays.stream(open).sum() > 0) { 
+			// don't count commas if anything's open
+			if (Arrays.stream(open).sum() > 0) {
 				sb.append(indexString.charAt(i));
 			} else {
-				if(indexString.charAt(i) == ',') {
+				if (indexString.charAt(i) == ',') {
 					indexes.add(new Index(sb.toString().trim()));
 					sb = new StringBuilder();
 					Arrays.setAll(open, x -> 0);
 				} else {
-					 sb.append(indexString.charAt(i));
+					sb.append(indexString.charAt(i));
 				}
 			}
 		}
-		if(Arrays.stream(open).sum() == 0) { 
+		if (Arrays.stream(open).sum() == 0) {
 			indexes.add(new Index(sb.toString().trim()));
 		} else {
-			String unmatched = IntStream.range(0, 4).mapToObj(i -> open[i] == 0 ? "" : new String[]{"\"","$","{","["}[i])
+			String unmatched = IntStream.range(0, 4)
+					.mapToObj(i -> open[i] == 0 ? "" : new String[] { "\"", "$", "{", "[" }[i])
 					.filter(s -> !s.equals("")).collect(Collectors.joining(","));
 			throw new IllegalArgumentException("Unmatched \"" + unmatched + "\" in Index: \"[" + indexString + "]\"");
 		}
 	}
 
 	@Override
-	public void accept(Table t) {
-		LinkedList<LinkedList<Column<?,?>>> unused = new LinkedList<>();
-		LinkedList<LinkedList<Column<?,?>>> indexed = new LinkedList<>();
-		for (LinkedList<Column<?,?>> stack : t.takeTop()) {
-			List<StackOperation> ops = new ArrayList<>();
+	public Consumer<Table> apply(Pinto pinto) {
+		return t -> {
+			LinkedList<LinkedList<Column<?>>> unused = new LinkedList<>();
+			LinkedList<LinkedList<Column<?>>> indexed = new LinkedList<>();
+			for (LinkedList<Column<?>> stack : t.takeTop()) {
+				List<StackOperation> ops = new ArrayList<>();
 				indexed.addLast(operate(stack, ops, pinto));
 				Index last = indexes.get(indexes.size() - 1);
 				while (last.isRepeat() && stack.size() > 0) {
@@ -77,25 +78,26 @@ public class Indexer implements Consumer<Table>, Cloneable {
 						break;
 					}
 				}
-			unused.add(stack);
-		}
-		t.insertAtTop(unused);
-		t.push(functionIndexer, indexed);
-
+				unused.add(stack);
+			}
+			t.insertAtTop(unused);
+			t.push(definedIndexer, indexed);
+		};
 	}
 
 	@SuppressWarnings("unchecked")
-	private LinkedList<Column<?,?>> operate(LinkedList<Column<?,?>> stack, List<StackOperation> ops, Pinto pinto) {
+	private LinkedList<Column<?>> operate(LinkedList<Column<?>> stack, List<StackOperation> ops, Pinto pinto) {
 		indexes.stream().map(i -> i.index(stack)).forEach(ops::addAll);
-		List<StackOperation> indexStringOps = ops.stream().filter(StackOperation::isHeader).collect(Collectors.toList());
-		List<StackOperation> ordinalOps = ops.stream().filter(so -> ! so.isHeader()).collect(Collectors.toList());
+		List<StackOperation> indexStringOps = ops.stream().filter(StackOperation::isHeader)
+				.collect(Collectors.toList());
+		List<StackOperation> ordinalOps = ops.stream().filter(so -> !so.isHeader()).collect(Collectors.toList());
 		// determine which operations need to be copies
 		LinkedList<StackOperation>[] opsByOrdinal = new LinkedList[stack.size()];
-		for(List<StackOperation> l : Arrays.asList(indexStringOps, ordinalOps)) {
+		for (List<StackOperation> l : Arrays.asList(indexStringOps, ordinalOps)) {
 			for (StackOperation op : l) {
 				if (!op.isAlternative()) {
 					if (opsByOrdinal[op.getOrdinal()] != null) {
-						if(opsByOrdinal[op.getOrdinal()].getLast().isHeader() && ! op.isHeader()) {
+						if (opsByOrdinal[op.getOrdinal()].getLast().isHeader() && !op.isHeader()) {
 							op.setSkip(true); // don't include cols index by indexString in subsequent ordinal indexes
 						} else {
 							opsByOrdinal[op.getOrdinal()].getLast().setNeedsCloning(true);
@@ -103,7 +105,7 @@ public class Indexer implements Consumer<Table>, Cloneable {
 					} else {
 						opsByOrdinal[op.getOrdinal()] = new LinkedList<>();
 					}
-					if(!op.skip()) {
+					if (!op.skip()) {
 						opsByOrdinal[op.getOrdinal()].add(op);
 					}
 				}
@@ -111,15 +113,15 @@ public class Indexer implements Consumer<Table>, Cloneable {
 		}
 
 		TreeSet<Integer> alreadyUsed = new TreeSet<>();
-		LinkedList<Column<?,?>> indexed = new LinkedList<>();
+		LinkedList<Column<?>> indexed = new LinkedList<>();
 		for (StackOperation o : ops) {
 			if (o.isAlternative()) {
 				indexed.addAll(pinto.parseSubExpression(o.getAlternativeString()));
-				if(o.isCopy()) {
+				if (o.isCopy()) {
 					stack.addAll(pinto.parseSubExpression(o.getAlternativeString()));
 				}
 			} else if ((!alreadyUsed.contains(o.getOrdinal())) && !o.skip()) {
-				Column<?,?> c = stack.get(o.getOrdinal());
+				Column<?> c = stack.get(o.getOrdinal());
 				indexed.add(o.checkType(o.needsCloning() || o.isCopy() ? c.clone() : c));
 				if (!o.isCopy()) {
 					alreadyUsed.add(o.getOrdinal());
@@ -178,7 +180,8 @@ public class Indexer implements Consumer<Table>, Cloneable {
 			if (s.contains("=")) {
 				String[] thisOrThat = s.split("=");
 				if (thisOrThat.length < 2) {
-					throw new IllegalArgumentException("\"=\" should be followed by alternative expression in index:" + s);
+					throw new IllegalArgumentException(
+							"\"=\" should be followed by alternative expression in index:" + s);
 				}
 				String alt = Arrays.stream(thisOrThat).skip(1).collect(Collectors.joining("="));
 				or = Optional.of(" {" + thisOrThat[0] + ": " + alt + "}");
@@ -230,15 +233,15 @@ public class Indexer implements Consumer<Table>, Cloneable {
 
 		}
 
-		public List<StackOperation> index(LinkedList<Column<?,?>> stack) {
+		public List<StackOperation> index(LinkedList<Column<?>> stack) {
 			List<StackOperation> ops = new ArrayList<>();
-//			if (stack.size() == 0 && ! or.isPresent()) {
-//				return ops;
-//			}
+			// if (stack.size() == 0 && ! or.isPresent()) {
+			// return ops;
+			// }
 			if (everything || sliceStart.isPresent() || ordinal.isPresent()) {
 				int start = 0, end = 0;
 				if (everything) {
-					if(stack.isEmpty()) {
+					if (stack.isEmpty()) {
 						return ops;
 					}
 					start = 0;
@@ -356,7 +359,7 @@ public class Indexer implements Consumer<Table>, Cloneable {
 		public void setNeedsCloning(boolean needsCloning) {
 			this.needsCloning = needsCloning;
 		}
-		
+
 		public boolean needsCloning() {
 			return needsCloning;
 		}
@@ -364,30 +367,30 @@ public class Indexer implements Consumer<Table>, Cloneable {
 		public void setSkip(boolean skip) {
 			this.skip = skip;
 		}
-		
+
 		public boolean skip() {
 			return skip;
 		}
-		
+
 		public boolean isHeader() {
 			return isHeader;
 		}
 
-		public Column<?,?> checkType(Column<?,?> c) throws PintoSyntaxException {
-			if(checkString && ! (c instanceof Column.OfConstantStrings)) {
+		public Column<?> checkType(Column<?> c) throws PintoSyntaxException {
+			if (checkString && !(c instanceof Column.OfConstantStrings)) {
 				throw new PintoSyntaxException("String column required.");
-			} else if(checkConstant && ! (c instanceof Column.OfConstantDoubles)) {
+			} else if (checkConstant && !(c instanceof Column.OfConstantDoubles)) {
 				throw new PintoSyntaxException("Constant column required.");
 			}
 			return c;
 		}
 
-//		public LinkedList<Column> checkType(LinkedList<Column> l) throws Exception {
-//			for (Column c : l) {
-//				checkType(c);
-//			}
-//			return l;
-//		}
+		// public LinkedList<Column> checkType(LinkedList<Column> l) throws Exception {
+		// for (Column c : l) {
+		// checkType(c);
+		// }
+		// return l;
+		// }
 
 		@Override
 		public int compareTo(StackOperation o) {

@@ -7,13 +7,13 @@ import java.time.temporal.ChronoUnit;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
-public abstract class Period implements Comparable<Period> {
+public abstract class Period<T extends Period<T>> implements Comparable<Period<T>> {
 	
 		final protected long value;
 
 		public abstract LocalDate endDate();
 
-		protected abstract Period makeSame(long value);
+		protected abstract T makeSame(long value);
 		
 		protected Period(long value) {
 			this.value = value;
@@ -23,23 +23,23 @@ public abstract class Period implements Comparable<Period> {
 			return value;
 		}
 		
-		public boolean isBefore(Period other) {
+		public boolean isBefore(T other) {
 			return compareTo(other) == -1;
 		}
 
-		public boolean isAfter(Period other) {
+		public boolean isAfter(T other) {
 			return compareTo(other) == 1;
 		}
 		
-		public Period next() {
+		public T next() {
 			return offset(1);
 		}
 
-		public Period previous() {
+		public T previous() {
 			return offset(-1);
 		}
 		
-		public Period offset(long value) {
+		public T offset(long value) {
 			return makeSame(this.value + value);
 		}
 		
@@ -52,7 +52,7 @@ public abstract class Period implements Comparable<Period> {
 		}
 		
 		@Override
-		public int compareTo(Period other) {
+		public int compareTo(Period<T> other) {
 			if(! getClass().equals(other.getClass())) {
 				throw new IllegalArgumentException("Periods can only be compared to other "
 						+ "Periods of the same type.");
@@ -64,7 +64,8 @@ public abstract class Period implements Comparable<Period> {
 		public boolean equals(Object obj) {
 			if (obj == null) return false;
 	        if (getClass() != obj.getClass()) return false;
-	        final Period other = (Period) obj;
+	        @SuppressWarnings("unchecked")
+	        final T other = (T) obj;
 	        return other.value == value;
 		}
 

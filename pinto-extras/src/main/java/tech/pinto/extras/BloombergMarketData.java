@@ -26,6 +26,7 @@ import com.bloomberglp.blpapi.CorrelationID;
 import com.bloomberglp.blpapi.Datetime;
 import com.bloomberglp.blpapi.Element;
 import com.bloomberglp.blpapi.Event;
+import com.bloomberglp.blpapi.EventHandler;
 import com.bloomberglp.blpapi.Message;
 import com.bloomberglp.blpapi.MessageIterator;
 import com.bloomberglp.blpapi.Service;
@@ -36,7 +37,7 @@ import tech.pinto.MarketData;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
-public class BloombergMarketData implements MarketData {
+public class BloombergMarketData implements MarketData, EventHandler {
 
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
@@ -55,62 +56,7 @@ public class BloombergMarketData implements MarketData {
 
 	private void connect() {
 		try {
-			session = new Session(options, (event, session) -> {
-				MessageIterator msgIter = event.messageIterator();
-				while (msgIter.hasNext()) {
-					Message msg = msgIter.next();
-					if (msg.messageType().toString().equals("SessionConnectionUp")) {
-						log.info("Bloomberg connection up.");
-						continue;
-					}
-					if (msg.messageType().toString().equals("SessionStarted")) {
-						log.info("Bloomberg session started.");
-						continue;
-					}
-					Job j = jobs.get(msg.correlationID().value());
-					try {
-						if (!(event.eventType().equals(Event.EventType.RESPONSE)
-								|| event.eventType().equals(Event.EventType.PARTIAL_RESPONSE))) {
-							return;
-						}
-						if (msg.hasElement("responseError")) {
-							throw new Exception("Response error: "
-									+ msg.getElement("responseError").getElement("message").getValueAsString());
-						}
-						Element securityDataRaw = msg.getElement("securityData"); // maybe one maybe many
-						List<Element> securityElements = new ArrayList<Element>();
-						Consumer<Element> processSecurityElement = e -> {
-							if (e.hasElement("securityError")) {
-								j.getErrorHandler().accept(new IllegalArgumentException("\""
-										+ e.getElementAsString("security") + ": \""
-										+ e.getElement("securityError").getElement("message").getValueAsString()));
-							} else if (e.hasElement("fieldExceptions")
-									&& e.getElement("fieldExceptions").numValues() != 0) {
-								Element exceptions = e.getElement("fieldExceptions");
-								Element field = exceptions.getValueAsElement(0).getElement("fieldId");
-								Element reason = exceptions.getValueAsElement(0).getElement("errorInfo")
-										.getElement("message");
-								j.getErrorHandler().accept(new IllegalArgumentException(
-										"\"" + field.getValueAsString() + "\": " + reason.getValueAsString()));
-							}
-							securityElements.add(e);
-						};
-						if (securityDataRaw.isArray()) {
-							for (int i = 0; i < securityDataRaw.numValues(); i++) {
-								processSecurityElement.accept(securityDataRaw.getValueAsElement(i));
-							}
-						} else {
-							processSecurityElement.accept(securityDataRaw);
-						}
-						j.addElements(securityElements);
-						if (event.eventType().equals(Event.EventType.RESPONSE)) {
-							j.finish();
-						}
-					} catch (Exception e) {
-						j.getErrorHandler().accept(e);
-					}
-				}
-			});
+			session = new Session(options, this);
 			if (!session.start())
 				throw new Exception("Failed to start Bloomberg session.");
 			if (!session.openService("//blp/refdata"))
@@ -120,7 +66,67 @@ public class BloombergMarketData implements MarketData {
 		}
 	}
 
-	public <P extends Period> Function<PeriodicRange<?>, double[][]> 
+	@Override
+	public void processEvent(Event event, Session session) {
+		MessageIterator msgIter = event.messageIterator();
+		while (msgIter.hasNext()) {
+			Message msg = msgIter.next();
+			if (msg.messageType().toString().equals("SessionConnectionUp")) {
+				log.info("Bloomberg connection up.");
+				continue;
+			}
+			if (msg.messageType().toString().equals("SessionStarted")) {
+				log.info("Bloomberg session started.");
+				continue;
+			}
+			Job j = jobs.get(msg.correlationID().value());
+			try {
+				if (!(event.eventType().equals(Event.EventType.RESPONSE)
+						|| event.eventType().equals(Event.EventType.PARTIAL_RESPONSE))) {
+					return;
+				}
+				if (msg.hasElement("responseError")) {
+					throw new Exception("Response error: "
+							+ msg.getElement("responseError").getElement("message").getValueAsString());
+				}
+				Element securityDataRaw = msg.getElement("securityData"); // maybe one maybe many
+				List<Element> securityElements = new ArrayList<Element>();
+				Consumer<Element> processSecurityElement = e -> {
+					if (e.hasElement("securityError")) {
+						j.getErrorHandler().accept(new IllegalArgumentException("\""
+								+ e.getElementAsString("security") + ": \""
+								+ e.getElement("securityError").getElement("message").getValueAsString()));
+					} else if (e.hasElement("fieldExceptions")
+							&& e.getElement("fieldExceptions").numValues() != 0) {
+						Element exceptions = e.getElement("fieldExceptions");
+						Element field = exceptions.getValueAsElement(0).getElement("fieldId");
+						Element reason = exceptions.getValueAsElement(0).getElement("errorInfo")
+								.getElement("message");
+						j.getErrorHandler().accept(new IllegalArgumentException(
+								"\"" + field.getValueAsString() + "\": " + reason.getValueAsString()));
+					} else {
+						securityElements.add(e);
+					}
+				};
+				if (securityDataRaw.isArray()) {
+					for (int i = 0; i < securityDataRaw.numValues(); i++) {
+						processSecurityElement.accept(securityDataRaw.getValueAsElement(i));
+					}
+				} else {
+					processSecurityElement.accept(securityDataRaw);
+				}
+				j.addElements(securityElements);
+				if (event.eventType().equals(Event.EventType.RESPONSE)) {
+					j.finish();
+				}
+			} catch (Exception e) {
+				j.getErrorHandler().accept(e);
+			}
+		}
+	}
+
+
+	public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> 
 					getFunction(List<String> securities, List<String> fields ) {
 		return (range) -> {
 			if (session == null) {
@@ -136,10 +142,6 @@ public class BloombergMarketData implements MarketData {
 			final double[][] data = new double[securityCodeFieldCode.size()][(int) range.size()];
 			Arrays.stream(data).forEach(d -> Arrays.fill(d, Double.NaN));
 			final CompletableFuture<double[][]> futureDS = new CompletableFuture<>();
-//			final Map<String,DoubleStream.Builder> builders = securityCodeFieldCode.stream()
-//						.collect(Collectors.toMap(Function.identity(), (s) -> DoubleStream.builder()));
-//			final Map<String,AtomicInteger> stillNeeded = securityCodeFieldCode.stream()
-//						.collect(Collectors.toMap(Function.identity(), (s) -> new AtomicInteger((int) d.size())));
 			final Consumer<Exception> errorHandler = e -> {
 				futureDS.completeExceptionally(e);
 			};
@@ -179,13 +181,12 @@ public class BloombergMarketData implements MarketData {
 									//TODO
 									//builders.get(securityField).add(Double.NaN);
 								} else {
+									int col = (int) range.indexOf(LocalDate.parse(date.toString()));
 									for(int j = 1; j < dateValueElement.numElements(); j++) {
-										int row = rowMap.get(securityData.getElement("security").getValueAsString() 
-												+ ":" + dateValueElement.getElement(j).name());
-										int col = (int) range.indexOf(LocalDate.parse(date.toString()));
+										int row = rowMap.get(
+												new StringBuilder().append(securityData.getElement("security").getValueAsString()) 
+												.append(":").append(dateValueElement.getElement(j).name()).toString());
 										data[row][col] = dateValueElement.getElement(j).getValueAsFloat64();
-//										builders.get(securityField).add(dateValueElement.getElement(1).getValueAsFloat64());
-//										stillNeeded.get(securityField).decrementAndGet();
 									}
 								}
 							}

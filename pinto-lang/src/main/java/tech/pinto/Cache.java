@@ -1,14 +1,12 @@
 package tech.pinto;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.DoubleStream;
 
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
@@ -24,14 +22,13 @@ public class Cache {
 	
 	private static HashMap<String, RangeMap<Long, CachedSeriesList>> seriesCache = new HashMap<>();
 
-	public static DoubleStream getCachedValues(String key, PeriodicRange<?> range, int column,
+	public static <P extends Period<P>> double[] getCachedValues(String key, PeriodicRange<P> range, int column,
 			int columnCount, Function<PeriodicRange<?>, double[][]> function) {
-		@SuppressWarnings("unchecked")
-		Periodicity<Period> freq = (Periodicity<Period>) range.periodicity();
+		Periodicity<P> freq =  range.periodicity();
 		String wholeKey = key + ":" + range.periodicity().code();
 		RangeMap<Long, CachedSeriesList> cache = null;
 		synchronized (seriesCache) {
-			if (range.clearCache() || !seriesCache.containsKey(wholeKey)) {
+			if (!seriesCache.containsKey(wholeKey)) {
 				seriesCache.put(wholeKey, TreeRangeMap.create());
 			}
 			cache = seriesCache.get(wholeKey);
@@ -58,13 +55,13 @@ public class Cache {
 					long thisChunkEnd = e.getValue().getRange().end().longValue();
 					chunkStart = Long.min(chunkStart, thisChunkStart);
 					if (current < thisChunkStart) {
-						concat(chunkData, function.apply(freq.range(current, thisChunkStart - 1, false)));
+						concat(chunkData, function.apply(freq.range(current, thisChunkStart - 1)));
 					}
 					concat(chunkData, e.getValue().getSeries());
 					current = thisChunkEnd + 1;
 				}
 				if (current <= requestedRange.upperEndpoint()) {
-					concat(chunkData, function.apply(freq.range(current, requestedRange.upperEndpoint(), false)));
+					concat(chunkData, function.apply(freq.range(current, requestedRange.upperEndpoint())));
 					current = requestedRange.upperEndpoint() + 1;
 				}
 				toRemove.stream().forEach(cache::remove);
@@ -72,19 +69,20 @@ public class Cache {
 				if(now > chunkStart) {
 					long endOfPast = Math.min(now - 1, current - 1);
 					cache.put(Range.closed(chunkStart, endOfPast),
-							new CachedSeriesList(freq.range(chunkStart,  endOfPast, false),
+							new CachedSeriesList(freq.range(chunkStart,  endOfPast),
 									dup(chunkData,0, (int) (1 + endOfPast - chunkStart)), Optional.empty()));
 				}
 				if(current - 1 >= now) {
 					long startOfNow = Math.max(now, chunkStart);
 					cache.put(Range.closed(startOfNow, current - 1),
-							new CachedSeriesList(freq.range(startOfNow,  current - 1, false),
+							new CachedSeriesList(freq.range(startOfNow,  current - 1),
 									dup(chunkData, (int) (startOfNow - chunkStart), (int) (current - startOfNow)),
 									Optional.of(expirationTime.orElse(System.currentTimeMillis() + CURRENT_DATA_TIMEOUT))));
 				}
 				final long finalStart = chunkStart;
-				return Arrays.stream(chunkData[column])
-						.skip(requestedRange.lowerEndpoint() - finalStart).limit(range.size());
+				double[] d = new double[(int)range.size()];
+				System.arraycopy(chunkData[column], (int) (requestedRange.lowerEndpoint() - finalStart), d, 0, d.length);
+				return d;
 			} catch (RuntimeException re) {
 				seriesCache.remove(wholeKey);
 				throw re;

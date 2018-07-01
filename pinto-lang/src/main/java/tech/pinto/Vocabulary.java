@@ -1,9 +1,9 @@
 package tech.pinto;
 
-import java.util.Map;
+import java.util.List;
 
 public abstract class Vocabulary {
 	
-	abstract protected Map<String,Name> getNameMap();
+	abstract protected List<Name> getNames();
     
 }

@@ -56,7 +56,7 @@ public class Servlet extends HttpServlet {
 			os.print(reportTop.get());
 			Table t = new Table();
 			pinto.getNamespace().getName("_rpt-" + request.getParameter("p")).apply(pinto).accept(t);
-			for(Column<?,?> c : t.flatten()) {
+			for(Column<?> c : t.flatten()) {
 				os.print(((Column.OfConstantStrings) c).getValue());
 			}
 			os.print(reportBottom.get());

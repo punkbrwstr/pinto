@@ -1,92 +1,169 @@
 package tech.pinto.tools;
 
-import java.util.function.ToDoubleFunction;
 
 public class DoubleCollector {
-		
-		private double sumOfSquares = 0, sum = 0, mean = 0, sumOfLogs = 0, first = Double.NaN,
-				last = Double.NaN, min = Double.NaN, max = Double.NaN;
-		private int n = 0;
-		private ToDoubleFunction<DoubleCollector> function;
-		
-		public DoubleCollector(ToDoubleFunction<DoubleCollector> function) {
-			this.function = function;
+	
+		@FunctionalInterface
+		public static interface Aggregation {
+			public double apply(double[] d);
 		}
 		
-		public void add(double d) {
-			last = d;
-			if(!Double.isNaN(d)) {
-				if(Double.isNaN(first)) {
-					first = d;
+		
+		public static double first(double[] d) {
+			return d[0];
+		}
+
+		public static double last(double[] d) {
+			return d[d.length-1];
+		}
+
+		public static double change(double[] d) {
+			return d[d.length-1] / d[0];
+		}
+
+		public static double pct_change(double[] d) {
+			return d[d.length-1] / d[0] - 1;
+		}
+
+		public static double log_change(double[] d) {
+			return Math.log(d[d.length-1] / d[0]);
+		}
+
+		public static double count(double[] d) {
+			int count = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					count++;
 				}
-				if(Double.isNaN(min) || d < min) {
-					min = d;
-				}
-				if(Double.isNaN(max) || d > max) {
-					max = d;
-				}
-				sum += d;
-				sumOfSquares += Math.pow(d, 2);
-				sumOfLogs += Math.log(d);
-				n++;
-				mean += (d - mean) / n;
 			}
-		}
-		
-		public void combine(DoubleCollector vc) {
-			int totalN = n + vc.n;
-			mean = mean * n / (double) totalN + vc.mean * vc.n / (double) totalN;
-			last = vc.last;
-			sum += vc.sum;
-			sumOfSquares += vc.sumOfSquares;
-			sumOfLogs += vc.sumOfLogs;
-			n += vc.n;
-			min = min < vc.min ? min : vc.min;
-			max = max > vc.max ? max : vc.max;
-		}
-		
-		public double finish() {
-			return function.applyAsDouble(this);
+			return (double) count;
 		}
 
-		public double getSumOfSquares() {
-			return sumOfSquares;
+		public static double mean(double[] d) {
+			int count = 0;
+			double sum = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					count++;
+					sum += d[i];
+				}
+			}
+			return sum / (double) count;
 		}
 
-		public double getSum() {
+		public static double geo_mean(double[] d) {
+			int count = 0;
+			double sum = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					count++;
+					sum += Math.log(d[i]);
+				}
+			}
+			return Math.exp(sum / (double) count);
+		}
+
+		public static double sum(double[] d) {
+			double sum = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					sum += d[i];
+				}
+			}
 			return sum;
 		}
 
-		public double getMean() {
-			return mean;
-		}
-
-		public double getSumOfLogs() {
-			return sumOfLogs;
-		}
-
-		public double getFirst() {
-			return first;
-		}
-
-		public double getLast() {
-			return last;
-		}
-
-		public int count() {
-			return n;
-		}
-
-		public double getMin() {
-			return min;
-		}
-
-		public double getMax() {
+		public static double max(double[] d) {
+			double max = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					if(Double.isNaN(max) || d[i] > max) {
+						max = d[i];
+					}
+				}
+			}
 			return max;
 		}
 
-		public int getN() {
-			return n;
+		public static double min(double[] d) {
+			double min = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					if(Double.isNaN(min) || d[i] < min) {
+						min = d[i];
+					}
+				}
+			}
+			return min;
 		}
 		
+		public static double varp(double[] d) {
+			int count = 0;
+			double sum = 0;
+			double sumOfSquares = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					count++;
+					sum += d[i];
+					sumOfSquares += Math.pow(d[i], 2);
+				}
+			}
+			double mean = sum / (double) count;
+			return (sumOfSquares - sum * mean) / (double) count;
+		}
+
+		public static double var(double[] d) {
+			int count = 0;
+			double sum = 0;
+			double sumOfSquares = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					count++;
+					sum += d[i];
+					sumOfSquares += Math.pow(d[i], 2);
+				}
+			}
+			double mean = sum / (double) count;
+			return (sumOfSquares - sum * mean) / (double) (count - 1);
+		}
+
+		public static double std(double[] d) {
+			return Math.sqrt(var(d));
+		}
+
+		public static double stdp(double[] d) {
+			return Math.sqrt(varp(d));
+		}
+
+		public static double zscore(double[] d) {
+			int count = 0;
+			double sum = 0;
+			double sumOfSquares = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					count++;
+					sum += d[i];
+					sumOfSquares += Math.pow(d[i], 2);
+				}
+			}
+			double mean = sum / (double) count;
+			double std = Math.sqrt((sumOfSquares - sum * mean) / (double) (count - 1));
+			return (d[d.length-1] - mean) / std;
+		}
+		
+		public static double zscorep(double[] d) {
+			int count = 0;
+			double sum = 0;
+			double sumOfSquares = 0;
+			for(int i = 0; i < d.length; i++) {
+				if(!Double.isNaN(d[i])) {
+					count++;
+					sum += d[i];
+					sumOfSquares += Math.pow(d[i], 2);
+				}
+			}
+			double mean = sum / (double) count;
+			double std = Math.sqrt((sumOfSquares - sum * mean) / (double) (count));
+			return (d[d.length-1] - mean) / std;
+		}
 }

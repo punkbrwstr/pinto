@@ -3,10 +3,7 @@ package tech.pinto.time;
 import java.time.LocalDate;
 import java.util.Objects;
 
-import com.google.common.collect.DiscreteDomain;
-import com.google.common.collect.Range;
-
-public abstract class Periodicity<P extends Period> extends DiscreteDomain<P> {
+public abstract class Periodicity<P extends Period<P>> {
 	
 	public abstract P get(long index);
 	
@@ -19,19 +16,16 @@ public abstract class Periodicity<P extends Period> extends DiscreteDomain<P> {
 	public abstract double annualizationFactor();
 	
 
-	@Override
 	public P next(P arg0) {
 		return offset(1,arg0);
 	}
 
-	@Override
 	public P previous(P arg0) {
 		return offset(-1,arg0);
 	}
 
-	@Override
-	public long distance(P arg0, P arg1) {
-		return arg1.longValue() - arg0.longValue();
+	public long distance(P arg0, P period) {
+		return period.longValue() - arg0.longValue();
 	}
 
 	public long distance(LocalDate arg0, LocalDate arg1) {
@@ -56,17 +50,17 @@ public abstract class Periodicity<P extends Period> extends DiscreteDomain<P> {
 		return get(from(start).longValue() + count).endDate();
 	}
 
-	@SuppressWarnings("unchecked")
-	public PeriodicRange<P> range(Period start, Period end, boolean clearCache) {
-		return new PeriodicRange<P>(this, (Range<P>) Range.closed(start, end), clearCache);
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public PeriodicRange<P> range(Period start, Period end) {
+		return new PeriodicRange(this, start, end);
 	}
 
-	public PeriodicRange<P> range(LocalDate start, LocalDate end, boolean clearCache) {
-		return range(from(start),from(end), clearCache);
+	public PeriodicRange<P> range(LocalDate start, LocalDate end) {
+		return range(from(start),from(end));
 	}
 	
-	public PeriodicRange<P> range(long start, long end, boolean clearCache) {
-		return range(get(start),get(end), clearCache);
+	public PeriodicRange<P> range(long start, long end) {
+		return range(get(start),get(end));
 	}
 
 	@Override
@@ -85,6 +79,14 @@ public abstract class Periodicity<P extends Period> extends DiscreteDomain<P> {
 	@Override
 	public int hashCode() {
 		return code().hashCode();
+	}
+
+	public P previous(LocalDate endDate) {
+		return from(endDate).previous();
+	}
+
+	public P next(LocalDate endDate) {
+		return from(endDate).next();
 	}
 	
 

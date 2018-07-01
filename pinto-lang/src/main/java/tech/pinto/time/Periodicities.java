@@ -22,7 +22,7 @@ public class Periodicities {
 			.build();
 	
 	@SuppressWarnings("unchecked")
-	public static <P extends Period> Periodicity<P> get(String code) {
+	public static <P extends Period<P>> Periodicity<P> get(String code) {
 		if(!map.containsKey(code)) {
 			throw new IllegalArgumentException("Periodicity code \"" + code + "\" not found.");
 		}

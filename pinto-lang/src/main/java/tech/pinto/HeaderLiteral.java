@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
-public class HeaderLiteral implements Consumer<LinkedList<Column<?,?>>>{
+public class HeaderLiteral implements Consumer<LinkedList<Column<?>>>{
 	
 	private final List<String[]> headers;
 	private final Pinto pinto;
@@ -59,11 +59,11 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?,?>>>{
 	}
 
 	@Override
-	public void accept(LinkedList<Column<?, ?>> stack) {
-		LinkedList<Column<?,?>> newStack = new LinkedList<>();
+	public void accept(LinkedList<Column<?>> stack) {
+		LinkedList<Column<?>> newStack = new LinkedList<>();
 		for(int i = headers.size() - 1; i >= 0; i--) {
 			final String label = headers.get(i)[0].trim();
-			LinkedList<Column<?,?>> unlabeled = new LinkedList<>();
+			LinkedList<Column<?>> unlabeled = new LinkedList<>();
 			if(headers.get(i)[1] == null) {
 				if(!stack.isEmpty()) {
 					unlabeled.addLast(stack.removeFirst());
@@ -71,7 +71,7 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?,?>>>{
 			} else {
 				unlabeled.addAll(pinto.parseSubExpression(headers.get(i)[1]));
 			}
-			for(Column<?,?> c : unlabeled) {
+			for(Column<?> c : unlabeled) {
 				c.setHeader(label);
 				newStack.addLast(c);
 			}

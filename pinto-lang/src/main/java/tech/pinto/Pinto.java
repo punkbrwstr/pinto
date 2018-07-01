@@ -24,75 +24,76 @@ public class Pinto {
 	static Pattern DATE_LITERAL = Pattern.compile("\\d{4}-[01]\\d-[0-3]\\d");
 	static Pattern ILLEGAL_NAME = Pattern.compile(".*[\\{\\}\\[\\]\"\\s:].*");
 	private static int port;
+	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
 	@Inject
 	Namespace namespace;
 	@Inject	
 	MarketData marketdata;
-	State engineState = new State(false);
+	Expression activeExpression = new Expression(false);
 
 	@Inject
 	public Pinto() {
 	}
 
-	public List<Table> eval(String expression) {
-		return evaluate(expression, engineState);
+	public List<Table> eval(String toEvaluate) {
+		return evaluate(toEvaluate, activeExpression);
 	}
 
-	public LinkedList<Column<?,?>> parseSubExpression(String expression) {
-		Table t = evaluate(expression, new State(true)).get(0);
+	public LinkedList<Column<?>> parseSubExpression(String expression) {
+		Table t = evaluate(expression, new Expression(true)).get(0);
 		return t.flatten();
 	}
 
-	public List<Table> evaluate(String expression, State state) {
+	public List<Table> evaluate(String toEvaluate, Expression e) {
 		List<Table> responses = new ArrayList<>();
-		expression = expression.replaceAll("\\(", " \\( ").replaceAll("\\)", " \\) ");
-		try (Scanner sc = new Scanner(expression)) {
+		toEvaluate = toEvaluate.replaceAll("\\(", " \\( ").replaceAll("\\)", " \\) ");
+		e.addText(toEvaluate);
+		try (Scanner sc = new Scanner(toEvaluate)) {
 			while (sc.hasNext()) {
 				if(sc.hasNext(Pattern.compile("#.*"))) { // comment
 					sc.nextLine();
-				} else if(state.isExpressionStart() && sc.hasNext(NAME_LITERAL)) { // name literal
+				} else if(e.isExpressionStart() && sc.hasNext(NAME_LITERAL)) { // name literal
 					String nl = sc.next(NAME_LITERAL).replaceAll(":", "");
-					state.setNameLiteral(checkName(nl));
+					e.setNameLiteral(checkName(nl));
 					String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
-					state.setNameIndexer(new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true));
-					state.setExpression(expression);
-				} else if(state.isInlineStart()) {
+					e.setDefinedIndexer(new Indexer(functionIndexString.replaceAll("^\\[|\\]$", ""), true));
+				} else if(e.isInlineStart()) {
 					String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
-					state.setCurrent(state.getCurrent().andThen(
-							new Indexer(this, functionIndexString.replaceAll("^\\[|\\]$", ""), true)));
+					e.setCurrent(e.getCurrent().andThen(
+							new Indexer(functionIndexString.replaceAll("^\\[|\\]$", ""), true).apply(this)));
 				} else if (sc.hasNext(Pattern.compile(".*?\\)"))) { // end inline function
 					sc.next();
-					state.setCurrent(state.getCurrent().andThen(t2 -> {
+					e.setCurrent(e.getCurrent().andThen(t2 -> {
 						t2.collapseFunction();
 					}));
 				} else if (sc.hasNext(Pattern.compile("\\(.*?"))) { // start inline function
 					sc.next();
-					state.startInline();
+					e.startInline();
 				} else if (sc.hasNextDouble()) { // double literal
 					double d = sc.nextDouble();
-					state.setCurrent(state.getCurrent().andThen(toTableConsumer(s -> {
+					e.setCurrent(e.getCurrent().andThen(toTableConsumer(s -> {
 						s.addFirst(new tech.pinto.Column.OfConstantDoubles(d));
 					})));
 				} else if (sc.hasNext(DATE_LITERAL)) { // date literal
 					final LocalDate d = LocalDate.parse(sc.next(DATE_LITERAL));
-					state.setCurrent(state.getCurrent().andThen(toTableConsumer(s -> {
+					e.setCurrent(e.getCurrent().andThen(toTableConsumer(s -> {
 						s.addFirst(new tech.pinto.Column.OfConstantDates(d));
 					})));
 				} else if (sc.hasNext(Pattern.compile("\\[.*?"))) { // indexer
-					state.setCurrent(state.getCurrent().andThen(
-							new Indexer(this, parseBlock(sc, "\\[", "\\]"), false)));
+					e.setCurrent(e.getCurrent().andThen(
+							new Indexer(parseBlock(sc, "\\[", "\\]"), false).apply(this)));
 				} else if (sc.hasNext(Pattern.compile("\\{.*?"))) { // header literal
-					state.setCurrent(state.getCurrent().andThen(toTableConsumer(
+					e.setCurrent(e.getCurrent().andThen(toTableConsumer(
 							new HeaderLiteral(this, parseBlock(sc, "\\{", "\\}")))));
 				} else if (sc.hasNext(Pattern.compile("\".*?"))) { // string literal
 					final String sl = parseBlock(sc,"\"","\"");
-					state.setCurrent(state.getCurrent().andThen(toTableConsumer(s -> {
+					e.setCurrent(e.getCurrent().andThen(toTableConsumer(s -> {
 						s.addFirst(new tech.pinto.Column.OfConstantStrings(sl));
 					})));
 				} else if (sc.hasNext(Pattern.compile("\\$.*?"))) { // market literal
 					final String sl = parseBlock(sc,"\\$","\\$");
-					state.setCurrent(state.getCurrent().andThen(toTableConsumer(s -> {
+					e.setCurrent(e.getCurrent().andThen(toTableConsumer(s -> {
 						String[] sa = sl.split(":");
 						List<String> tickers = Arrays.asList(sa[0].split(","));
 						String fieldsString = sa.length > 1 ? sa[1] : "PX_LAST";
@@ -103,51 +104,49 @@ public class Pinto {
 								.collect(Collectors.toList());
 						for (int i = 0; i < tickersfields.size(); i++) {
 							final int index = i;
-							s.addFirst(new Column.OfDoubles(inputs -> tickersfields.get(index), inputs -> range -> {
-										return Cache.getCachedValues(key, range, index, tickersfields.size(),
-												marketdata.getFunction(tickers, fields));
-							}));
+							s.addFirst(new Column.OfDoubles(inputs -> tickersfields.get(index),
+									(range, inputs) -> Cache.getCachedValues(key, range, index, tickersfields.size(),
+												marketdata.getFunction(tickers, fields))));
 						}
 					})));
 				} else { // name
 					String name = sc.next();
 					if (!namespace.contains(name)) {
-						throw new PintoSyntaxException("Name \"" + name + "\" not found in \"" + expression + "\"");
+						throw new PintoSyntaxException("Name \"" + name + "\" not found in \"" + toEvaluate + "\"");
 					}
-					state.getDependencies().add(name);
+					e.getDependencies().add(name);
 					Name n = namespace.getName(name);
-					if(n.hasDefaultIndexer()) {
-						state.setCurrent(state.getCurrent().andThen(t -> {
-							namespace.getName(name).getDefaultIndexer(this).accept(t);
-						}));
-					}
-					state.setCurrent(state.getCurrent().andThen(t -> {
+					e.setCurrent(e.getCurrent().andThen(t -> {
+						namespace.getName(name).getDefaultIndexer(this).accept(t);
+					}));
+					e.setCurrent(e.getCurrent().andThen(t -> {
 						namespace.getName(name).apply(this).accept(t);
 					}));
 					if(n.terminal()) {
-						if(state.isSubExpression()) {
+						if(e.isSubExpression()) {
 							throw new PintoSyntaxException("Sub-expressions cannot include terminal functions");
 						}
 						Table t = new Table();
 						if(!n.startFromLast()) {
-							state.getCurrent().accept(t); 
+							e.getCurrent().accept(t); 
 						} else {
 							namespace.getName(name).apply(this).accept(t); // used by def
 						}
+						log.info("expression: {}", e.getText());
 						responses.add(t);
-						state.reset();
+						e.reset();
 					}
 				}
 			}
-			if(state.isSubExpression()) {
+			if(e.isSubExpression()) {
 				Table t = new Table();
-				state.getCurrent().accept(t);
+				e.getCurrent().accept(t);
 				responses.add(t);
 			} 
 			return responses;
-		} catch (RuntimeException e) {
-			state.reset();
-			throw e;
+		} catch (RuntimeException re) {
+			e.reset();
+			throw re;
 		}
 	}
 	
@@ -155,8 +154,8 @@ public class Pinto {
 		return namespace;
 	}
 	
-	public State getState() {
-		return engineState;
+	public Expression getExpression() {
+		return activeExpression;
 	}
 	
 	public void setPort(int port) {
@@ -167,7 +166,7 @@ public class Pinto {
 		return port;
 	}
 	
-	public static Consumer<Table> toTableConsumer(Consumer<LinkedList<Column<?,?>>> colsFunction) {
+	public static Consumer<Table> toTableConsumer(Consumer<LinkedList<Column<?>>> colsFunction) {
 		return t -> {
 			t.insertAtTop(t.takeTop().stream().map(c -> { 
 				colsFunction.accept(c);	
@@ -183,7 +182,26 @@ public class Pinto {
 		return name;
 	}
 	
-	public static class State {
+	@FunctionalInterface
+	public static interface TableFunction {
+		public void accept(Pinto pinto, Table table);
+	}
+
+	@FunctionalInterface
+	public static interface StackFunction {
+		public void accept(Pinto pinto, LinkedList<Column<?>> stack);
+		default TableFunction toTableFunction() {
+			return (p,t) -> {
+				t.insertAtTop(t.takeTop().stream().map(c -> { 
+					accept(p,c);	
+					return c;
+				}).collect(Collectors.toList()));
+			};
+			
+		}
+	}
+	
+	public static class Expression {
 		
 		private final boolean isSubExpression;
 		private boolean expressionStart = true;
@@ -191,11 +209,11 @@ public class Pinto {
 		private Consumer<Table> current = t -> {};
 		private Consumer<Table> previous = t -> {};
 		private List<String> dependencies = new ArrayList<>();
-		private Optional<String> expression = Optional.empty();
+		private StringBuilder text = new StringBuilder();
 		private	Optional<String> nameLiteral = Optional.empty();
-		private Optional<Indexer> nameIndexer = Optional.empty();
+		private Indexer definedIndexer = Indexer.ALL_DEFINED;
 		
-		public State(boolean isSubExpression) {
+		public Expression(boolean isSubExpression) {
 			this.isSubExpression = isSubExpression;
 		}
 
@@ -204,9 +222,9 @@ public class Pinto {
 			current = t -> {};
 			previous = t -> {};
 			dependencies = new ArrayList<>();
-			expression = Optional.empty();
+			text = new StringBuilder();
 			nameLiteral = Optional.empty();
-			nameIndexer = Optional.empty();
+			definedIndexer = Indexer.ALL_DEFINED;
 			inlineStart = false;
 		}
 		
@@ -249,11 +267,11 @@ public class Pinto {
 		public void setDependencies(List<String> dependencies) {
 			this.dependencies = dependencies;
 		}
-		public Optional<String> getExpression() {
-			return expression;
+		public String getText() {
+			return text.toString();
 		}
-		public void setExpression(String expression) {
-			this.expression = Optional.of(expression);
+		public void addText(String expression) {
+			this.text.append(" ").append(expression);
 		}
 		public Optional<String> getNameLiteral() {
 			return nameLiteral;
@@ -261,11 +279,11 @@ public class Pinto {
 		public void setNameLiteral(String nameLiteral) {
 			this.nameLiteral = Optional.of(nameLiteral);
 		}
-		public Optional<Indexer> getNameIndexer() {
-			return nameIndexer;
+		public Indexer getDefinedIndexer() {
+			return definedIndexer;
 		}
-		public void setNameIndexer(Indexer nameIndexer) {
-			this.nameIndexer = Optional.of(nameIndexer);
+		public void setDefinedIndexer(Indexer nameIndexer) {
+			this.definedIndexer = nameIndexer;
 		}
 	}
 	

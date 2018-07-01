@@ -90,11 +90,11 @@ public class DateTester {
 
 		assertEquals("BusinessQuarter range size (1)",  2l,
 				p.range(p.from(LocalDate.of(2014, MAY, 2)),
-						p.from(LocalDate.of(2014, JULY, 4)), false).size());
+						p.from(LocalDate.of(2014, JULY, 4))).size());
 
 		assertEquals("BusinessQuarter range size (2)",  1l,
 				p.range(p.from(LocalDate.of(2014, JULY, 4)),
-						p.from(LocalDate.of(2014, JULY, 14)), false).size());
+						p.from(LocalDate.of(2014, JULY, 14))).size());
 
 		log.info("END testBusinessQuarter");
 	}
@@ -132,15 +132,15 @@ public class DateTester {
 
 		assertEquals("BusinessMonthly range size (1)",  2l,
 				p.range(p.from(LocalDate.of(2014, MAY, 2)),
-						p.from(LocalDate.of(2014, JUNE, 4)), false).size());
+						p.from(LocalDate.of(2014, JUNE, 4))).size());
 
 		assertEquals("BusinessMonthly range size (2)",  1l,
 				p.range(p.from(LocalDate.of(2014, JULY, 4)),
-						p.from(LocalDate.of(2014, JULY, 14)), false).size());
+						p.from(LocalDate.of(2014, JULY, 14))).size());
 
 		assertEquals("BusinessMonthly range values size (1)",  3l,
 				p.range(p.from(LocalDate.of(2014, MAY, 2)),
-						p.from(LocalDate.of(2014, JULY, 4)), false).values().size());
+						p.from(LocalDate.of(2014, JULY, 4))).values().size());
 		
 		log.info("END testBusinessMonthly");
 	}
@@ -211,15 +211,15 @@ public class DateTester {
 
 		assertEquals("FridayWeekly range size (1)",  10l,
 				p.range(p.from(LocalDate.of(2014, MAY, 2)),
-						p.from(LocalDate.of(2014, JULY, 4)), false).size());
+						p.from(LocalDate.of(2014, JULY, 4))).size());
 
 		assertEquals("FridayWeekly range size (2)",  1l,
 				p.range(p.from(LocalDate.of(2014, JULY, 4)),
-						p.from(LocalDate.of(2014, JULY, 4)), false).size());
+						p.from(LocalDate.of(2014, JULY, 4))).size());
 
 		assertEquals("FridayWeekly range values size (1)",  10l,
 				p.range(p.from(LocalDate.of(2014, MAY, 2)),
-						p.from(LocalDate.of(2014, JULY, 4)), false).values().size());
+						p.from(LocalDate.of(2014, JULY, 4))).values().size());
 		
 		log.info("END testFridayWeekly");
 	}
@@ -260,15 +260,15 @@ public class DateTester {
 
 		assertEquals("BusinessDay range size (1)",  10l,
 				p.range(p.from(LocalDate.of(2014, JULY, 1)),
-						p.from(LocalDate.of(2014, JULY, 14)), false).size());
+						p.from(LocalDate.of(2014, JULY, 14))).size());
 
 		assertEquals("BusinessDay range size (2)",  1l,
 				p.range(p.from(LocalDate.of(2014, JULY, 1)),
-						p.from(LocalDate.of(2014, JULY, 1)), false).size());
+						p.from(LocalDate.of(2014, JULY, 1))).size());
 
 		assertEquals("BusinessDay range values size (1)",  10l,
 				p.range(p.from(LocalDate.of(2014, JULY, 1)),
-						p.from(LocalDate.of(2014, JULY, 14)), false).values().size());
+						p.from(LocalDate.of(2014, JULY, 14))).values().size());
 		
 		log.info("END testBusinessDaily");
 	}

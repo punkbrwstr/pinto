@@ -3,7 +3,7 @@ package tech.pinto.time;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
-public class BusinessDay extends Period {
+public class BusinessDay extends Period<BusinessDay> {
 	
 	static final LocalDate EPOCH = LocalDate.of(1970, 1, 2);
 	

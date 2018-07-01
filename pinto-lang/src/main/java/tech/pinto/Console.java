@@ -17,6 +17,7 @@ public class Console implements Runnable {
 	private final int port;
 	private final String build;
 	private final Runnable[] shutdownCommands;
+	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 	private boolean trace = false;
 
 	public Console(Pinto pinto, int port, String build, Runnable...shutdownCommands) {
@@ -90,7 +91,9 @@ public class Console implements Runnable {
 				    		out.println("");
 						} else {
 							for(Table t : l) {
+								long start = System.nanoTime();
 								out.println(t.getStatus().isPresent() ? t.getStatus().get() : t.getConsoleText(nf, trace));
+								log.info("console elapsed: {}ms", (System.nanoTime() - start) / 1000000d);
 							}
 						}
 					} catch (PintoSyntaxException pse) {

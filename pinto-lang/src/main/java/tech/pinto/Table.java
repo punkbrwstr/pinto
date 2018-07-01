@@ -13,10 +13,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.PrimitiveIterator.OfDouble;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
@@ -32,7 +30,7 @@ public class Table {
 	private final LinkedList<Level> levels = new LinkedList<>();
 	private Optional<String> status = Optional.empty();
 	private Optional<PeriodicRange<?>> range = Optional.empty();
-	private Optional<LinkedList<Column<?,?>>> evaluatedStack = Optional.empty();
+	private Optional<LinkedList<Column<?>>> evaluatedStack = Optional.empty();
 
 	public Table() {
 		levels.add(new Level(true));
@@ -43,7 +41,7 @@ public class Table {
 		this.status = Optional.of(status);
 	}
 	
-	public List<LinkedList<Column<?,?>>> takeTop() {
+	public List<LinkedList<Column<?>>> takeTop() {
 		if(!levels.peekFirst().isFunctionLevel()) {
 			return levels.removeFirst().getStacks();
 		} else {
@@ -51,13 +49,13 @@ public class Table {
 		}
 	}
 	
-	public void insertAtTop(LinkedList<Column<?,?>> s) {
-		List<LinkedList<Column<?,?>>> l = new ArrayList<>();
+	public void insertAtTop(LinkedList<Column<?>> s) {
+		List<LinkedList<Column<?>>> l = new ArrayList<>();
 		l.add(s);
 		insertAtTop(l);
 	}
 
-	public void insertAtTop(List<LinkedList<Column<?,?>>> l) {
+	public void insertAtTop(List<LinkedList<Column<?>>> l) {
 		if(levels.peekFirst().getStacks().size() == 1) {
 			levels.peekFirst().getStacks().get(0).addAll(0, l.stream().flatMap(LinkedList::stream).collect(Collectors.toList()));
 		} else if(l.size() > 1) {
@@ -71,7 +69,7 @@ public class Table {
 		}
 	}
 	
-	public void push(boolean isFunction, List<LinkedList<Column<?,?>>> l) {
+	public void push(boolean isFunction, List<LinkedList<Column<?>>> l) {
 		levels.addFirst(new Level(isFunction, l));
 	}
 	
@@ -83,14 +81,14 @@ public class Table {
 		boolean foundFunction = false;
 		while(!foundFunction) {
 			foundFunction = levels.peekFirst().isFunctionLevel();
-			List<LinkedList<Column<?,?>>> functionReturn = levels.removeFirst().getStacks();
+			List<LinkedList<Column<?>>> functionReturn = levels.removeFirst().getStacks();
 			insertAtTop(functionReturn);
 		}
 	}
 	
-	public LinkedList<Column<?,?>> flatten() {
+	public LinkedList<Column<?>> flatten() {
 		while(levels.size() > 1) {
-			List<Column<?,?>> collapsed = levels.removeFirst().getStacks().stream().flatMap(LinkedList::stream).collect(Collectors.toList());
+			List<Column<?>> collapsed = levels.removeFirst().getStacks().stream().flatMap(LinkedList::stream).collect(Collectors.toList());
 			levels.peekFirst().getStacks().get(0).addAll(0,collapsed);
 		}
 		return levels.peekFirst().getStacks().get(0);
@@ -106,7 +104,7 @@ public class Table {
 		return range.orElseThrow(() -> new PintoSyntaxException("Cannot access table range before evaluating."));
 	}
 	
-	public LinkedList<Column<?,?>> getStack() {
+	public LinkedList<Column<?>> getStack() {
 		return evaluatedStack.orElseThrow(() -> new PintoSyntaxException("Cannot access stack before evaluating."));
 	}
 	
@@ -131,11 +129,6 @@ public class Table {
 		return (int) getRange().size();
 	}
 
-	public DoubleStream getSeries(int index, boolean reverse) {
-		int i = reverse ? getStack().size() - index - 1 : index;
-		return (DoubleStream) getStack().get(i).rows(getRange());
-	}
-
 	public String toCsv() {
 		NumberFormat nf = NumberFormat.getInstance();
 		nf.setGroupingUsed(false);
@@ -151,12 +144,11 @@ public class Table {
 		StringBuilder sb = new StringBuilder();
 		sb.append(streamInReverse(getStack()).map(Column::getHeader).collect(Collectors.joining(",","Date,","\n")));
 		List<LocalDate> d = getRange().dates();
-		List<OfDouble> s = getStack().stream().map(c -> (Column.OfDoubles) c).map(c -> c.rows(getRange()))
-				.map(DoubleStream::iterator).collect(Collectors.toList());
+		List<String[]> s = getStack().stream().map(c -> c.rowsAsStrings(getRange(), nf)).collect(Collectors.toList());
 		for(int row = 0; row < getRange().size(); row++) {
 			sb.append(d.get(row).format(dtf)).append(",");
 			for (int col = getStack().size() - 1; col > -1; col--) {
-				sb.append(nf.format(s.get(col).nextDouble()));
+				sb.append(s.get(col)[row]);
 				sb.append(col > 0 ? "," : "\n");
 			}
 		}
@@ -173,29 +165,27 @@ public class Table {
 			builder.put("index", getRange().dates().stream().map(LocalDate::toString)
 					.collect(toList()));
 		}
-		builder.put("series", !numbersAsStrings ? toColumnMajorArray().get() :
-				Stream.of(toColumnMajorArray().get()).map(DoubleStream::of)
+		builder.put("series", !numbersAsStrings ? toColumnMajorArray() :
+				Stream.of(toColumnMajorArray()).map(DoubleStream::of)
 					.map(ds -> ds.mapToObj(Double::toString).collect(toList())).collect(toList()));
 		return builder.build();
 	}
 
-	public Optional<double[][]> toColumnMajorArray() {
+	public double[][] toColumnMajorArray() {
 		double[][] series = new double[getStack().size()][];
 		for (int i = getStack().size() - 1; i > -1; i--) {
-			series[getStack().size() - i - 1] = ((Column.OfDoubles)getStack().get(i)).rows(getRange()).toArray();
+			series[i] = ((Column.OfDoubles)getStack().get(i)).rows(getRange());
 		}
-		return Optional.of(series);
+		return series;
 	}
 
-	public Optional<double[][]> toRowMajorArray() {
-		double[][] table = new double[getRowCount()][getColumnCount()];
-		for (int col = getStack().size() - 1; col > -1; col--) {
-			final int thisCol = col;
-			AtomicInteger row = new AtomicInteger(0);
-			((Column.OfDoubles)getStack().get(col)).rows(getRange())
-					.forEach(d -> table[row.getAndIncrement()][getStack().size() - thisCol - 1] = d);
-		}
-		return Optional.of(table);
+	public double[][] toRowMajorArray() {
+		double[][] m = toColumnMajorArray();
+        double[][] temp = new double[m[0].length][m.length];
+        for (int i = 0; i < m.length; i++)
+            for (int j = 0; j < m[0].length; j++)
+                temp[j][i] = m[i][j];
+        return temp;
 	}
 
 	public String[] headerToText(boolean trace) {
@@ -208,14 +198,12 @@ public class Table {
 		if (range.isPresent()) {
 			List<LocalDate> dates = getRange().dates();
 			String[][] table = new String[(int) getRange().size()][getStack().size() + 1];
+			List<String[]> s = getStack().stream().map(c -> c.rowsAsStrings(getRange(), nf)).collect(Collectors.toList());
 			for (int row = 0; row < getRange().size(); row++) {
 				table[row][0] = dates.get(row).toString();
-			}
-			for (int col = 0; col < getStack().size(); col++) {
-				final int thisCol = col;
-				AtomicInteger row = new AtomicInteger(0);
-				getStack().get(col).rowsAsText(getRange(), nf)
-						.forEach(s -> table[row.getAndIncrement()][getStack().size() - thisCol] = s);
+				for (int col = 0; col < getStack().size(); col++) {
+					table[row][col+1] = s.get(getStack().size() - 1 - col)[row];
+				}
 			}
 			return table;
 		} else {
@@ -240,7 +228,7 @@ public class Table {
 	}
 	
 	private static class Level {
-		private final List<LinkedList<Column<?,?>>> stacks;
+		private final List<LinkedList<Column<?>>> stacks;
 		private final boolean functionLevel;
 		
 		public Level(boolean baseLevel) {
@@ -248,12 +236,12 @@ public class Table {
 			stacks.add(new LinkedList<>());
 		}
 
-		public Level(boolean functionLevel, List<LinkedList<Column<?,?>>> stacks) {
+		public Level(boolean functionLevel, List<LinkedList<Column<?>>> stacks) {
 			this.functionLevel = functionLevel;
 			this.stacks = stacks;
 		}
 		
-		public List<LinkedList<Column<?,?>>> getStacks() {
+		public List<LinkedList<Column<?>>> getStacks() {
 			return stacks;
 		}
 		
@@ -261,8 +249,8 @@ public class Table {
 			return functionLevel;
 		}
 		
-		public List<LinkedList<Column<?,?>>> clearStacks() {
-			ArrayList<LinkedList<Column<?,?>>> l = new ArrayList<>(stacks);
+		public List<LinkedList<Column<?>>> clearStacks() {
+			ArrayList<LinkedList<Column<?>>> l = new ArrayList<>(stacks);
 			stacks.clear();
 			for(int i = 0; i < l.size(); i++) {
 				stacks.add(new LinkedList<>());
