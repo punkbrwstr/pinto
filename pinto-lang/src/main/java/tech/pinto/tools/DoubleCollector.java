@@ -32,7 +32,8 @@ public class DoubleCollector {
 		public static double count(double[] d) {
 			int count = 0;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
+				double value = d[i];
+				if(value == value) {
 					count++;
 				}
 			}
@@ -43,9 +44,10 @@ public class DoubleCollector {
 			int count = 0;
 			double sum = 0;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
+				double value = d[i];
+				if(value == value) {
 					count++;
-					sum += d[i];
+					sum += value;
 				}
 			}
 			return sum / (double) count;
@@ -55,9 +57,10 @@ public class DoubleCollector {
 			int count = 0;
 			double sum = 0;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
+				double value = d[i];
+				if(value == value) {
 					count++;
-					sum += Math.log(d[i]);
+					sum += Math.log(value);
 				}
 			}
 			return Math.exp(sum / (double) count);
@@ -66,19 +69,21 @@ public class DoubleCollector {
 		public static double sum(double[] d) {
 			double sum = 0;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
-					sum += d[i];
+				double value = d[i];
+				if(value == value) {
+					sum += value;
 				}
 			}
 			return sum;
 		}
 
 		public static double max(double[] d) {
-			double max = 0;
+			double max = Double.NaN;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
-					if(Double.isNaN(max) || d[i] > max) {
-						max = d[i];
+				double value = d[i];
+				if(value == value) {
+					if(max != max || value > max) {
+						max = value;
 					}
 				}
 			}
@@ -86,11 +91,12 @@ public class DoubleCollector {
 		}
 
 		public static double min(double[] d) {
-			double min = 0;
+			double min = Double.NaN;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
-					if(Double.isNaN(min) || d[i] < min) {
-						min = d[i];
+				double value = d[i];
+				if(value == value) {
+					if(min != min || value < min) {
+						min = value;
 					}
 				}
 			}
@@ -102,10 +108,11 @@ public class DoubleCollector {
 			double sum = 0;
 			double sumOfSquares = 0;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
+				double value = d[i];
+				if(value == value) {
 					count++;
-					sum += d[i];
-					sumOfSquares += Math.pow(d[i], 2);
+					sum += value;
+					sumOfSquares += Math.pow(value, 2);
 				}
 			}
 			double mean = sum / (double) count;
@@ -117,10 +124,11 @@ public class DoubleCollector {
 			double sum = 0;
 			double sumOfSquares = 0;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
+				double value = d[i];
+				if(value == value) {
 					count++;
-					sum += d[i];
-					sumOfSquares += Math.pow(d[i], 2);
+					sum += value;
+					sumOfSquares += Math.pow(value, 2);
 				}
 			}
 			double mean = sum / (double) count;
@@ -140,10 +148,11 @@ public class DoubleCollector {
 			double sum = 0;
 			double sumOfSquares = 0;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
+				double value = d[i];
+				if(value == value) {
 					count++;
-					sum += d[i];
-					sumOfSquares += Math.pow(d[i], 2);
+					sum += value;
+					sumOfSquares += Math.pow(value, 2);
 				}
 			}
 			double mean = sum / (double) count;
@@ -156,10 +165,11 @@ public class DoubleCollector {
 			double sum = 0;
 			double sumOfSquares = 0;
 			for(int i = 0; i < d.length; i++) {
-				if(!Double.isNaN(d[i])) {
+				double value = d[i];
+				if(value == value) {
 					count++;
-					sum += d[i];
-					sumOfSquares += Math.pow(d[i], 2);
+					sum += value;
+					sumOfSquares += Math.pow(value, 2);
 				}
 			}
 			double mean = sum / (double) count;

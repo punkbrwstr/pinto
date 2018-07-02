@@ -40,7 +40,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import tech.pinto.Column.ConstantColumn;
 import tech.pinto.Column.RowsFunction;
@@ -463,7 +462,12 @@ public class StandardVocabulary extends Vocabulary {
 
 	private static <P extends Period<P>> double[] dayCountRowFunction(PeriodicRange<P> range, Column<?>[] inputs,
 			Class<?> c) {
-		return range.values().stream().mapToDouble(Period::dayCount).toArray();
+		double[] d = new double[(int)range.size()];
+		List<P> l = range.values();
+		for(int i = 0; i < d.length; i++) {
+			d[i] = l.get(i).dayCount();
+		}
+		return d;
 	}
 
 	private static void annualizationFactor(Pinto pinto, LinkedList<Column<?>> s) {
@@ -761,12 +765,15 @@ public class StandardVocabulary extends Vocabulary {
 				a));
 	}
 
-	private static double[][] crossRowFunction(PeriodicRange<?> range, Column<?>[] inputs) {
-		double[][] output = new double[(int) range.size()][inputs.length];
-		List<double[]> l = Stream.of(inputs).map(c -> castColumn(c, OfDoubles.class).rows(range)).collect(Collectors.toList());
-		for (int i = 0; i < output.length; i++) {
-			for (int j = 0; j < inputs.length; j++) {
-				output[i][j] = l.get(j)[i];
+	private static double[][] crossRowFunction(PeriodicRange<?> range, Column<?>[] columns) {
+		double[][] output = new double[(int) range.size()][columns.length];
+		double[][] input = new double[columns.length][];
+		for (int j = 0; j < columns.length; j++) {
+			input[j] = castColumn(columns[j], OfDoubles.class).rows(range);
+		}
+		for (int j = 0; j < columns.length; j++) {
+			for (int i = 0; i < output.length; i++) {
+				output[i][j] = input[j][i];
 			}
 		}
 		return output;

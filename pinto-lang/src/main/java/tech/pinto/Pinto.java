@@ -168,10 +168,17 @@ public class Pinto {
 	
 	public static Consumer<Table> toTableConsumer(Consumer<LinkedList<Column<?>>> colsFunction) {
 		return t -> {
-			t.insertAtTop(t.takeTop().stream().map(c -> { 
-				colsFunction.accept(c);	
-				return c;
-			}).collect(Collectors.toList()));
+			List<LinkedList<Column<?>>> stacksBefore = t.takeTop();
+			List<LinkedList<Column<?>>> stacksAfter = new ArrayList<>();
+			for(LinkedList<Column<?>> s : stacksBefore) {
+				colsFunction.accept(s);
+				stacksAfter.add(s);
+			}
+			t.insertAtTop(stacksAfter);
+//			t.insertAtTop(t.takeTop().stream().map(c -> { 
+//				colsFunction.accept(c);	
+//				return c;
+//			}).collect(Collectors.toList()));
 		};
 	}
 
