@@ -108,10 +108,12 @@ public class Servlet extends HttpServlet {
 			}
 			DecimalFormatSymbols dfs = new DecimalFormatSymbols();
 			dfs.setNaN(naLiteral);
+			dfs.setInfinity(naLiteral);
 			DecimalFormat nf = new DecimalFormat();
 			nf.setDecimalFormatSymbols(dfs);
 			nf.setGroupingUsed(false);
-                        nf.setMaximumFractionDigits(10);
+            nf.setMinimumFractionDigits(1);
+            nf.setMaximumFractionDigits(8);
 			List<Table> l = pinto.eval(request.getParameter("p"));
 			if(l.size() > 0) {
 				if(!l.get(l.size() - 1).getStatus().isPresent()) {

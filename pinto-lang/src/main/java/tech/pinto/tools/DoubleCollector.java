@@ -18,7 +18,7 @@ public class DoubleCollector {
 		}
 
 		public static double change(double[] d) {
-			return d[d.length-1] / d[0];
+			return d[d.length-1] - d[0];
 		}
 
 		public static double pct_change(double[] d) {

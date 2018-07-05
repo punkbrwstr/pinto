@@ -139,7 +139,7 @@ public class StandardVocabulary extends Vocabulary {
 
 	/* data cleanup */
 			nameBuilder("fill", StandardVocabulary::fill)
-				.indexer("[periodicity=BQ-DEC,lookback=\"true\",:]")
+				.indexer("[periodicity=BQ-DEC,lookback=\"true\",default=NaN,:]")
 				.description("Fills missing values with last good value, looking back one period of *freq* if *lookback* is true."),
 			nameBuilder("join", StandardVocabulary::join)
 				.indexer("[date,:]")
@@ -551,6 +551,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static void fill(Pinto pinto, LinkedList<Column<?>> s) {
 		Periodicity<?> p = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
 		boolean lb = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
+		double defaultValue = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue();
 		Function<Periodicity<?>, Function<Boolean, RowsFunctionGeneric<double[]>>> fillRowFunction = periodicity -> lookBack -> {
 			return new RowsFunctionGeneric<double[]>() {
 				@Override
@@ -563,17 +564,22 @@ public class StandardVocabulary extends Vocabulary {
 								range.end().endDate());
 						skip = (int) r.indexOf(range.start().endDate());
 					}
-					double[] input = castColumn(inputs[0], OfDoubles.class).rows(r);
-					double[] output = new double[(int) range.size()];
+					double[] d = castColumn(inputs[0], OfDoubles.class).rows(r);
 					int i = skip;
-					while (i > 0 && Double.isNaN(input[i])) {
+					while (i > 0 && d[i] != d[i]) {
 						i--;
 					}
-					output[0] = input[i];
-					for (i = 1; i < output.length; i++) {
-						output[i] = Double.isNaN(input[i + skip]) ? output[i - 1] : input[i + skip];
+					d[skip] = d[i];
+					if(d[skip] != d[skip]) {
+						d[skip] = defaultValue;
 					}
-					return output;
+					for (i = skip + 1; i < d.length; i++) {
+						double inputValue = d[i];
+						if(inputValue != inputValue) {
+							d[i] = d[i - 1];
+						}
+					}
+					return Arrays.copyOfRange(d, skip, d.length);
 				}
 			};
 		};
