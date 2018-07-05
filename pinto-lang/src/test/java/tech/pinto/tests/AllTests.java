@@ -1,8 +1,7 @@
 package tech.pinto.tests;
 
-import static tech.pinto.Pinto.toTableConsumer;
-
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import javax.inject.Singleton;
 
@@ -24,6 +23,8 @@ import tech.pinto.Pinto;
 import tech.pinto.Pinto.StackFunction;
 import tech.pinto.StandardVocabulary;
 import tech.pinto.Vocabulary;
+import tech.pinto.time.Period;
+import tech.pinto.time.PeriodicRange;
 
 @RunWith(Suite.class)
 @SuiteClasses({
@@ -53,7 +54,9 @@ public class AllTests {
 			return new TestVocabulary();
 		}
 		@Provides @Singleton MarketData provideMarketData()  {
-			return new MarketData() {};
+			return new MarketData() {
+				@Override public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> getFunction(Request request) { throw new UnsupportedOperationException(); }
+				@Override public String getDefaultField() { throw new UnsupportedOperationException(); }};
 		}
 	}
 	
@@ -68,12 +71,13 @@ public class AllTests {
 		private static AtomicInteger count = new AtomicInteger();
 		
 		public TestVocabulary() {
+			Cache.putFunction("counter", 1, r -> {
+				Column.OfConstantDoubles col = new Column.OfConstantDoubles(count.getAndIncrement());
+				return new double[][] {col.rows(r)};
+			});
 			names.add(Name.nameBuilder("counter", (StackFunction) (p,s) -> {
 				s.addFirst(new Column.OfDoubles(inputs -> "", (range, inputs) -> {
-					return Cache.getCachedValues("counter", range, 0, 1, r -> {
-						Column.OfConstantDoubles col = new Column.OfConstantDoubles(count.getAndIncrement());
-						return new double[][] {col.rows(r)};
-					});
+					return Cache.getCachedRows("counter", 0, range);
 					
 				}));
 			}).build());

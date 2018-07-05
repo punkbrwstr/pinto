@@ -2,9 +2,11 @@ package tech.pinto;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -15,12 +17,14 @@ import java.util.stream.IntStream;
 public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 
 	public static final Indexer ALL = new Indexer(":", false);
-	public static final Indexer NONE = new Indexer(":", false);
+	public static final Indexer NONE = new Indexer("", false);
 	public static final Indexer ALL_DEFINED = new Indexer(":", true);
+	public static final Indexer NONE_DEFINED = new Indexer("", true);
 
 	private final List<Index> indexes = new ArrayList<>();
 	private final String indexString;
 	private final boolean definedIndexer;
+	private final Set<String> dependencies = new HashSet<>();
 
 	public Indexer(String indexString, boolean functionIndexer) {
 		this.indexString = indexString;
@@ -61,12 +65,17 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 			throw new IllegalArgumentException("Unmatched \"" + unmatched + "\" in Index: \"[" + indexString + "]\"");
 		}
 	}
+	
+	public boolean isNone() {
+		return indexes.size() == 1 && indexes.get(0).isNone();
+	}
 
 	@Override
 	public Consumer<Table> apply(Pinto pinto) {
 		return t -> {
 			LinkedList<LinkedList<Column<?>>> unused = new LinkedList<>();
 			LinkedList<LinkedList<Column<?>>> indexed = new LinkedList<>();
+
 			for (LinkedList<Column<?>> stack : t.takeTop()) {
 				List<StackOperation> ops = new ArrayList<>();
 				indexed.addLast(operate(stack, ops, pinto));
@@ -87,7 +96,9 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 
 	@SuppressWarnings("unchecked")
 	private LinkedList<Column<?>> operate(LinkedList<Column<?>> stack, List<StackOperation> ops, Pinto pinto) {
-		indexes.stream().map(i -> i.index(stack)).forEach(ops::addAll);
+		for(int i = 0; i < indexes.size(); i++) {
+			ops.addAll(indexes.get(i).index(stack));
+		}
 		List<StackOperation> indexStringOps = ops.stream().filter(StackOperation::isHeader)
 				.collect(Collectors.toList());
 		List<StackOperation> ordinalOps = ops.stream().filter(so -> !so.isHeader()).collect(Collectors.toList());
@@ -116,9 +127,12 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 		LinkedList<Column<?>> indexed = new LinkedList<>();
 		for (StackOperation o : ops) {
 			if (o.isAlternative()) {
-				indexed.addAll(pinto.parseSubExpression(o.getAlternativeString()));
+				Table t = pinto.parseSubExpression(o.getAlternativeString());
+				dependencies.addAll(t.getDependencies().get());
+				indexed.addAll(t.flatten());
 				if (o.isCopy()) {
-					stack.addAll(pinto.parseSubExpression(o.getAlternativeString()));
+					t = pinto.parseSubExpression(o.getAlternativeString());
+					stack.addAll(t.flatten());
 				}
 			} else if ((!alreadyUsed.contains(o.getOrdinal())) && !o.skip()) {
 				Column<?> c = stack.get(o.getOrdinal());
@@ -139,6 +153,10 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 
 	private static boolean isNumeric(String s) {
 		return s.matches("[-+]?\\d*\\.?\\d+");
+	}
+	
+	public Set<String> getDependencies() {
+		return dependencies;
 	}
 
 	public String toString() {
@@ -165,6 +183,7 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 		private boolean repeat = false;
 		private boolean optional = false;
 		private boolean everything = false;
+		private boolean none = false;
 		private boolean checkString = false;
 		private boolean checkConstant = false;
 
@@ -207,7 +226,7 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 				s = s.replace("#", "");
 			}
 			if (s.equals("")) {
-				// none index
+				none = true;
 			} else if (s.equals(":")) {
 				everything = true;
 			} else if (s.contains(":")) {
@@ -305,6 +324,10 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 
 		public boolean isCopy() {
 			return copy;
+		}
+
+		public boolean isNone() {
+			return none;
 		}
 
 		public boolean isRepeat() {

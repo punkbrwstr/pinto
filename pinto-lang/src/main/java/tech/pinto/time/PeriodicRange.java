@@ -16,6 +16,9 @@ public final class PeriodicRange<P extends Period<P>> {
 	private final P endInclusive;
 
 	PeriodicRange(Periodicity<P> periodcity, P startInclusive, P endInclusive) {
+		if(endInclusive.isBefore(startInclusive)) {
+			throw new IllegalArgumentException("Range end must be >= range start");
+		}
 		this.periodicity = periodcity;
 		this.startInclusive = startInclusive;
 		this.endInclusive = endInclusive;

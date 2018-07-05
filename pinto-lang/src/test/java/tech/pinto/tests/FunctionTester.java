@@ -42,6 +42,16 @@ public class FunctionTester {
 	}
 
 	@Test
+	public void testCacheClearing() throws Exception {
+		pinto.eval(":a [] 5 def");
+		pinto.eval(":b [] a 10 + def");
+		pinto.eval(":c [] b 5 + def");
+		assertEquals("Nested defined", 20, sumRow(0,pinto.eval("c eval").get(0)), 0.001d);
+		pinto.eval(":a [] 4 def");
+		assertEquals("Nested defined after dependency change", 19, sumRow(0,pinto.eval("c eval").get(0)), 0.001d);
+	}
+
+	@Test
 	public void testCopy() throws Exception {
 		Table t = pinto.eval("{test: 1 2} copy copy +" + EVAL).get(0);
 		assertEquals("Correct # dup outputs", 7, t.getColumnCount());
@@ -50,6 +60,7 @@ public class FunctionTester {
 		assertEquals("Correct # dup outputs with params", 6, t.getColumnCount());
 
 	}
+
 
 
 	@Test(expected=PintoSyntaxException.class)

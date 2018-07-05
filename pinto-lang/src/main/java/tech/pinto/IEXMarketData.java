@@ -31,15 +31,14 @@ public class IEXMarketData implements MarketData {
 	private static Map<String,TreeMap<LocalDate,double[]>> cache = new HashMap<>();
 
 	@Override
-	public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> getFunction(List<String> securities,
-			List<String> fields) {
+	public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> getFunction(Request req) {
 		return range -> {
-			double[][] d = new double[securities.size() * fields.size()][(int) range.size()];
+			double[][] d = new double[req.size()][(int) range.size()];
 			for(int i = 0; i < d.length; i++) {
 				Arrays.fill(d[i], Double.NaN);
 			}
-			for(int i = 0; i < securities.size(); i++) {
-				String ticker = securities.get(i).toLowerCase();
+			for(int i = 0; i < req.getSecurities().size(); i++) {
+				String ticker = req.getSecurities().get(i).toLowerCase();
 				if((!cache.containsKey(ticker))
 						|| cache.get(ticker).lastKey().isBefore(Periodicities.get("B").offset(-1, LocalDate.now()))) {
 					loadCache(ticker);
@@ -50,14 +49,14 @@ public class IEXMarketData implements MarketData {
 					tree = tree.tailMap(dates.get(j));
 					if(!tree.isEmpty() && tree.firstKey().equals(dates.get(j))) {
 						double[] prices = tree.get(tree.firstKey());
-						for(int k = 0; k < fields.size(); k++) {
+						for(int k = 0; k < req.getFields().size(); k++) {
 							Field f = null;
 							try {
-								f = Field.valueOf(fields.get(k).toUpperCase());
+								f = Field.valueOf(req.getFields().get(k).toUpperCase());
 							} catch(IllegalArgumentException e) {
-								throw new IllegalArgumentException("Field \"" + fields.get(k) + "\" not supported by IEX.");
+								throw new IllegalArgumentException("Field \"" + req.getFields().get(k) + "\" not supported by IEX.");
 							}
-							d[i * fields.size() + k][j] = prices[f.ordinal()];
+							d[i * req.getFields().size() + k][j] = prices[f.ordinal()];
 						}
 					}
 				}
@@ -66,6 +65,11 @@ public class IEXMarketData implements MarketData {
 		};
 	}
 	
+	@Override
+	public String getDefaultField() {
+		return "CLOSE";
+	}
+
 	private void loadCache(String ticker) {
 		String url = MessageFormat.format("https://api.iextrading.com/1.0/stock/{0}/chart/5y",ticker);
 		Type type = new TypeToken<List<Map<String, Object>>>(){}.getType();
@@ -87,7 +91,5 @@ public class IEXMarketData implements MarketData {
 		
 	}
 	
-	public static void main(String[] args) {
-	}
 
 }

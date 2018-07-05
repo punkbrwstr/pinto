@@ -32,7 +32,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
@@ -286,15 +285,10 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static final void def(Pinto p, Table t) {
-		Pinto.Expression expression = p.getExpression();
-		String name = expression.getNameLiteral()
+		Pinto.Expression e = p.getExpression();
+		String name = e.getNameLiteral()
 				.orElseThrow(() -> new PintoSyntaxException("def requires a name literal."));
-		String desc = expression.getText();
-		Consumer<Table> f = expression.getPrevious().andThen(t2 -> {
-			t2.collapseFunction();
-		});
-		p.getNamespace().define(name, expression.getDefinedIndexer(), desc,
-				expression.getDependencies().subList(0, expression.getDependencies().size() - 1), f);
+		p.getNamespace().define(p,name, e.getDefinedIndexer(), e.getText(), e.getDependencies(), e.getPrevious());
 		t.setStatus("Defined " + name);
 	}
 
@@ -861,8 +855,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static void report(Pinto p, Table t) {
 		Pinto.Expression state = p.getExpression();
 		String id = getId();
-		p.getNamespace().define("_rpt-" + id, Indexer.NONE, "Report id: " + id,
-				state.getDependencies().subList(0, state.getDependencies().size() - 1), state.getPrevious());
+		p.getNamespace().define(p,"_rpt-" + id, Indexer.NONE, "Report id: " + id, state.getDependencies(), state.getPrevious());
 		try {
 			int port = p.getPort();
 			Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + port + "/pinto/report?p=" + id));
@@ -1180,15 +1173,6 @@ public class StandardVocabulary extends Vocabulary {
 		};
 		return nameBuilder(name, function.apply(agg))
 				.description("Aggregates row values in double array by " + name + ".").build();
-	}
-	
-	private static <T extends Column<S>,S> T castColumn(Column<?> o, Class<T> clazz) {
-		try {
-			return clazz.cast(o);
-		} catch(ClassCastException cce) {
-			throw new PintoSyntaxException("Wrong column type: expected "
-					+ clazz.getSimpleName() + " and input is " + o.getClass().getSimpleName());
-		}
 	}
 
 	private static String getId() {

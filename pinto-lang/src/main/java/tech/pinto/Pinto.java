@@ -3,15 +3,15 @@ package tech.pinto;
 import java.time.LocalDate;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -40,9 +40,8 @@ public class Pinto {
 		return evaluate(toEvaluate, activeExpression);
 	}
 
-	public LinkedList<Column<?>> parseSubExpression(String expression) {
-		Table t = evaluate(expression, new Expression(true)).get(0);
-		return t.flatten();
+	public Table parseSubExpression(String expression) {
+		return evaluate(expression, new Expression(true)).get(0);
 	}
 
 	public List<Table> evaluate(String toEvaluate, Expression e) {
@@ -60,8 +59,11 @@ public class Pinto {
 					e.setDefinedIndexer(new Indexer(functionIndexString.replaceAll("^\\[|\\]$", ""), true));
 				} else if(e.isInlineStart()) {
 					String functionIndexString = sc.hasNext(INDEXER) ? sc.next(INDEXER) : "[:]";
-					e.setCurrent(e.getCurrent().andThen(
-							new Indexer(functionIndexString.replaceAll("^\\[|\\]$", ""), true).apply(this)));
+					Indexer indexer = new Indexer(functionIndexString.replaceAll("^\\[|\\]$", ""), true);
+					e.setCurrent(e.getCurrent().andThen( t -> {
+							indexer.apply(this).accept(t);
+							e.getDependencies().addAll(indexer.getDependencies());
+					}));
 				} else if (sc.hasNext(Pattern.compile(".*?\\)"))) { // end inline function
 					sc.next();
 					e.setCurrent(e.getCurrent().andThen(t2 -> {
@@ -81,41 +83,36 @@ public class Pinto {
 						s.addFirst(new tech.pinto.Column.OfConstantDates(d));
 					})));
 				} else if (sc.hasNext(Pattern.compile("\\[.*?"))) { // indexer
-					e.setCurrent(e.getCurrent().andThen(
-							new Indexer(parseBlock(sc, "\\[", "\\]"), false).apply(this)));
+					Indexer indexer = new Indexer(parseBlock(sc, "\\[", "\\]"), false);
+					e.setCurrent(e.getCurrent().andThen( t -> {
+							indexer.apply(this).accept(t);
+							e.getDependencies().addAll(indexer.getDependencies());
+					}));
 				} else if (sc.hasNext(Pattern.compile("\\{.*?"))) { // header literal
-					e.setCurrent(e.getCurrent().andThen(toTableConsumer(
-							new HeaderLiteral(this, parseBlock(sc, "\\{", "\\}")))));
+					HeaderLiteral hl = new HeaderLiteral(this, parseBlock(sc, "\\{", "\\}"));
+					e.setCurrent(e.getCurrent().andThen(toTableConsumer( s -> {
+							hl.accept(s);
+							e.getDependencies().addAll(hl.getDependencies());
+					})));
 				} else if (sc.hasNext(Pattern.compile("\".*?"))) { // string literal
 					final String sl = parseBlock(sc,"\"","\"");
 					e.setCurrent(e.getCurrent().andThen(toTableConsumer(s -> {
 						s.addFirst(new tech.pinto.Column.OfConstantStrings(sl));
 					})));
 				} else if (sc.hasNext(Pattern.compile("\\$.*?"))) { // market literal
-					final String sl = parseBlock(sc,"\\$","\\$");
-					e.setCurrent(e.getCurrent().andThen(toTableConsumer(s -> {
-						String[] sa = sl.split(":");
-						List<String> tickers = Arrays.asList(sa[0].split(","));
-						String fieldsString = sa.length > 1 ? sa[1] : "PX_LAST";
-						List<String> fields = Arrays.stream(fieldsString.split(",")).map(f -> f.trim()).map(String::toUpperCase)
-								.map(f -> f.replaceAll(" ", "_")).collect(Collectors.toList());
-						String key = tickers.stream().collect(Collectors.joining(",")) + fields.stream().collect(Collectors.joining(","));
-						List<String> tickersfields = tickers.stream().flatMap(t -> fields.stream().map(c -> t + ":" + c))
-								.collect(Collectors.toList());
-						for (int i = 0; i < tickersfields.size(); i++) {
-							final int index = i;
-							s.addFirst(new Column.OfDoubles(inputs -> tickersfields.get(index),
-									(range, inputs) -> Cache.getCachedValues(key, range, index, tickersfields.size(),
-												marketdata.getFunction(tickers, fields))));
-						}
-					})));
+					final String literal = parseBlock(sc,"\\$","\\$");
+					e.setCurrent(e.getCurrent().andThen( t -> {
+						marketdata.getStackFunction(literal).toTableFunction().accept(this, t);
+					}));
 				} else { // name
 					String name = sc.next();
 					if (!namespace.contains(name)) {
 						throw new PintoSyntaxException("Name \"" + name + "\" not found in \"" + toEvaluate + "\"");
 					}
-					e.getDependencies().add(name);
 					Name n = namespace.getName(name);
+					if(!n.builtIn()) {
+						e.getDependencies().add(name);
+					}
 					e.setCurrent(e.getCurrent().andThen(t -> {
 						namespace.getName(name).getDefaultIndexer(this).accept(t);
 					}));
@@ -141,6 +138,7 @@ public class Pinto {
 			if(e.isSubExpression()) {
 				Table t = new Table();
 				e.getCurrent().accept(t);
+				t.setDependencies(e.getDependencies());
 				responses.add(t);
 			} 
 			return responses;
@@ -169,16 +167,10 @@ public class Pinto {
 	public static Consumer<Table> toTableConsumer(Consumer<LinkedList<Column<?>>> colsFunction) {
 		return t -> {
 			List<LinkedList<Column<?>>> stacksBefore = t.takeTop();
-			List<LinkedList<Column<?>>> stacksAfter = new ArrayList<>();
 			for(LinkedList<Column<?>> s : stacksBefore) {
 				colsFunction.accept(s);
-				stacksAfter.add(s);
 			}
-			t.insertAtTop(stacksAfter);
-//			t.insertAtTop(t.takeTop().stream().map(c -> { 
-//				colsFunction.accept(c);	
-//				return c;
-//			}).collect(Collectors.toList()));
+			t.insertAtTop(stacksBefore);
 		};
 	}
 
@@ -199,10 +191,11 @@ public class Pinto {
 		public void accept(Pinto pinto, LinkedList<Column<?>> stack);
 		default TableFunction toTableFunction() {
 			return (p,t) -> {
-				t.insertAtTop(t.takeTop().stream().map(c -> { 
-					accept(p,c);	
-					return c;
-				}).collect(Collectors.toList()));
+				List<LinkedList<Column<?>>> inputs = t.takeTop();
+				for(int i = 0; i < inputs.size(); i++) {
+					accept(p, inputs.get(i));
+				}
+				t.insertAtTop(inputs);
 			};
 			
 		}
@@ -215,7 +208,7 @@ public class Pinto {
 		private boolean inlineStart = false;
 		private Consumer<Table> current = t -> {};
 		private Consumer<Table> previous = t -> {};
-		private List<String> dependencies = new ArrayList<>();
+		private Set<String> dependencies = new HashSet<>();
 		private StringBuilder text = new StringBuilder();
 		private	Optional<String> nameLiteral = Optional.empty();
 		private Indexer definedIndexer = Indexer.ALL_DEFINED;
@@ -228,7 +221,7 @@ public class Pinto {
 			expressionStart = true;
 			current = t -> {};
 			previous = t -> {};
-			dependencies = new ArrayList<>();
+			dependencies = new HashSet<>();
 			text = new StringBuilder();
 			nameLiteral = Optional.empty();
 			definedIndexer = Indexer.ALL_DEFINED;
@@ -268,10 +261,10 @@ public class Pinto {
 			this.previous = this.current;
 			this.current = current;
 		}
-		public List<String> getDependencies() {
+		public Set<String> getDependencies() {
 			return dependencies;
 		}
-		public void setDependencies(List<String> dependencies) {
+		public void setDependencies(Set<String> dependencies) {
 			this.dependencies = dependencies;
 		}
 		public String getText() {

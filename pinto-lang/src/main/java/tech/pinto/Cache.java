@@ -3,41 +3,119 @@ package tech.pinto;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
 
+import tech.pinto.Pinto.StackFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
+import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 
 public class Cache {
 	
 	private static final long CURRENT_DATA_TIMEOUT = 60 * 1000l;
 	
-	private static HashMap<String, RangeMap<Long, CachedSeriesList>> seriesCache = new HashMap<>();
+	private static final HashMap<String, RangeMap<Long, CachedSeriesList>> rowCache = new HashMap<>();
+	private static final HashMap<String, LinkedList<Column<?>>> columns = new HashMap<>();
+	private static final HashMap<String, LinkedList<Column<?>>> uncachedColumns = new HashMap<>();
+	private static final HashMap<String, Consumer<Table>> nullaryFunctions = new HashMap<>();
+	private static final HashMap<String, Integer> columnCounts = new HashMap<>();
+	private static final HashMap<String, Function<PeriodicRange<?>,double[][]>> rowFunctions = new HashMap<>();
 
-	public static <P extends Period<P>> double[] getCachedValues(String key, PeriodicRange<P> range, int column,
-			int columnCount, Function<PeriodicRange<?>, double[][]> function) {
-		Periodicity<P> freq =  range.periodicity();
-		String wholeKey = key + ":" + range.periodicity().code();
-		RangeMap<Long, CachedSeriesList> cache = null;
-		synchronized (seriesCache) {
-			if (!seriesCache.containsKey(wholeKey)) {
-				seriesCache.put(wholeKey, TreeRangeMap.create());
+	public static void clearCache(String key) {
+		columns.remove(key);
+		uncachedColumns.remove(key);
+		columnCounts.remove(key);
+		rowFunctions.remove(key);
+		for(String per: Periodicities.allCodes()) {
+			rowCache.remove(key.concat(":").concat(per));
+		}
+	}
+	
+	public static StackFunction cacheNullaryFunction(String key, Consumer<Table> uncached) {
+		nullaryFunctions.put(key, uncached);
+		return (p,s) -> {
+			s.addAll(getCachedColumns(key));
+		};
+	}
+	
+	private static void loadCachedColumns(String key) {
+		Table t = new Table();
+		nullaryFunctions.get(key).accept(t);
+		LinkedList<Column<?>> cols = t.flatten();
+		columnCounts.put(key, cols.size());
+		boolean rowCacheable = true;
+		for(int i = 0; i < cols.size(); i++) {
+			if(!(cols.get(i) instanceof Column.OfDoubles)) {
+				rowCacheable = false;
 			}
-			cache = seriesCache.get(wholeKey);
+		}
+		if(rowCacheable) {
+			LinkedList<Column<?>> cached = new LinkedList<>();
+			for(int i = 0; i < cols.size(); i++) {
+				cached.add(getCachedColumn(key,i, cols.get(i).getHeader(), cols.get(i).getTrace()));
+			}
+			columns.put(key, cached);
+			uncachedColumns.put(key, cols);
+			rowFunctions.put(key, getRowFunctionForColumns(key));
+		} else {
+			columns.put(key, cols);
+		}
+	}
+	
+	public static LinkedList<Column<?>> getCachedColumns(String key) {
+		if(!columns.containsKey(key)) {
+			loadCachedColumns(key);
+		}
+		LinkedList<Column<?>> cols = new LinkedList<>(columns.get(key));
+		cols.replaceAll(c -> c.clone());
+		return cols;
+	}
+
+	private static Column.OfDoubles getCachedColumn(String key, int col, String header, String trace) {
+		return new Column.OfDoubles(i -> header, i -> trace, (range, inputs) -> getCachedRows(key, col, range));
+	}
+	
+	private static Function<PeriodicRange<?>,double[][]> getRowFunctionForColumns(String key) {
+		return range -> {
+			LinkedList<Column<?>> l = uncachedColumns.get(key);
+			double[][] newData = new double[l.size()][];
+			for(int i = 0; i < newData.length; i++) {
+				newData[i] = Column.castColumn(l.get(i),Column.OfDoubles.class).rows(range); 
+			}
+			return newData;
+		};
+	}
+
+	public static void putFunction(String key, int columns, Function<PeriodicRange<?>,double[][]> function) {
+		columnCounts.put(key, columns);
+		rowFunctions.put(key, function);
+	}
+
+	public static <P extends Period<P>> double[] getCachedRows(String key, int col, PeriodicRange<P> range) {
+		Periodicity<P> per =  range.periodicity();
+		String perKey = key.concat(":").concat(range.periodicity().code());
+		RangeMap<Long, CachedSeriesList> cache = null;
+		synchronized (rowCache) {
+			if (!rowCache.containsKey(perKey)) {
+				rowCache.put(perKey, TreeRangeMap.create());
+			}
+			cache = rowCache.get(perKey);
 		}
 		synchronized (cache) {
 			try {
 				Range<Long> requestedRange = Range.closed(range.start().longValue(), range.end().longValue());
 				Set<Range<Long>> toRemove = new HashSet<>();
-				double[][] chunkData = new double[columnCount][];
+				double[][] chunkData = new double[columnCounts.get(key)][];
 				long current = requestedRange.lowerEndpoint();
 				long chunkStart = current;
 				Optional<Long> expirationTime = Optional.empty();
@@ -55,36 +133,36 @@ public class Cache {
 					long thisChunkEnd = e.getValue().getRange().end().longValue();
 					chunkStart = Long.min(chunkStart, thisChunkStart);
 					if (current < thisChunkStart) {
-						concat(chunkData, function.apply(freq.range(current, thisChunkStart - 1)));
+						concat(chunkData, rowFunctions.get(key).apply(per.range(current, thisChunkStart - 1)));
 					}
 					concat(chunkData, e.getValue().getSeries());
 					current = thisChunkEnd + 1;
 				}
 				if (current <= requestedRange.upperEndpoint()) {
-					concat(chunkData, function.apply(freq.range(current, requestedRange.upperEndpoint())));
+					concat(chunkData, rowFunctions.get(key).apply(per.range(current, requestedRange.upperEndpoint())));
 					current = requestedRange.upperEndpoint() + 1;
 				}
 				toRemove.stream().forEach(cache::remove);
-				long now = freq.from(LocalDate.now()).longValue();
+				long now = per.from(LocalDate.now()).longValue();
 				if(now > chunkStart) {
 					long endOfPast = Math.min(now - 1, current - 1);
 					cache.put(Range.closed(chunkStart, endOfPast),
-							new CachedSeriesList(freq.range(chunkStart,  endOfPast),
+							new CachedSeriesList(per.range(chunkStart,  endOfPast),
 									dup(chunkData,0, (int) (1 + endOfPast - chunkStart)), Optional.empty()));
 				}
 				if(current - 1 >= now) {
 					long startOfNow = Math.max(now, chunkStart);
 					cache.put(Range.closed(startOfNow, current - 1),
-							new CachedSeriesList(freq.range(startOfNow,  current - 1),
+							new CachedSeriesList(per.range(startOfNow,  current - 1),
 									dup(chunkData, (int) (startOfNow - chunkStart), (int) (current - startOfNow)),
 									Optional.of(expirationTime.orElse(System.currentTimeMillis() + CURRENT_DATA_TIMEOUT))));
 				}
 				final long finalStart = chunkStart;
 				double[] d = new double[(int)range.size()];
-				System.arraycopy(chunkData[column], (int) (requestedRange.lowerEndpoint() - finalStart), d, 0, d.length);
+				System.arraycopy(chunkData[col], (int) (requestedRange.lowerEndpoint() - finalStart), d, 0, d.length);
 				return d;
 			} catch (RuntimeException re) {
-				seriesCache.remove(wholeKey);
+				rowCache.remove(perKey);
 				throw re;
 			}
 		}

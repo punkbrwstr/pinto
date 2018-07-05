@@ -1,5 +1,6 @@
 package tech.pinto;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -14,6 +15,7 @@ import javax.inject.Inject;
 import com.google.common.base.Joiner;
 
 import jline.console.completer.Completer;
+import tech.pinto.Pinto.StackFunction;
 import tech.pinto.Pinto.TableFunction;
 
 public class Namespace implements Completer {
@@ -33,8 +35,13 @@ public class Namespace implements Completer {
 		return names.containsKey(name);
 	}
 
-	public synchronized void define(String name, Indexer indexer, String description, List<String> dependencies, Consumer<Table> function) {
+	public synchronized void define(Pinto pinto, String name, Indexer indexer, String description, Set<String> dependencies,
+				Consumer<Table> function) {
 		if(names.containsKey(name)) {
+			if(names.get(name).builtIn()) {
+				throw new IllegalArgumentException("Cannot redefine built-in name " + name + ".");
+			}
+			clearCache(name);
 			for(String dependencyCode : getDependsOn(name)) {
 				dependencyGraph.remove(join(name, "dependsOn", dependencyCode));
 				dependencyGraph.remove(join(dependencyCode, "dependedOnBy", name));
@@ -44,20 +51,24 @@ public class Namespace implements Completer {
 			dependencyGraph.add(join(name, "dependsOn", dependencyName));
 			dependencyGraph.add(join(dependencyName, "dependedOnBy", name));
 		}
-		names.put(name, Name.nameBuilder(name, (TableFunction) (p,t) -> function.accept(t))
-							.defined().indexer(indexer).description(description).build());
+		if(indexer.isNone()) {
+			names.put(name, Name.nameBuilder(name,Cache.cacheNullaryFunction(name, function))
+					.defined().indexer(Indexer.NONE).description(description).build());
+		} else {
+			names.put(name, Name.nameBuilder(name, (TableFunction) (p,t) -> {
+				function.andThen(t2 -> t2.collapseFunction()).accept(t);
+			}).defined().indexer(indexer).description(description).build());
+		}
 	}
 
 	public synchronized void undefine(String name) throws IllegalArgumentException {
 		SortedSet<String> dependedOnBy = getDependedOnBy(name);
 		if(dependedOnBy.size() != 0) {
-			String d = dependedOnBy.stream().map(s -> s.split(DELIMITER)[2])
-					.map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
+			String d = dependedOnBy.stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
 			throw new IllegalArgumentException("Cannot delete \"" + name + "\" because other names (" + d
 						+ ") depend on it.");
 		}
 		for(String dependencyCode : getDependsOn(name)) {
-			dependencyCode = dependencyCode.split(DELIMITER)[2];
 			dependencyGraph.remove(join(name, "dependsOn", dependencyCode));
 			dependencyGraph.remove(join(dependencyCode, "dependedOnBy", name));
 		}
@@ -66,6 +77,13 @@ public class Namespace implements Completer {
 	
     public synchronized Name getName(String functionName) {
         return names.get(functionName);
+    }
+    
+    private synchronized void clearCache(String name) {
+		Cache.clearCache(name);
+		for(String dependencyCode : getDependedOnBy(name)) {
+			clearCache(dependencyCode);
+		}
     }
 	
 	private synchronized SortedSet<String> getDependedOnBy(String code) {
@@ -88,7 +106,7 @@ public class Namespace implements Completer {
 		SortedSet<String> matching = new TreeSet<>();
 		for(String key : dependencyGraph.tailSet(query)) {
 			if(key.startsWith(query)) {
-				matching.add(key);
+				matching.add(key.split(DELIMITER)[2]);
 			} else {
 				break;
 			}

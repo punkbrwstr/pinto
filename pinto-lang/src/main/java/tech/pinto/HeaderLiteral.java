@@ -2,8 +2,10 @@ package tech.pinto;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -13,6 +15,7 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?>>>{
 	
 	private final List<String[]> headers;
 	private final Pinto pinto;
+	private final Set<String> dependencies = new HashSet<>();
 	
 	public HeaderLiteral(Pinto pinto, String header) {
 		this.headers = new ArrayList<>();
@@ -69,7 +72,9 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?>>>{
 					unlabeled.addLast(stack.removeFirst());
 				}
 			} else {
-				unlabeled.addAll(pinto.parseSubExpression(headers.get(i)[1]));
+				Table t = pinto.parseSubExpression(headers.get(i)[1]);
+				dependencies.addAll(t.getDependencies().get());
+				unlabeled.addAll(t.flatten());
 			}
 			for(Column<?> c : unlabeled) {
 				c.setHeader(label);
@@ -77,6 +82,11 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?>>>{
 			}
 		}
 		stack.addAll(0, newStack);
+	}
+	
+	
+	public Set<String> getDependencies() {
+		return dependencies;
 	}
 
 }

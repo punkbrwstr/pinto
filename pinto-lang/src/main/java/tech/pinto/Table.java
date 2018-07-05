@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class Table {
 	private Optional<String> status = Optional.empty();
 	private Optional<PeriodicRange<?>> range = Optional.empty();
 	private Optional<LinkedList<Column<?>>> evaluatedStack = Optional.empty();
+	private Optional<Set<String>> dependencies = Optional.empty();
 
 	public Table() {
 		levels.add(new Level(true));
@@ -108,6 +110,14 @@ public class Table {
 		return evaluatedStack.orElseThrow(() -> new PintoSyntaxException("Cannot access stack before evaluating."));
 	}
 	
+	public Optional<Set<String>> getDependencies() {
+		return dependencies;
+	}
+
+	public void setDependencies(Set<String> dependencies) {
+		this.dependencies = Optional.of(dependencies);
+	}
+
 	public void setStatus(String s) {
 		this.status = Optional.of(s);
 	}

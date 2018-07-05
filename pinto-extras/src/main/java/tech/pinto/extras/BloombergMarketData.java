@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import com.bloomberglp.blpapi.CorrelationID;
 import com.bloomberglp.blpapi.Datetime;
@@ -125,84 +124,86 @@ public class BloombergMarketData implements MarketData, EventHandler {
 		}
 	}
 
+	@Override
+	public String getDefaultField() {
+		return "PX_LAST";
+	}
 
-	public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> 
-					getFunction(List<String> securities, List<String> fields ) {
+	@Override
+	public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> getFunction(MarketData.Request req) {
 		return (range) -> {
 			if (session == null) {
 				connect();
 			}
-			final long jobNumber = requestNumber.incrementAndGet();
-			final List<String> securityCodes = securities;
-			final List<String> fieldCodes = fields;
-			final List<String> securityCodeFieldCode = securityCodes.stream()
-						.flatMap(s -> fieldCodes.stream().map(c -> s + ":" + c)).collect(Collectors.toList());
-			final Map<String,Integer> rowMap = IntStream.range(0,securityCodeFieldCode.size()).mapToObj(Integer::valueOf)
-						.collect(Collectors.toMap((i) -> securityCodeFieldCode.get(i), Function.identity()));
-			final double[][] data = new double[securityCodeFieldCode.size()][(int) range.size()];
-			Arrays.stream(data).forEach(d -> Arrays.fill(d, Double.NaN));
-			final CompletableFuture<double[][]> futureDS = new CompletableFuture<>();
-			final Consumer<Exception> errorHandler = e -> {
-				futureDS.completeExceptionally(e);
-			};
 			try {
+				CompletableFuture<double[][]> future = new CompletableFuture<>();
 				synchronized (session) {
 					Service refDataService = session.getService("//blp/refdata");
 					com.bloomberglp.blpapi.Request request = refDataService.createRequest("HistoricalDataRequest");
-					log.info("history: {} {}",securityCodeFieldCode.stream().collect(Collectors.joining(",")),range.toString());
-					securityCodes.stream().forEach(request.getElement("securities")::appendValue);
-					fieldCodes.stream().forEach(request.getElement("fields")::appendValue);
+					log.info("Bloomberg history: {} {}", req.getSecurityFieldsString(), range.toString());
+					req.getSecurities().stream().forEach(request.getElement("securities")::appendValue);
+					req.getFields().stream().forEach(request.getElement("fields")::appendValue);
 					request.set("periodicitySelection", range.periodicity().bloombergCode());
 					request.set("startDate", range.start().endDate().format(DateTimeFormatter.BASIC_ISO_DATE));
 					LocalDate endDate = Arrays.asList("BM", "BQ-DEC", "BA-DEC").contains(range.periodicity().code())
-							? range.end().endDate().withDayOfMonth(range.end().endDate().lengthOfMonth()) : range.end().endDate();
+							? range.end().endDate().withDayOfMonth(range.end().endDate().lengthOfMonth())
+							: range.end().endDate();
 
 					request.set("endDate", endDate.format(DateTimeFormatter.BASIC_ISO_DATE));
 					request.set("maxDataPoints", 10000);
 					request.set("returnEids", true);
 					request.set("nonTradingDayFillOption", "NON_TRADING_WEEKDAYS");
 					request.set("nonTradingDayFillMethod", "NIL_VALUE");
-					if(Arrays.asList("W-MON", "W-TUE", "W-WED", "W-THU").contains(range.periodicity().code())) {
+					if (Arrays.asList("W-MON", "W-TUE", "W-WED", "W-THU").contains(range.periodicity().code())) {
 						request.set("periodicityAdjustment", "ACTUAL");
 					}
-					//request.set("nonTradingDayFillMethod", fillPrevious ? "PREVIOUS_VALUE" : "NIL_VALUE");
-					jobs.put(jobNumber, new Job(l -> {
-						for (Element securityData : l) {
-							Element fieldElement = securityData.getElement("fieldData");
-							for (int i = 0; i < fieldElement.numValues(); ++i) {
-								Element dateValueElement = fieldElement.getValueAsElement(i);
-								Datetime date = dateValueElement.getElement(0).getValueAsDate();
-								if (range.periodicity().code().equals("B")
-										&& (date.calendar().get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
-												|| date.calendar().get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)) {
-									continue;
-								}
-								if (dateValueElement.numElements() == 1) {
-									//TODO
-									//builders.get(securityField).add(Double.NaN);
-								} else {
-									int col = (int) range.indexOf(LocalDate.parse(date.toString()));
-									for(int j = 1; j < dateValueElement.numElements(); j++) {
-										int row = rowMap.get(
-												new StringBuilder().append(securityData.getElement("security").getValueAsString()) 
-												.append(":").append(dateValueElement.getElement(j).name()).toString());
-										data[row][col] = dateValueElement.getElement(j).getValueAsFloat64();
-									}
-								}
-							}
-						}
-						jobs.remove(jobNumber);
-						futureDS.complete(data);
-					}, errorHandler));
+					// request.set("nonTradingDayFillMethod", fillPrevious ? "PREVIOUS_VALUE" :
+					// "NIL_VALUE");
+					long jobNumber = requestNumber.incrementAndGet();
+					jobs.put(jobNumber, getJob(jobNumber, req, range, future));
 					session.sendRequest(request, new CorrelationID(jobNumber));
 				}
-				return futureDS.get(TIMEOUT, TimeUnit.SECONDS);
+				return future.get(TIMEOUT, TimeUnit.SECONDS);
 			} catch (Exception e) {
 				String message = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
 				session = null;
 				throw new RuntimeException("Bloomberg error: " + message, e);
 			}
 		};
+	}
+
+	private Job getJob(long jobNumber, MarketData.Request request, PeriodicRange<?> range, CompletableFuture<double[][]> future) {
+		return new Job(l -> {
+			double[][] d = new double[request.size()][(int) range.size()];
+			for(int i = 0; i < d.length; i++) {
+				Arrays.fill(d[i], Double.NaN);
+			}
+			for (Element securityData : l) {
+				String security = securityData.getElement("security").getValueAsString().concat(":");
+				Element fieldElement = securityData.getElement("fieldData");
+				for (int i = 0; i < fieldElement.numValues(); ++i) {
+					Element dateValueElement = fieldElement.getValueAsElement(i);
+					Datetime date = dateValueElement.getElement(0).getValueAsDate();
+					if (range.periodicity().code().equals("B")
+							&& (date.calendar().get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
+									|| date.calendar().get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)) {
+						continue;
+					}
+					if (dateValueElement.numElements() == 1) {
+						// TODO
+						// builders.get(securityField).add(Double.NaN);
+					} else {
+						int col = (int) range.indexOf(LocalDate.parse(date.toString()));
+						for (int j = 1; j < dateValueElement.numElements(); j++) {
+							int row = request.getOrdinal(security.concat(dateValueElement.getElement(j).name().toString()));
+							d[row][col] = dateValueElement.getElement(j).getValueAsFloat64();
+						}
+					}
+				}
+			}
+			jobs.remove(jobNumber);
+			future.complete(d);
+		}, e -> future.completeExceptionally(e));
 	}
 
 	public String getStaticData(String code, String field) {
@@ -313,5 +314,6 @@ public class BloombergMarketData implements MarketData, EventHandler {
 		}
 
 	}
+
 
 }

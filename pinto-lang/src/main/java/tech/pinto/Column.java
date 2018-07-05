@@ -60,7 +60,7 @@ public abstract class Column<T> implements Cloneable {
 
 	@Override
 	public String toString() {
-		return getHeader();
+		return getTrace();
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -91,6 +91,17 @@ public abstract class Column<T> implements Cloneable {
 	public interface ConstantColumn<C> {
 		public C getValue();
 	}
+	
+	
+	public static <T extends Column<S>,S> T castColumn(Column<?> o, Class<T> clazz) {
+		try {
+			return clazz.cast(o);
+		} catch(ClassCastException cce) {
+			throw new PintoSyntaxException("Wrong column type: expected "
+					+ clazz.getSimpleName() + " and input is " + o.getClass().getSimpleName());
+		}
+	}
+
 
 	public static class OfDoubles extends Column<double[]> {
 
