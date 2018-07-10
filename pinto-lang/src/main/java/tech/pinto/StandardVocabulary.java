@@ -123,6 +123,9 @@ public class StandardVocabulary extends Vocabulary {
 				.description("Creates a column with annualization factor for the specified or evaluated range's periodicity."),
 				
 				
+			nameBuilder("mkt", StandardVocabulary::mkt)
+				.indexer("[tickers,fields]")
+				.description("Adds columns for market data specified by *tickers* and *fields*."),
 			nameBuilder("pi", StandardVocabulary::pi)
 				.indexer(Indexer.NONE)
 				.description("Creates a constant double column with the value pi."),
@@ -474,6 +477,12 @@ public class StandardVocabulary extends Vocabulary {
 			return a;
 		};
 		s.addFirst(new OfDoubles(c -> "annualization_factor", function.apply(periodicity)));
+	}
+	
+	private static void mkt(Pinto p, LinkedList<Column<?>> s) {
+		String tickers = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
+		String fields = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
+		p.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(p, s);
 	}
 
 	private static void pi(Pinto p, LinkedList<Column<?>> s) {

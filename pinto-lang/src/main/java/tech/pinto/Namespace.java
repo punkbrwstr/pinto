@@ -1,6 +1,5 @@
 package tech.pinto;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -15,7 +14,6 @@ import javax.inject.Inject;
 import com.google.common.base.Joiner;
 
 import jline.console.completer.Completer;
-import tech.pinto.Pinto.StackFunction;
 import tech.pinto.Pinto.TableFunction;
 
 public class Namespace implements Completer {
@@ -132,7 +130,12 @@ public class Namespace implements Completer {
         if (buffer == null) {
             candidates.addAll(names.keySet());
         } else {
-        	candidates.addAll(namesStartingWith(buffer));
+        	int i = buffer.lastIndexOf(" ");
+        	String toComplete = i == -1 ? buffer : buffer.substring(i+1, buffer.length());
+        	String stub = i == -1 ? "" : buffer.substring(0, i+1);
+        	for(String name : namesStartingWith(toComplete)) {
+        		candidates.add(stub.concat(name));
+        	}
         }
 
         return candidates.isEmpty() ? -1 : 0;
