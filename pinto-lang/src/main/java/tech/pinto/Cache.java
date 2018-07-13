@@ -44,7 +44,7 @@ public class Cache {
 	public static StackFunction cacheNullaryFunction(String key, Consumer<Table> uncached) {
 		nullaryFunctions.put(key, uncached);
 		return (p,s) -> {
-			s.addAll(getCachedColumns(key));
+			s.addAll(0, getCachedColumns(key));
 		};
 	}
 	

@@ -37,7 +37,7 @@ public class FunctionTester {
 		assertEquals("Nested save ref", 3.4, sumRow(0,pinto.eval("thing2 thing + eval").get(0)), 0.001d);
 		pinto.eval(":thing 2 def");
 		assertEquals("Update nested ref", 5.2, sumRow(0,pinto.eval("thing2 thing +" + EVAL).get(0)), 0.001d);
-		pinto.eval(":increment 1 + def");
+		pinto.eval(":increment [0] 1 + def");
 		assertEquals("Saved function", 7.0, sumRow(0,pinto.eval("6 increment" + EVAL).get(0)), 0.001d);
 	}
 

@@ -7,13 +7,13 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
 import com.google.common.base.Joiner;
 
 import jline.console.completer.Completer;
+import tech.pinto.Pinto.Expression;
 import tech.pinto.Pinto.TableFunction;
 
 public class Namespace implements Completer {
@@ -33,8 +33,9 @@ public class Namespace implements Completer {
 		return names.containsKey(name);
 	}
 
-	public synchronized void define(Pinto pinto, String name, Indexer indexer, String description, Set<String> dependencies,
-				Consumer<Table> function) {
+	public synchronized String define(Pinto pinto, Expression expression) {
+		String name = expression.getNameLiteral()
+				.orElseThrow(() -> new PintoSyntaxException("A name literal is required to define a name."));
 		if(names.containsKey(name)) {
 			if(names.get(name).builtIn()) {
 				throw new IllegalArgumentException("Cannot redefine built-in name " + name + ".");
@@ -45,18 +46,18 @@ public class Namespace implements Completer {
 				dependencyGraph.remove(join(dependencyCode, "dependedOnBy", name));
 			}
 		}
-		for(String dependencyName : dependencies) {
+		for(String dependencyName : expression.getDependencies()) {
 			dependencyGraph.add(join(name, "dependsOn", dependencyName));
 			dependencyGraph.add(join(dependencyName, "dependedOnBy", name));
 		}
-		if(indexer.isNone()) {
-			names.put(name, Name.nameBuilder(name,Cache.cacheNullaryFunction(name, function))
-					.defined().indexer(Indexer.NONE).description(description).build());
+		if(expression.isNullary()) {
+			names.put(name, Name.nameBuilder(name,Cache.cacheNullaryFunction(name, expression))
+					.defined().description(expression.getText()).build());
 		} else {
-			names.put(name, Name.nameBuilder(name, (TableFunction) (p,t) -> {
-				function.andThen(t2 -> t2.collapseFunction()).accept(t);
-			}).defined().indexer(indexer).description(description).build());
+			names.put(name, Name.nameBuilder(name, (TableFunction) (p,t) -> expression.accept(t))
+					.defined().description(expression.getText()).build());
 		}
+		return name;
 	}
 
 	public synchronized void undefine(String name) throws IllegalArgumentException {
@@ -74,6 +75,9 @@ public class Namespace implements Completer {
 	}
 	
     public synchronized Name getName(String functionName) {
+		if (!names.containsKey(functionName)) {
+			throw new PintoSyntaxException("Name \"" + functionName + "\" not found.");
+		}
         return names.get(functionName);
     }
     

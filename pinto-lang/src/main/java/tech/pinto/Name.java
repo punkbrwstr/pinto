@@ -1,55 +1,49 @@
 package tech.pinto;
 
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import tech.pinto.Pinto.StackFunction;
 import tech.pinto.Pinto.TableFunction;
 
-public class Name implements Function<Pinto,Consumer<Table>> {
+public class Name {
 
 	final private String name;
 	final private Pinto.TableFunction function;
-	final private Indexer indexer;
+	final private Optional<Indexer> indexer;
 	final private boolean isTerminal;
-	final private boolean startFromLast;
 	final private boolean isBuiltIn;
+	final private boolean isSkipEvaluation;
 	final private String description;
 
-	public Name(String name, Pinto.TableFunction function, Indexer indexer,
-			boolean isTerminal, boolean startFromLast, boolean isBuiltIn, String description) {
+	public Name(String name, Pinto.TableFunction function, Optional<Indexer> indexer,
+			boolean isTerminal, boolean isBuiltIn, boolean isSkipEvaluation, String description) {
 		this.name = name;
 		this.function = function;
 		this.indexer = indexer;
 		this.isTerminal = isTerminal;
-		this.startFromLast = startFromLast;
 		this.description = description;
 		this.isBuiltIn = isBuiltIn;
+		this.isSkipEvaluation = isSkipEvaluation;
 	}
 
 
-	public Consumer<Table> getFunction(Pinto pinto) {
-		return t -> function.accept(pinto, t);
-	}
-	
-	public Consumer<Table> getDefaultIndexer(Pinto pinto) {
-		return t -> {
-			try {
-				indexer.apply(pinto).accept(t);
-			} catch(Throwable e) {
-				throw new PintoSyntaxException("Indexer error for \"" + name + "\": " + e.getLocalizedMessage() , e);
-			}
-		};
+	public Consumer<Table> getConsumer(Pinto pinto, Set<String> dependencies) {
+		Consumer<Table> c = t -> {};
+		if(isTerminal && !isSkipEvaluation) {
+			c = pinto.getExpression();
+		}
+		if(indexer.isPresent()) {
+			c =  c.andThen(indexer.get().getConsumer(pinto, dependencies, false));
+		} 
+		return c.andThen(t -> function.accept(pinto, t));
 	}
 	
 	public boolean terminal() {
 		return isTerminal;
 	}
 	
-	public boolean startFromLast() {
-		return startFromLast;
-	}
-
 	public boolean builtIn() {
 		return isBuiltIn;
 	}
@@ -66,20 +60,11 @@ public class Name implements Function<Pinto,Consumer<Table>> {
 		StringBuilder sb = new StringBuilder();
     	String crlf = System.getProperty("line.separator");
 		sb.append(name).append(" help").append(crlf);
-		sb.append("\t").append("Default indexer: ").append(getIndexString()).append(crlf);
+		if(indexer.isPresent()) {
+			sb.append("\t").append("Default indexer: ").append(getIndexString()).append(crlf);
+		}
 		sb.append("\t").append(description).append(crlf);
 		return sb.toString();
-	}
-
-	@Override
-	public Consumer<Table> apply(Pinto arg0) {
-		return t -> {
-			try {
-				function.accept(arg0, t);
-			} catch(Throwable e) {
-				throw new PintoSyntaxException("Error in \"" + name + "\"" , e);
-			}
-		};
 	}
 
 	@Override
@@ -98,28 +83,27 @@ public class Name implements Function<Pinto,Consumer<Table>> {
 	public static class Builder {
 		final private String name;
 		final private Pinto.TableFunction function;
-		private Indexer indexer;
+		private Optional<Indexer> indexer = Optional.empty();
 		private boolean isTerminal;
-		private boolean startFromLast;
 		private boolean isBuiltIn;
+		private boolean isSkipEvaluation;
 		private String description;
 
 		public Builder(String name, TableFunction function) {
 			this.name = name;
 			this.function = function;
-			this.indexer = Indexer.ALL;
 			this.isBuiltIn = true;
 			this.isTerminal = false;
-			this.startFromLast = false;
+			this.isSkipEvaluation = false;
 		}
 		
 		public Builder indexer(Indexer indexer) {
-			this.indexer = indexer;
+			this.indexer = Optional.of(indexer);
 			return this;
 		}
 
 		public Builder indexer(String index) {
-			this.indexer = new Indexer(index.replaceAll("^\\[|\\]$", ""), false);
+			this.indexer = Optional.of(new Indexer(index.replaceAll("^\\[|\\]$", "")));
 			return this;
 		}
 
@@ -138,14 +122,13 @@ public class Name implements Function<Pinto,Consumer<Table>> {
 			return this;
 		}
 
-		public Builder startFromLast() {
-			this.startFromLast = true;
+		public Builder skipEvaluation() {
+			this.isSkipEvaluation = true;
 			return this;
 		}
-		
-		
+
 		public Name build() {
-			return new Name(name, function, indexer, isTerminal, startFromLast, isBuiltIn, description);
+			return new Name(name, function, indexer, isTerminal, isBuiltIn, isSkipEvaluation, description);
 		}
 		
 		

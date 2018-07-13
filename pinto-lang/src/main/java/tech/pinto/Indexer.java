@@ -2,33 +2,28 @@ package tech.pinto;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
+import tech.pinto.Pinto.Expression;
 
-	public static final Indexer ALL = new Indexer(":", false);
-	public static final Indexer NONE = new Indexer("", false);
-	public static final Indexer ALL_DEFINED = new Indexer(":", true);
-	public static final Indexer NONE_DEFINED = new Indexer("", true);
+public class Indexer implements Cloneable {
+
+	public static final Indexer ALL = new Indexer(":");
+	public static final Indexer NONE = new Indexer("");
 
 	private final List<Index> indexes = new ArrayList<>();
 	private final String indexString;
-	private final boolean definedIndexer;
-	private final Set<String> dependencies = new HashSet<>();
 
-	public Indexer(String indexString, boolean functionIndexer) {
+	public Indexer(String indexString) {
 		this.indexString = indexString;
-		this.definedIndexer = functionIndexer;
 
 		StringBuilder sb = new StringBuilder();
 		final int[] open = new int[4]; // ", $, {, [
@@ -70,19 +65,18 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 		return indexes.size() == 1 && indexes.get(0).isNone();
 	}
 
-	@Override
-	public Consumer<Table> apply(Pinto pinto) {
+	public Consumer<Table> getConsumer(Pinto pinto, Set<String> dependencies, boolean indexForExpression) {
 		return t -> {
 			LinkedList<LinkedList<Column<?>>> unused = new LinkedList<>();
 			LinkedList<LinkedList<Column<?>>> indexed = new LinkedList<>();
 
 			for (LinkedList<Column<?>> stack : t.takeTop()) {
 				List<StackOperation> ops = new ArrayList<>();
-				indexed.addLast(operate(stack, ops, pinto));
+				indexed.addLast(operate(pinto, dependencies, stack, ops));
 				Index last = indexes.get(indexes.size() - 1);
 				while (last.isRepeat() && stack.size() > 0) {
 					try {
-						indexed.addLast(operate(stack, last.index(stack), pinto));
+						indexed.addLast(operate(pinto, dependencies, stack, last.index(pinto, dependencies, stack)));
 					} catch (IllegalArgumentException pse) {
 						break;
 					}
@@ -90,14 +84,15 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 				unused.add(stack);
 			}
 			t.insertAtTop(unused);
-			t.push(definedIndexer, indexed);
+			t.push(indexForExpression, indexed);
 		};
 	}
 
 	@SuppressWarnings("unchecked")
-	private LinkedList<Column<?>> operate(LinkedList<Column<?>> stack, List<StackOperation> ops, Pinto pinto) {
+	private LinkedList<Column<?>> operate(Pinto pinto, Set<String> dependencies,
+					LinkedList<Column<?>> stack, List<StackOperation> ops) {
 		for(int i = 0; i < indexes.size(); i++) {
-			ops.addAll(indexes.get(i).index(stack));
+			ops.addAll(indexes.get(i).index(pinto, dependencies, stack));
 		}
 		List<StackOperation> indexStringOps = ops.stream().filter(StackOperation::isHeader)
 				.collect(Collectors.toList());
@@ -127,16 +122,17 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 		LinkedList<Column<?>> indexed = new LinkedList<>();
 		for (StackOperation o : ops) {
 			if (o.isAlternative()) {
-				Table t = pinto.parseSubExpression(o.getAlternativeString());
-				dependencies.addAll(t.getDependencies().get());
+				Table t = new Table();
+				o.getAlternativeFunction().accept(t);
 				indexed.addAll(t.flatten());
 				if (o.isCopy()) {
-					t = pinto.parseSubExpression(o.getAlternativeString());
+					t = new Table();
+					o.getAlternativeFunction().accept(t);
 					stack.addAll(t.flatten());
 				}
 			} else if ((!alreadyUsed.contains(o.getOrdinal())) && !o.skip()) {
 				Column<?> c = stack.get(o.getOrdinal());
-				indexed.add(o.checkType(o.needsCloning() || o.isCopy() ? c.clone() : c));
+				indexed.add(o.needsCloning() || o.isCopy() ? c.clone() : c);
 				if (!o.isCopy()) {
 					alreadyUsed.add(o.getOrdinal());
 				}
@@ -155,10 +151,6 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 		return s.matches("[-+]?\\d*\\.?\\d+");
 	}
 	
-	public Set<String> getDependencies() {
-		return dependencies;
-	}
-
 	public String toString() {
 		return "[" + indexString + "]";
 	}
@@ -174,27 +166,22 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 
 	private class Index {
 
-		private Optional<String> indexString = Optional.empty();
-		private Optional<Integer> ordinal = Optional.empty();
-		private Optional<Integer> sliceStart = Optional.empty();
-		private Optional<Integer> sliceEnd = Optional.empty();
-		private Optional<String> or = Optional.empty();
-		private boolean copy = false;
-		private boolean repeat = false;
-		private boolean optional = false;
-		private boolean everything = false;
-		private boolean none = false;
-		private boolean checkString = false;
-		private boolean checkConstant = false;
+		private final String string;
+		private final boolean copy;
+		private final boolean repeat;
+		private final Optional<String> header;
+		private final Optional<Integer> sliceStart;
+		private final Optional<Integer> sliceEnd;
+		private final Optional<String> or;
+		private Optional<Consumer<Table>> orFunction = Optional.empty();
 
 		public Index(String s) {
+			this.string = s;
 			if (s.contains("&")) {
-				if (repeat) {
-					throw new PintoSyntaxException(
-							"Cannot copy and repeat an index because it will create an infinite loop.");
-				}
 				copy = true;
 				s = s.replace("&", "");
+			} else {
+				copy = false;
 			}
 			if (s.contains("=")) {
 				String[] thisOrThat = s.split("=");
@@ -205,91 +192,83 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 				String alt = Arrays.stream(thisOrThat).skip(1).collect(Collectors.joining("="));
 				or = Optional.of(" {" + thisOrThat[0] + ": " + alt + "}");
 				s = thisOrThat[0];
+			} else {
+				or = Optional.empty();
 			}
 			if (s.contains("+")) {
+				if (copy) {
+					throw new PintoSyntaxException(
+							"Cannot copy and repeat an index because it will create an infinite loop.");
+				}
 				repeat = true;
 				s = s.replace("+", "");
-			}
-			if (s.contains("?")) {
-				optional = true;
-				s = s.replace("?", "");
-			}
-			if (s.contains("@")) {
-				checkString = true;
-				s = s.replace("@", "");
-			}
-			if (s.contains("#")) {
-				if (checkString) {
-					throw new PintoSyntaxException("Cannot enforce both # and @ types.");
-				}
-				checkConstant = true;
-				s = s.replace("#", "");
+			} else {
+				repeat = false;
 			}
 			if (s.equals("")) {
-				none = true;
+				sliceStart = Optional.of(0);
+				sliceEnd = Optional.of(0);
+				header = Optional.empty();
 			} else if (s.equals(":")) {
-				everything = true;
+				sliceStart = Optional.of(0);
+				sliceEnd = Optional.of(Integer.MAX_VALUE);
+				header = Optional.empty();
 			} else if (s.contains(":")) {
 				if (s.indexOf(":") == 0) {
 					sliceStart = Optional.of(0);
 					sliceEnd = Optional.of(Integer.parseInt(s.substring(1)));
 				} else if (s.indexOf(":") == s.length() - 1) {
-					sliceEnd = Optional.of(Integer.MAX_VALUE);
 					sliceStart = Optional.of(Integer.parseInt(s.substring(0, s.length() - 1)));
+					sliceEnd = Optional.of(Integer.MAX_VALUE);
 				} else {
 					String[] parts = s.split(":");
 					sliceStart = Optional.of(Integer.parseInt(parts[0]));
 					sliceEnd = Optional.of(Integer.parseInt(parts[1]));
 				}
-
+				header = Optional.empty();
 			} else {
 				if (isNumeric(s)) {
-					ordinal = Optional.of(Integer.parseInt(s));
+					sliceStart = Optional.of(Integer.parseInt(s));
+					sliceEnd = Optional.empty();
+					header = Optional.empty();
 				} else {
-					indexString = Optional.of(s);
+					header = Optional.of(s);
+					sliceStart = Optional.empty();
+					sliceEnd = Optional.empty();
 				}
 			}
 
 		}
 
-		public List<StackOperation> index(LinkedList<Column<?>> stack) {
+		public List<StackOperation> index(Pinto pinto, Set<String> dependencies, LinkedList<Column<?>> stack) {
 			List<StackOperation> ops = new ArrayList<>();
-			// if (stack.size() == 0 && ! or.isPresent()) {
-			// return ops;
-			// }
-			if (everything || sliceStart.isPresent() || ordinal.isPresent()) {
-				int start = 0, end = 0;
-				if (everything) {
-					if (stack.isEmpty()) {
-						return ops;
-					}
-					start = 0;
-					end = stack.size();
-				} else if (sliceStart.isPresent()) {
-					start = sliceStart.get();
-					start = start < 0 ? start + stack.size() : start;
-					end = sliceEnd.get();
-					end = end < 0 ? end + stack.size() : end;
-				} else if (ordinal.isPresent()) {
-					start = ordinal.get();
-					start = start < 0 ? start + stack.size() : start;
-					end = start + 1;
+			if (sliceStart.isPresent()) {
+				if(stack.isEmpty()) {
+					return ops;
 				}
-				if (start >= end) {
+				int end = 0;
+				int start = sliceStart.get();
+				start = start < 0 ? start + stack.size() : start;
+				if(sliceEnd.isPresent()) {
+					end = sliceEnd.get();
+					end = end < 0 ? end + stack.size() : 
+							end == Integer.MAX_VALUE ? stack.size() : end;
+				} else {
+					end = start + 1;
+				} 
+				if (start > end) {
 					throw new IllegalArgumentException("Invalid index. Start is after end.");
 				}
 				if (start < 0 || start >= stack.size()) {
-					if (!optional) {
-						throw new IllegalArgumentException(
+					throw new IllegalArgumentException(
 								"Index [" + start + ":" + end + "] is outside bounds of stack.");
-					}
 				} else {
 					for (int n = start; n < end && n < stack.size(); n++) {
-						ops.add(new StackOperation(n, isCopy(), false, checkString, checkConstant));
+						ops.add(new StackOperation(n, isCopy(), false));
 					}
 				}
-			} else if (indexString.isPresent()) {
-				final String query = indexString.get();
+			} else {
+				final String query = header.get();
 				Predicate<String> test;
 				if (query.startsWith("*")) {
 					final String toFind = query.substring(1);
@@ -306,13 +285,18 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 				boolean found = false;
 				for (int n = 0; n < stack.size(); n++) {
 					if (test.test(stack.get(n).getHeader())) {
-						ops.add(new StackOperation(n, isCopy(), true, checkString, checkConstant));
+						ops.add(new StackOperation(n, isCopy(), true));
 						found = true;
 					}
 				}
-				if (!found && !optional) {
+				if (!found) {
 					if (or.isPresent()) {
-						ops.add(new StackOperation(or.get(), checkString, checkConstant));
+						if(!orFunction.isPresent()) {
+							Expression e = pinto.parseSubExpression(or.get());
+							dependencies.addAll(e.getDependencies());
+							orFunction = Optional.of(e);
+						}
+						ops.add(new StackOperation(orFunction.get()));
 					} else {
 						throw new IllegalArgumentException("Missing required header \"" + query + "\"");
 					}
@@ -322,16 +306,22 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 
 		}
 
+		public boolean isNone() {
+			return (sliceStart.orElse(1) == 0) &&
+					(sliceEnd.orElse(1) == 0) &&
+					!header.isPresent();
+		}
+
 		public boolean isCopy() {
 			return copy;
 		}
 
-		public boolean isNone() {
-			return none;
-		}
-
 		public boolean isRepeat() {
 			return repeat;
+		}
+
+		public String toString() {
+			return string;
 		}
 
 	}
@@ -339,27 +329,21 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 	private static class StackOperation implements Comparable<StackOperation> {
 		private final int ordinal;
 		private final boolean isHeader;
-		private final boolean checkString;
-		private final boolean checkConstant;
 		private final boolean copy;
 		private boolean skip = false;
 		private boolean needsCloning = false;
-		private Optional<String> alternative = Optional.empty();
+		private Optional<Consumer<Table>> alternative = Optional.empty();
 
-		public StackOperation(int ordinal, boolean copy, boolean isHeader, boolean checkString, boolean checkConstant) {
+		public StackOperation(int ordinal, boolean copy, boolean isHeader) {
 			this.ordinal = ordinal;
 			this.copy = copy;
-			this.checkConstant = checkConstant;
-			this.checkString = checkString;
 			this.isHeader = isHeader;
 		}
 
-		public StackOperation(String alternative, boolean checkString, boolean checkConstant) {
+		public StackOperation(Consumer<Table> alternative) {
 			this.alternative = Optional.of(alternative);
 			ordinal = -1;
 			copy = false;
-			this.checkConstant = checkConstant;
-			this.checkString = checkString;
 			this.isHeader = false;
 		}
 
@@ -367,7 +351,7 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 			return alternative.isPresent();
 		}
 
-		public String getAlternativeString() {
+		public Consumer<Table> getAlternativeFunction() {
 			return alternative.get();
 		}
 
@@ -398,22 +382,6 @@ public class Indexer implements Function<Pinto, Consumer<Table>>, Cloneable {
 		public boolean isHeader() {
 			return isHeader;
 		}
-
-		public Column<?> checkType(Column<?> c) throws PintoSyntaxException {
-			if (checkString && !(c instanceof Column.OfConstantStrings)) {
-				throw new PintoSyntaxException("String column required.");
-			} else if (checkConstant && !(c instanceof Column.OfConstantDoubles)) {
-				throw new PintoSyntaxException("Constant column required.");
-			}
-			return c;
-		}
-
-		// public LinkedList<Column> checkType(LinkedList<Column> l) throws Exception {
-		// for (Column c : l) {
-		// checkType(c);
-		// }
-		// return l;
-		// }
 
 		@Override
 		public int compareTo(StackOperation o) {

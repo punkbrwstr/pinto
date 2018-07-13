@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,7 +56,8 @@ public class Servlet extends HttpServlet {
 			}
 			os.print(reportTop.get());
 			Table t = new Table();
-			pinto.getNamespace().getName("_rpt-" + request.getParameter("p")).apply(pinto).accept(t);
+			pinto.getNamespace().getName("_rpt-" + request.getParameter("p"))
+					.getConsumer(pinto, new HashSet<>()).accept(t);
 			for(Column<?> c : t.flatten()) {
 				os.print(((Column.OfConstantStrings) c).getValue());
 			}

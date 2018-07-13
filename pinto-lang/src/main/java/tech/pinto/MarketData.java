@@ -3,12 +3,13 @@ package tech.pinto;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import tech.pinto.Pinto.StackFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 
@@ -17,8 +18,8 @@ public interface MarketData {
 	public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> getFunction(Request request);
 	public String getDefaultField();
 					
-	default public StackFunction getStackFunction(String literal) {
-		return (p, s) -> {
+	default public Consumer<LinkedList<Column<?>>> getStackFunction(String literal) {
+		return  s -> {
 			String[] sa = literal.split(":");
 			String[] securitiesArray = sa[0].split(",");
 			for(int i = 0; i < securitiesArray.length; i++) {

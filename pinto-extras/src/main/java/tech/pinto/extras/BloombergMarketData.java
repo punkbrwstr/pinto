@@ -1,12 +1,12 @@
 package tech.pinto.extras;
 
 import java.io.IOException;
-
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.bloomberglp.blpapi.CorrelationID;
-import com.bloomberglp.blpapi.Datetime;
 import com.bloomberglp.blpapi.Element;
 import com.bloomberglp.blpapi.Event;
 import com.bloomberglp.blpapi.EventHandler;
@@ -183,20 +182,16 @@ public class BloombergMarketData implements MarketData, EventHandler {
 				Element fieldElement = securityData.getElement("fieldData");
 				for (int i = 0; i < fieldElement.numValues(); ++i) {
 					Element dateValueElement = fieldElement.getValueAsElement(i);
-					Datetime date = dateValueElement.getElement(0).getValueAsDate();
-					if (range.periodicity().code().equals("B")
-							&& (date.calendar().get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
-									|| date.calendar().get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)) {
-						continue;
-					}
-					if (dateValueElement.numElements() == 1) {
-						// TODO
-						// builders.get(securityField).add(Double.NaN);
-					} else {
-						int col = (int) range.indexOf(LocalDate.parse(date.toString()));
-						for (int j = 1; j < dateValueElement.numElements(); j++) {
-							int row = request.getOrdinal(security.concat(dateValueElement.getElement(j).name().toString()));
-							d[row][col] = dateValueElement.getElement(j).getValueAsFloat64();
+					LocalDate date = dateValueElement.getElement(0).getValueAsDate().calendar().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+					DayOfWeek dow = date.getDayOfWeek();
+					if (!(range.periodicity().code().equals("B") &&
+							dow.equals(DayOfWeek.SATURDAY) || dow.equals(DayOfWeek.SUNDAY))) {
+						if (dateValueElement.numElements() != 1) {
+							int col = (int) range.indexOf(date);
+							for (int j = 1; j < dateValueElement.numElements(); j++) {
+								int row = request.getOrdinal(security.concat(dateValueElement.getElement(j).name().toString()));
+								d[row][col] = dateValueElement.getElement(j).getValueAsFloat64();
+							}
 						}
 					}
 				}

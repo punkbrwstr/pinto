@@ -61,19 +61,22 @@ public class StandardVocabulary extends Vocabulary {
 				.description("Defines the expression as the preceding name literal.")
 				.indexer(Indexer.NONE)
 				.terminal()
-				.startFromLast(),
+				.skipEvaluation(),
 			nameBuilder("undef", StandardVocabulary::undef)
 				.description("Defines the expression as the preceding name literal.")
 				.indexer(Indexer.NONE)
-				.terminal(),
+				.terminal()
+				.skipEvaluation(),
 			nameBuilder("help", StandardVocabulary::help)
 				.description("Prints help for the preceding name literal or all names if one has not been specified.")
 				.indexer(Indexer.NONE)
-				.terminal(),
+				.terminal()
+				.skipEvaluation(),
 			nameBuilder("list", StandardVocabulary::list)
 				.description("Shows description for all names.")
 				.indexer(Indexer.NONE)
-				.terminal(),
+				.terminal()
+				.skipEvaluation(),
 			nameBuilder("eval", StandardVocabulary::eval)
 				.description("Evaluates the expression over date range between two *date* columns over *periodicity*.")
 				.indexer("[periodicity=B,date=today today,:]")
@@ -188,7 +191,6 @@ public class StandardVocabulary extends Vocabulary {
 			nameBuilder("report", StandardVocabulary::report)
 				.indexer("[HTML]")
 				.terminal()
-				.startFromLast()
 				.description("Creates an HTML report from any columns labelled HTML."),
 			nameBuilder("grid", StandardVocabulary::grid)
 				.indexer("[columns=3,HTML]")
@@ -288,11 +290,7 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static final void def(Pinto p, Table t) {
-		Pinto.Expression e = p.getExpression();
-		String name = e.getNameLiteral()
-				.orElseThrow(() -> new PintoSyntaxException("def requires a name literal."));
-		p.getNamespace().define(p,name, e.getDefinedIndexer(), e.getText(), e.getDependencies(), e.getPrevious());
-		t.setStatus("Defined " + name);
+		t.setStatus("Defined " + p.getNamespace().define(p, p.getExpression()));
 	}
 
 	private static void undef(Pinto p, Table t) {
@@ -356,7 +354,7 @@ public class StandardVocabulary extends Vocabulary {
 				int lineNumber = 0;
 				try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
 					String line = null;
-					p.activeExpression.reset();
+					p.activeExpression = new Pinto.Expression(p, false);
 					while ((line = reader.readLine()) != null) {
 						lineNumber++;
 						p.eval(line);
@@ -439,7 +437,7 @@ public class StandardVocabulary extends Vocabulary {
 		}
 		t.insertAtTop(s);
 		String index = endpoints.size() == 1 ? ":" + endpoints.get(0) : endpoints.get(1) + ":" + endpoints.get(0);
-		new Indexer(index, false).apply(p).accept(t);
+		new Indexer(index).getConsumer(p,p.activeExpression.getDependencies(),false).accept(t);
 	}
 
 	private static void today(Pinto p, LinkedList<Column<?>> s) {
@@ -482,7 +480,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static void mkt(Pinto p, LinkedList<Column<?>> s) {
 		String tickers = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 		String fields = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
-		p.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(p, s);
+		p.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(s);
 	}
 
 	private static void pi(Pinto p, LinkedList<Column<?>> s) {
@@ -870,14 +868,14 @@ public class StandardVocabulary extends Vocabulary {
 	private static void report(Pinto p, Table t) {
 		Pinto.Expression state = p.getExpression();
 		String id = getId();
-		p.getNamespace().define(p,"_rpt-" + id, Indexer.NONE, "Report id: " + id, state.getDependencies(), state.getPrevious());
+		state.setNameLiteral("_rpt-" + id);
+		t.setStatus("Report id: " + p.getNamespace().define(p, state));
 		try {
 			int port = p.getPort();
 			Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + port + "/pinto/report?p=" + id));
 		} catch (Exception e) {
 			throw new PintoSyntaxException("Unable to open report", e);
 		}
-		t.setStatus("Report id: " + id);
 	}
 
 	private static void chart(Pinto pinto, LinkedList<Column<?>> s) {
@@ -899,8 +897,8 @@ public class StandardVocabulary extends Vocabulary {
 		}
 		NumberFormat nf = NumberFormat.getInstance();
 		nf.setGroupingUsed(false);
-		nf.setMinimumFractionDigits(4);
-		nf.setMaximumFractionDigits(14);
+		nf.setMinimumFractionDigits(2);
+		nf.setMaximumFractionDigits(6);
 		String dates = range.dates().stream().map(LocalDate::toString)
 				.collect(Collectors.joining("', '", "['x', '", "']"));
 		StringBuilder data = new StringBuilder();
@@ -997,9 +995,9 @@ public class StandardVocabulary extends Vocabulary {
 		for (int i = 0; i < columns; i++) {
 			double[][] values = new double[s.size()][2];
 			for (int j = 0; j < s.size(); j++) {
-				Pinto.Expression state = new Pinto.Expression(false);
+				Pinto.Expression state = new Pinto.Expression(pinto, false);
 				final int J = j;
-				state.setCurrent(t -> {
+				state.addFunction(t -> {
 					LinkedList<Column<?>> stack = new LinkedList<>();
 					stack.add(s.get(J).clone());
 					t.insertAtTop(stack);

@@ -1,8 +1,10 @@
 package tech.pinto;
 
 import java.util.ArrayList;
+
+
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -10,15 +12,19 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import tech.pinto.Pinto.Expression;
 
-public class HeaderLiteral implements Consumer<LinkedList<Column<?>>>{
+
+public class HeaderLiteral implements Consumer<LinkedList<Column<?>>> {
 	
 	private final List<String[]> headers;
+	private final HashMap<Integer,Consumer<Table>> defaultFunctions = new HashMap<>();
 	private final Pinto pinto;
-	private final Set<String> dependencies = new HashSet<>();
+	private final Set<String> dependencies;
 	
-	public HeaderLiteral(Pinto pinto, String header) {
+	public HeaderLiteral(Pinto pinto, Set<String> dependencies, String header) {
 		this.headers = new ArrayList<>();
+		this.dependencies = dependencies;
 
 		StringBuilder[] h = new StringBuilder[] {new StringBuilder(), new StringBuilder()};
 		int position = 0;
@@ -72,8 +78,8 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?>>>{
 					unlabeled.addLast(stack.removeFirst());
 				}
 			} else {
-				Table t = pinto.parseSubExpression(headers.get(i)[1]);
-				dependencies.addAll(t.getDependencies().get());
+				Table t = new Table();
+				getDefaultFunction(i).accept(t);
 				unlabeled.addAll(t.flatten());
 			}
 			for(Column<?> c : unlabeled) {
@@ -84,9 +90,17 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?>>>{
 		stack.addAll(0, newStack);
 	}
 	
+	private Consumer<Table> getDefaultFunction(Integer i) {
+		if(!defaultFunctions.containsKey(i)) {
+			Expression e = pinto.parseSubExpression(headers.get(i)[1]);
+			dependencies.addAll(e.getDependencies());
+			defaultFunctions.put(i, e);
+		}
+		return defaultFunctions.get(i);
+	}
+	
 	
 	public Set<String> getDependencies() {
 		return dependencies;
 	}
-
 }
