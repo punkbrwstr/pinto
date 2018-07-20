@@ -20,7 +20,13 @@ public abstract class Column<T> implements Cloneable {
 	
 	protected Column(Function<Column<?>[], String> headerFunction, Function<Column<?>[], String> traceFunction,
 				RowsFunctionGeneric<T> rowsFunction, Column<?>... inputs) {
-		this(headerFunction, traceFunction, (range, columns) -> rowsFunction.getRows(range, columns, null), inputs);
+		this(headerFunction, traceFunction, (range, columns) -> {
+			try {
+				return rowsFunction.getRows(range, columns, null);
+			} catch(Throwable t) {
+				throw new PintoSyntaxException("Error in column \"" + traceFunction.apply(columns) + "\"",t);
+			}
+		}, inputs);
 	}
 
 	protected Column(Function<Column<?>[], String> headerFunction, Function<Column<?>[], String> traceFunction,
@@ -199,6 +205,27 @@ public abstract class Column<T> implements Cloneable {
 				double[] a = d[j];
 				s[j] = "[" + nf.format(a[0]) + (a.length == 1 ? "" : ", ..., " + nf.format(a[a.length-1]) + "]"); 
 			}
+			return s;
+		}
+		
+	}
+
+	public static class OfWindow extends Column<Window> {
+
+		public OfWindow(Function<Column<?>[], String> headerFunction,  Function<Column<?>[], String> traceFunction,
+				RowsFunction<Window> rowsFunction, Column<?>... inputs) {
+			super(headerFunction, traceFunction, rowsFunction, inputs);
+		}
+
+		public OfWindow(Function<Column<?>[], String> headerFunction,  Function<Column<?>[], String> traceFunction,
+				RowsFunctionGeneric<Window> rowsFunction, Column<?>... inputs) {
+			super(headerFunction, traceFunction, rowsFunction, inputs);
+		}
+
+		@Override
+		protected <P extends Period<P>> String[] rowsToStrings(Window w, NumberFormat nf) {
+			String[] s = new String[w.viewCount()];
+			Arrays.fill(s, "window");
 			return s;
 		}
 		

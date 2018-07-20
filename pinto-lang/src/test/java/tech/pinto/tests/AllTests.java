@@ -30,9 +30,10 @@ import tech.pinto.time.PeriodicRange;
 @SuiteClasses({
 	DateTester.class,
 	FunctionTester.class,
-        IndexTester.class,
-        SyntaxTester.class,
-	SearchableMultiMapTester.class
+    IndexTester.class,
+    SyntaxTester.class,
+	SearchableMultiMapTester.class,
+	WindowTester.class
 })
 public class AllTests {
 	

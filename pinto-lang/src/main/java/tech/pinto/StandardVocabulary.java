@@ -48,7 +48,6 @@ import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
-import tech.pinto.tools.DoubleCollector;
 
 public class StandardVocabulary extends Vocabulary {
     
@@ -174,20 +173,31 @@ public class StandardVocabulary extends Vocabulary {
 				.description("Concatenates values of constant string columns."),
 				
 				
-	/* array creation */
-			nameBuilder("rolling", StandardVocabulary::rolling)
-				.indexer("[c=2,periodicity=\"range\",:]")
-				.description("Creates double array columns for each input column with rows containing values"
-						+ "from rolling window of past data where the window is *c* periods of periodicity *periodicity*,"
-						+ "defaulting to the evaluation periodicity."),
-			nameBuilder("cross", StandardVocabulary::cross)
-				.description("Creates a double array column with each row containing values of input columns."),
-			nameBuilder("rev_expanding", StandardVocabulary::revExpanding)
-				.description("Creates double array columns for each input column with rows containing values from the current period to the end of the range."),
-			nameBuilder("expanding", StandardVocabulary::expanding)
-				.indexer("[date=\"range\",periodicity=\"range\",initial_zero=\"false\",non_zero=\"false\",:]")
-				.description("Creates double array columns for each input column with rows containing values from "
-						+ "an expanding window of past data with periodicity *freq* that starts on date *start*."),
+	/* windows */
+			nameBuilder("rolling", StandardVocabulary::rolling_window)
+					.description("Creates a rolling window of size *c* for each input.")
+					.indexer("[c=2,:]"),
+			nameBuilder("cross", StandardVocabulary::cross_window)
+					.description("Creates a cross sectional window from input columns.")
+					.indexer("[:]"),
+			nameBuilder("expanding", StandardVocabulary::expanding_window)
+					.description("Creates creates an expanding window starting on *start* or the start of the evaluated range.")
+					.indexer("[date=\"range\",:]"),
+			nameBuilder("rev_expanding", StandardVocabulary::rev_expanding_window)
+					.description("Creates a reverse-expanding window containing values from the current period to the end of the range.")
+					.indexer("[:]"),
+			getStatisticName("sum", () -> new Window.Sum()),
+			getStatisticName("mean", () -> new Window.Mean()),
+			getStatisticName("zscore", () -> new Window.ZScore()),
+			getStatisticName("std", () -> new Window.StandardDeviation()),
+			getStatisticName("first", () -> Window.First),
+			getStatisticName("last", () -> Window.Last),
+			getStatisticName("change", () -> Window.Change),
+			getStatisticName("pct_change", () -> Window.PercentChange),
+			getStatisticName("min", () -> new Window.Min()),
+			getStatisticName("max", () -> new Window.Max()),
+			
+	/* reporting */
 			nameBuilder("report", StandardVocabulary::report)
 				.indexer("[HTML]")
 				.terminal()
@@ -211,24 +221,6 @@ public class StandardVocabulary extends Vocabulary {
 						.indexer(Indexer.NONE)
 						.description( "Creates a constant periodcities column for " + e.getKey()).build());
 		}
-
-    	names.add(getCollectorName("first", DoubleCollector::first));
-    	names.add(getCollectorName("last", DoubleCollector::last));
-    	names.add(getCollectorName("change", DoubleCollector::change));
-    	names.add(getCollectorName("pct_change", DoubleCollector::pct_change));
-    	names.add(getCollectorName("log_change", DoubleCollector::log_change));
-    	names.add(getCollectorName("count", DoubleCollector::count));
-    	names.add(getCollectorName("mean", DoubleCollector::mean));
-    	names.add(getCollectorName("geo_mean", DoubleCollector::geo_mean));
-    	names.add(getCollectorName("sum", DoubleCollector::sum));
-    	names.add(getCollectorName("max", DoubleCollector::max));
-    	names.add(getCollectorName("min", DoubleCollector::min));
-    	names.add(getCollectorName("varp", DoubleCollector::varp));
-    	names.add(getCollectorName("var", DoubleCollector::var));
-    	names.add(getCollectorName("std", DoubleCollector::std));
-    	names.add(getCollectorName("stdp", DoubleCollector::stdp));
-    	names.add(getCollectorName("zscore", DoubleCollector::zscore));
-    	names.add(getCollectorName("zscorep", DoubleCollector::zscorep));
 
     	names.add(getBinaryOperatorName("+", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x + y));
     	names.add(getBinaryOperatorName("-", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x - y));
@@ -288,6 +280,88 @@ public class StandardVocabulary extends Vocabulary {
 		}));
 
 	}
+
+	private static void rolling_window(Pinto pinto, LinkedList<Column<?>> s) {
+		int size = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
+		s.replaceAll(c -> {
+			return new OfWindow(inputs -> inputs[0].getHeader(),
+					inputs -> inputs[0].getTrace() + " rolling", getRollingWindowFunction(size), c);
+		});
+	}
+	
+	private static RowsFunctionGeneric<Window> getRollingWindowFunction(int size) {
+		return new RowsFunctionGeneric<Window>(){
+			@Override
+			public <P extends Period<P>> Window getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
+				P expandedWindowStart = range.periodicity().offset(-1 * (size - 1), range.start());
+				PeriodicRange<P> expandedWindow = range.periodicity().range(expandedWindowStart, range.end());
+				return new Window.Rolling(castColumn(columns[0], OfDoubles.class).rows(expandedWindow), size);
+			}};
+	}
+
+	private static void cross_window(Pinto pinto, LinkedList<Column<?>> s) {
+		Column.OfDoubles[] a = s.toArray(new OfDoubles[] {});
+		s.clear();
+		s.add(new OfWindow(inputs -> "cross", inputs -> "cross", StandardVocabulary::crossWindowRowsFunction, a));
+	}
+	
+	private static Window crossWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
+		double[][] d = new double[columns.length][];
+		for(int i = 0; i < d.length; i++) {
+			d[i] = castColumn(columns[i], OfDoubles.class).rows(range);
+		}
+		return new Window.Cross(d);
+	}
+
+	private static void rev_expanding_window(Pinto pinto, LinkedList<Column<?>> s) {
+		s.replaceAll(c -> new OfWindow(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " rev_expanding", StandardVocabulary::revExpandingWindowRowsFunction, c));
+	}
+	
+	private static Window revExpandingWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
+		return new Window.ReverseExpanding(castColumn(columns[0], OfDoubles.class).rows(range));
+	}
+
+	private static void expanding_window(Pinto pinto, LinkedList<Column<?>> s) {
+		Optional<LocalDate> start = s.peekFirst() instanceof OfConstantStrings
+				&& castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("range") ? Optional.empty()
+						: Optional.of(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
+		s.replaceAll(c -> {
+			return new OfWindow(inputs -> inputs[0].getHeader(),
+					inputs -> inputs[0].getTrace() + " expanding", getExpandingWindowFunction(start), c);
+		});
+	}
+	
+	private static RowsFunctionGeneric<Window> getExpandingWindowFunction(Optional<LocalDate> start) {
+		return new RowsFunctionGeneric<Window>(){
+			@Override
+			public <P extends Period<P>> Window getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
+				P expandedStart = start.isPresent() ? range.periodicity().from(start.get()) : range.start();
+				int offset;
+				double d[];
+				if(expandedStart.isAfter(range.end())) {
+					d = new double[] {};
+					offset = (int) range.size() * -1;
+				} else {
+					PeriodicRange<P> expandedWindow = range.periodicity().range(expandedStart, range.end());
+					offset = (int) range.periodicity().distance(expandedStart, range.start());
+					d = castColumn(columns[0], OfDoubles.class).rows(expandedWindow);
+				}
+				return new Window.Expanding(d, offset);
+			}};
+	}
+
+	private static Name.Builder getStatisticName(String name, Supplier<Window.Statistic> s) {
+		Function<Supplier<Window.Statistic>, RowsFunction<double[]>> f = a -> (range, inputs) -> {
+			return a.get().apply(castColumn(inputs[0], OfWindow.class).rows(range));
+		};
+		Function<Supplier<Window.Statistic>, StackFunction> function = a -> (p, stack) -> {
+			stack.replaceAll(c -> new OfDoubles(inputs -> inputs[0].getHeader(),
+					inputs -> inputs[0].getTrace() + " " + name, f.apply(a), c));
+		};
+		return nameBuilder(name, function.apply(s))
+				.description("Aggregates row values in window by " + name + ".");
+	}
+	
 
 	private static final void def(Pinto p, Table t) {
 		t.setStatus("Defined " + p.getNamespace().define(p, p.getExpression()));
@@ -722,149 +796,6 @@ public class StandardVocabulary extends Vocabulary {
 		s.addFirst(new OfConstantStrings(l.stream().collect(Collectors.joining(sep))));
 	}
 
-	private static void rolling(Pinto pinto, LinkedList<Column<?>> s) {
-		int size = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
-		Periodicity<?> windowFreq = s.peekFirst() instanceof OfConstantStrings
-				&& castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("range") ? null
-						: castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
-		s.replaceAll(c -> {
-			return new OfDoubleArray1Ds(inputs -> inputs[0].getHeader(),
-					inputs -> inputs[0].getTrace() + " rolling", getRollingFunction(windowFreq).apply(size), c);
-		});
-
-	}
-
-	private static <N extends Period<N>> Function<Integer, RowsFunctionGeneric<double[][]>> getRollingFunction(
-			Periodicity<N> n) {
-		return size -> new RowsFunctionGeneric<double[][]>() {
-			@Override
-			public <P extends Period<P>> double[][] getRows(PeriodicRange<P> range, Column<?>[] inputs,
-					Class<?> clazz) {
-				double[][] output = new double[(int) range.size()][];
-				if (n != null) {
-					N expandedWindowStart = n.offset(-1 * (size - 1), n.from(range.start().endDate()));
-					N windowEnd = n.from(range.end().endDate());
-					PeriodicRange<N> expandedWindow = n.range(expandedWindowStart, windowEnd);
-					double[] data = castColumn(inputs[0], OfDoubles.class).rows(expandedWindow);
-					List<P> l = range.values();
-					for (int i = 0; i < output.length; i++) {
-						long windowStartIndex = n.distance(expandedWindowStart, n.from(l.get(i).endDate())) - size + 1;
-						output[i] = Arrays.copyOfRange(data, (int) windowStartIndex, (int) windowStartIndex + size);
-					}
-					return output;
-				} else {
-					P expandedWindowStart = range.periodicity().offset(-1 * (size - 1), range.start());
-					PeriodicRange<P> expandedWindow = range.periodicity().range(expandedWindowStart, range.end());
-					double[] data = castColumn(inputs[0], OfDoubles.class).rows(expandedWindow);
-					for (int i = 0; i < output.length; i++) {
-						output[i] = Arrays.copyOfRange(data, i, i + size);
-					}
-					return output;
-				}
-			}
-		};
-	}
-
-	private static void cross(Pinto pinto, LinkedList<Column<?>> s) {
-		Column.OfDoubles[] a = s.toArray(new OfDoubles[] {});
-		s.clear();
-		s.add(new OfDoubleArray1Ds(inputs -> "cross", inputs -> "cross", StandardVocabulary::crossRowFunction,
-				a));
-	}
-
-	private static double[][] crossRowFunction(PeriodicRange<?> range, Column<?>[] columns) {
-		double[][] output = new double[(int) range.size()][columns.length];
-		double[][] input = new double[columns.length][];
-		for (int j = 0; j < columns.length; j++) {
-			input[j] = castColumn(columns[j], OfDoubles.class).rows(range);
-		}
-		for (int j = 0; j < columns.length; j++) {
-			for (int i = 0; i < output.length; i++) {
-				output[i][j] = input[j][i];
-			}
-		}
-		return output;
-	}
-
-	private static void revExpanding(Pinto pinto, LinkedList<Column<?>> s) {
-		s.replaceAll(c -> {
-			return new OfDoubleArray1Ds(inputs -> inputs[0].getHeader(),
-					inputs -> inputs[0].getTrace() + " rev_expanding", StandardVocabulary::revExpandingRowFunction, c);
-		});
-	}
-
-	private static double[][] revExpandingRowFunction(PeriodicRange<?> range, Column<?>[] inputs) {
-		double[][] output = new double[(int) range.size()][];
-		double[] data = castColumn(inputs[0], OfDoubles.class).rows(range);
-		for (int i = 0; i < range.size(); i++) {
-			output[i] = Arrays.copyOfRange(data, i, data.length);
-		}
-		return output;
-	}
-
-	private static void expanding(Pinto pinto, LinkedList<Column<?>> s) {
-		Optional<LocalDate> start = s.peekFirst() instanceof OfConstantStrings
-				&& castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("range") ? Optional.empty()
-						: Optional.of(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
-		Periodicity<?> periodicity = s.peekFirst() instanceof OfConstantStrings
-				&& castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("range") ? null
-						: castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
-		boolean initialZero = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
-		boolean nonZero = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
-		s.replaceAll(c -> new OfDoubleArray1Ds(inputs -> inputs[0].getHeader(),
-				inputs -> inputs[0].getTrace() + " expanding",
-				getExpandingFunction(periodicity).apply(start).apply(initialZero).apply(nonZero), c));
-	}
-
-	private static <N extends Period<N>> Function<Optional<LocalDate>, Function<Boolean, Function<Boolean, RowsFunctionGeneric<double[][]>>>> getExpandingFunction(
-			Periodicity<N> n) {
-		return start -> initialZero -> nonZero -> new RowsFunctionGeneric<double[][]>() {
-			@Override
-			public <P extends Period<P>> double[][] getRows(PeriodicRange<P> range, Column<?>[] inputs,
-					Class<?> clazz) {
-				double[][] output = new double[(int) range.size()][];
-				LocalDate startDate = start.orElse(range.start().endDate());
-				boolean rangePeriodicity = n == null;
-				double[] data = null;
-				PeriodicRange<N> newWindow = null;
-				PeriodicRange<P> rangeWindow = null;
-				if (!rangePeriodicity) {
-					N windowStart = n.from(startDate);
-					N windowEnd = n.from(range.end().endDate());
-					windowEnd = windowEnd.isBefore(windowStart) ? windowStart : windowEnd;
-					newWindow = n.range(windowStart, windowEnd);
-					data = castColumn(inputs[0], OfDoubles.class).rows(newWindow);
-				} else {
-					P windowStart = range.periodicity().from(startDate);
-					P windowEnd = range.end().isBefore(windowStart) ? windowStart : range.end();
-					rangeWindow = range.periodicity().range(windowStart, windowEnd);
-					data = castColumn(inputs[0], OfDoubles.class).rows(rangeWindow);
-				}
-				if (initialZero) {
-					data[0] = 0.0d;
-				}
-				List<P> rangePeriods = range.values();
-				for (int i = 0; i < range.size(); i++) {
-					int index = rangePeriodicity ? (int) rangeWindow.indexOf(rangePeriods.get(i))
-							: (int) newWindow.indexOf(rangePeriods.get(i).endDate());
-					if (index >= 0) {
-						int startIndex = 0;
-						if (nonZero) {
-							startIndex = index + 1;
-							while (startIndex > 0 && data[startIndex - 1] != 0) {
-								startIndex--;
-							}
-						}
-						output[i] = Arrays.copyOfRange(data, startIndex, index + 1);
-					} else {
-						output[i] = new double[] { Double.NaN };
-					}
-				}
-				return output;
-			}
-		};
-	}
-
 	private static void report(Pinto p, Table t) {
 		Pinto.Expression state = p.getExpression();
 		String id = getId();
@@ -995,14 +926,12 @@ public class StandardVocabulary extends Vocabulary {
 		for (int i = 0; i < columns; i++) {
 			double[][] values = new double[s.size()][2];
 			for (int j = 0; j < s.size(); j++) {
-				Pinto.Expression state = new Pinto.Expression(pinto, false);
+				Pinto.Expression expression = new Pinto.Expression(pinto, false);
 				final int J = j;
-				state.addFunction(t -> {
-					LinkedList<Column<?>> stack = new LinkedList<>();
+				expression.addFunction(Pinto.toTableConsumer(stack -> {
 					stack.add(s.get(J).clone());
-					t.insertAtTop(stack);
-				});
-				Table t = pinto.evaluate(functions.get(i), state).get(0);
+				}));
+				Table t = pinto.evaluate(functions.get(i), expression).get(0);
 				double[][] d = t.toColumnMajorArray();
 				values[j][0] = d[0][d[0].length - 1];
 				values[j][1] = (int) j;
@@ -1158,34 +1087,12 @@ public class StandardVocabulary extends Vocabulary {
 							inputs -> inputs[0].getTrace() + " " + name, arrayFunction.apply(duo), c);
 				} else {
 					throw new IllegalArgumentException(
-							"Operator " + duo.toString() + " can only operate on columns of doubles or double arrays.");
+							"Operator " + name + " can only operate on columns of doubles, not " + c.getClass());
 				}
 
 			});
 		};
 		return nameBuilder(name, function.apply(duo)).description("Unary operator " + name + ".").build();
-	}
-
-	private static Name getCollectorName(String name, DoubleCollector.Aggregation agg) {
-		Function<DoubleCollector.Aggregation, RowsFunction<double[]>> f = a -> (range, inputs) -> {
-			if (!(inputs[0] instanceof OfDoubleArray1Ds)) {
-				throw new IllegalArgumentException(
-						"Operator " + name.toString() + " can only operate on columns of double arrays.");
-			}
-			double[] output = new double[(int) range.size()];
-			double d[][] = castColumn(inputs[0], OfDoubleArray1Ds.class).rows(range);
-			for (int i = 0; i < output.length; i++) {
-				output[i] = a.apply(d[i]);
-			}
-			return output;
-
-		};
-		Function<DoubleCollector.Aggregation, StackFunction> function = dc -> (p, s) -> {
-			s.replaceAll(c -> new OfDoubles(inputs -> inputs[0].getHeader(),
-					inputs -> inputs[0].getTrace() + " " + name, f.apply(dc), c));
-		};
-		return nameBuilder(name, function.apply(agg))
-				.description("Aggregates row values in double array by " + name + ".").build();
 	}
 
 	private static String getId() {

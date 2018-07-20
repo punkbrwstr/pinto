@@ -37,7 +37,12 @@ public class Pinto {
 	}
 
 	public List<Table> eval(String toEvaluate) {
-		return evaluate(toEvaluate, activeExpression);
+		try {
+			return evaluate(toEvaluate, activeExpression);
+		} catch(RuntimeException t) {
+			activeExpression = new Expression(this, false);
+			throw t;
+		}
 	}
 
 	public Expression parseSubExpression(String expression) {
@@ -90,10 +95,7 @@ public class Pinto {
 				}
 			}
 			return responses;
-		} catch (RuntimeException re) {
-			activeExpression = new Expression(this, false);
-			throw re;
-		}
+		} 
 	}
 	
 	public Namespace getNamespace() {
@@ -129,6 +131,7 @@ public class Pinto {
 	private static Consumer<Table> getNamedConsumer(Pinto pinto, Set<String> dependencies, Name name) {
 		return t -> {
 			try {
+				System.out.println(name);
 				name.getConsumer(pinto, dependencies).accept(t);
 			} catch(Throwable throwable) {
 				throw new PintoSyntaxException("Error for \"" + name.toString() + "\": " + throwable.getLocalizedMessage() , throwable);

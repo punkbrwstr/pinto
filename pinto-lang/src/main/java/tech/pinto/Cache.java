@@ -82,7 +82,15 @@ public class Cache {
 	}
 
 	private static Column.OfDoubles getCachedColumn(String key, int col, String header, String trace) {
-		return new Column.OfDoubles(i -> header, i -> trace, (range, inputs) -> getCachedRows(key, col, range));
+		return new Column.OfDoubles(i -> header, i -> trace,
+				(range, inputs) -> {
+					try {
+						return getCachedRows(key, col, range);
+					} catch(Throwable t) {
+						throw new PintoSyntaxException("Error getting cached values for \"" + key + "\"", t);
+					}
+				}
+		);
 	}
 	
 	private static Function<PeriodicRange<?>,double[][]> getRowFunctionForColumns(String key) {

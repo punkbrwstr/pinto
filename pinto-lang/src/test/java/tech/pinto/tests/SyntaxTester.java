@@ -41,9 +41,9 @@ public class SyntaxTester {
 		t = pinto.eval("{test:1 2} [1] ( [0] rolling sum) eval").get(0);
 		assertEquals("Inline with previous indexer", 2.0, t.toColumnMajorArray()[0][0],0.01);
 		assertEquals("Inline with previous indexer", 2.0, t.toColumnMajorArray()[1][0],0.01);
-		t = pinto.eval("{test: 1 2} [0+] ( [0] rolling sum) eval").get(0);
-		assertEquals("Inline with repeat", 2.0, t.toColumnMajorArray()[1][0],0.01);
-		assertEquals("Inline with repeat", 4.0, t.toColumnMajorArray()[0][0],0.01);
+		double[][] d = pinto.eval("{test: 1 2} [0+] ( [0] rolling sum) eval").get(0).toColumnMajorArray();
+		assertEquals("Inline with repeat", 2.0, d[1][0],0.01);
+		assertEquals("Inline with repeat", 4.0, d[0][0],0.01);
 	}
 
 
