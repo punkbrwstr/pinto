@@ -86,6 +86,10 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[filename,periodicity=B,date=today today,:]")
 				.description("Evaluates the expression over the date range specified by *start, *end* and *freq* columns, exporting the resulting table to csv *filename*.")
 				.terminal(),
+			nameBuilder("report", StandardVocabulary::report)
+				.indexer("[HTML]")
+				.terminal()
+				.description("Creates an HTML report from any columns labelled HTML."),
 
 
 	/* stack manipulation */
@@ -191,10 +195,6 @@ public class StandardVocabulary extends Vocabulary {
 			getStatisticName("max", () -> new Window.Max()),
 			
 	/* reporting */
-			nameBuilder("report", StandardVocabulary::report)
-				.indexer("[HTML]")
-				.terminal()
-				.description("Creates an HTML report from any columns labelled HTML."),
 			nameBuilder("grid", StandardVocabulary::grid)
 				.indexer("[columns=3,HTML]")
 				.description("Creates a grid layout in a report with all input columns labelled HTML as cells in the grid."),
@@ -202,7 +202,7 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[periodicity=B, date=-20 offset today,format=\"decimal\",row_header=\"date\",col_headers=\"true\",:]")
 				.description("Creates a const string column with code for a table defined by input columns and with header HTML."),
 			nameBuilder("chart", StandardVocabulary::chart)
-				.indexer("[periodicity=B, date=-20 offset today,title=\"\",options=\"\",:]")
+				.indexer("[title=\"\",options=\"\",periodicity=B, date=-20 offset today,:]")
 				.description("Creates a const string column with code for an HTML chart."),
 			nameBuilder("rt", StandardVocabulary::rt)
 				.indexer("[functions=\" BA-DEC offset expanding pct_change {YTD} today today eval\",format=\"percent\",digits=2,:]")
@@ -456,16 +456,19 @@ public class StandardVocabulary extends Vocabulary {
 		t.setStatus("Successfully exported");
 	}
 
-	private static void report(Pinto p, Table t) {
-		Pinto.Expression state = p.getExpression();
+	private static void report(Pinto pinto, Table t) {
+		Pinto.Expression e = new Pinto.Expression(false);
+		final LinkedList<Column<?>> stackCopy = new LinkedList<>();
+		stackCopy.addAll(t.takeTop().get(0));
+		e.addFunction(Pinto.toTableConsumer(s -> s.addAll(stackCopy)));
 		String id = getId();
-		state.setNameLiteral("_rpt-" + id);
-		t.setStatus("Report id: " + p.getNamespace().define(p, state));
+		e.setNameLiteral("~report-" + id);
+		pinto.getNamespace().define(pinto, e);
+		t.setStatus("Report id: " + id);
 		try {
-			int port = p.getPort();
-			Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + port + "/pinto/report?p=" + id));
-		} catch (Exception e) {
-			throw new PintoSyntaxException("Unable to open report", e);
+			Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + pinto.getPort() + "/pinto/report?p=" + id));
+		} catch (Exception err) {
+			throw new PintoSyntaxException("Unable to open report", err);
 		}
 	}
 
@@ -803,37 +806,31 @@ public class StandardVocabulary extends Vocabulary {
 
 
 	private static void chart(Pinto pinto, LinkedList<Column<?>> s) {
-		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
-		LinkedList<LocalDate> d = new LinkedList<>();
-		while ((!s.isEmpty()) && d.size() < 2 && s.peekFirst().getHeader().equals("date")) {
-			d.add(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
-		}
-		PeriodicRange<?> range = periodicity.range(d.removeLast(), d.isEmpty() ? LocalDate.now() : d.peek());
 		String title = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 		String options = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
+		Pinto.Expression e = new Pinto.Expression(false);
+		final LinkedList<Column<?>> s3 = new LinkedList<>();
+		s3.addAll(s);
+		s.clear();
+		e.addFunction(Pinto.toTableConsumer(s2 -> s2.addAll(s3)));
+		String id = "~chart-" + getId();
+		e.setNameLiteral(id);
+		pinto.getNamespace().define(pinto, e);
+		String url = "http://127.0.0.1:" + pinto.getPort() + "/pinto/csv?p=" + id + "%20eval";
 		if (!chartHTML.isPresent()) {
 			try {
 				chartHTML = Optional.of(new MessageFormat(readInputStreamIntoString(
 						(StandardVocabulary.class.getClassLoader().getResourceAsStream("report_chart.html")))));
-			} catch (IOException e) {
-				throw new PintoSyntaxException("Unable to open chart html template", e);
+			} catch (IOException ioe) {
+				throw new PintoSyntaxException("Unable to open chart html template", ioe);
 			}
 		}
 		NumberFormat nf = NumberFormat.getInstance();
 		nf.setGroupingUsed(false);
 		nf.setMinimumFractionDigits(2);
 		nf.setMaximumFractionDigits(6);
-		String dates = range.dates().stream().map(LocalDate::toString)
-				.collect(Collectors.joining("', '", "['x', '", "']"));
-		StringBuilder data = new StringBuilder();
-		for (int i = s.size() - 1; i >= 0; i--) {
-			data.append("['").append(s.get(i).getHeader()).append("',");
-			data.append(castColumn(s.get(i), OfDoubles.class).rowsAsCsv(range, nf)).append("]");
-			data.append(i > 0 ? "," : "");
-		}
 		String html = chartHTML.get()
-				.format(new Object[] { getId(), dates, data, title, options }, new StringBuffer(), null).toString();
-		s.clear();
+				.format(new Object[] { getId(), url, "", title, options }, new StringBuffer(), null).toString();
 		s.add(new OfConstantStrings(html, "HTML"));
 
 	}
@@ -902,64 +899,64 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void rt(Pinto pinto, LinkedList<Column<?>> s) {
-		LinkedList<String> functions = new LinkedList<>();
-		while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("functions")) {
-			functions.addFirst(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
-		}
-		NumberFormat nf = castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
-				? NumberFormat.getPercentInstance()
-				: NumberFormat.getNumberInstance();
-		int digits = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().intValue();
-		nf.setMaximumFractionDigits(digits);
-		int columns = functions.size();
-		int rows = s.size();
-		String[] labels = new String[rows];
-		String[] headers = new String[columns];
-		String[][] cells = new String[rows][columns];
-		for (int i = 0; i < columns; i++) {
-			double[][] values = new double[s.size()][2];
-			for (int j = 0; j < s.size(); j++) {
-				Pinto.Expression expression = new Pinto.Expression(false);
-				final int J = j;
-				expression.addFunction(Pinto.toTableConsumer(stack -> {
-					stack.add(s.get(J).clone());
-				}));
-				Table t = pinto.parse(functions.get(i), expression).get(0);
-				double[][] d = t.toColumnMajorArray();
-				values[j][0] = d[0][d[0].length - 1];
-				values[j][1] = (int) j;
-				if (j == 0) {
-					headers[i] = t.getHeaders(false, false).get(0);
-				}
-				if (i == 0) {
-					labels[j] = s.get(j).getHeader();
-				}
-			}
-
-			Arrays.sort(values, (c1, c2) -> c1[0] == c2[0] ? 0 : c1[0] < c2[0] ? 1 : -1);
-			for (int j = 0; j < values.length; j++) {
-				StringBuilder sb = new StringBuilder();
-				sb.append("\t<td id=\"rankingColor").append((int) values[j][1]).append("\" class=\"rankingTableCell\">")
-						.append(labels[(int) values[j][1]]).append(": ").append(nf.format(values[j][0]))
-						.append("</td>\n");
-				cells[j][i] = sb.toString();
-			}
-		}
-		StringBuilder sb = new StringBuilder();
-		sb.append("<table class=\"rankingTable\">\n<thead>\n");
-		Arrays.stream(headers)
-				.forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
-		sb.append("</thead>\n<tbody>\n");
-		for (int i = 0; i < cells.length; i++) {
-			sb.append("<tr>\n");
-			for (int j = 0; j < columns; j++) {
-				sb.append(cells[i][j]);
-			}
-			sb.append("</tr>\n");
-		}
-		sb.append("</tbody></table>\n");
-		s.clear();
-		s.add(new OfConstantStrings(sb.toString(), "HTML"));
+//		LinkedList<String> functions = new LinkedList<>();
+//		while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("functions")) {
+//			functions.addFirst(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
+//		}
+//		NumberFormat nf = castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
+//				? NumberFormat.getPercentInstance()
+//				: NumberFormat.getNumberInstance();
+//		int digits = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+//		nf.setMaximumFractionDigits(digits);
+//		int columns = functions.size();
+//		int rows = s.size();
+//		String[] labels = new String[rows];
+//		String[] headers = new String[columns];
+//		String[][] cells = new String[rows][columns];
+//		for (int i = 0; i < columns; i++) {
+//			double[][] values = new double[s.size()][2];
+//			for (int j = 0; j < s.size(); j++) {
+//				Pinto.Expression expression = new Pinto.Expression(false);
+//				final int J = j;
+//				expression.addFunction(Pinto.toTableConsumer(stack -> {
+//					stack.add(s.get(J).clone());
+//				}));
+//				Table t = pinto.parse(functions.get(i), expression).get(0);
+//				double[][] d = t.toColumnMajorArray();
+//				values[j][0] = d[0][d[0].length - 1];
+//				values[j][1] = (int) j;
+//				if (j == 0) {
+//					headers[i] = t.getHeaders(false, false).get(0);
+//				}
+//				if (i == 0) {
+//					labels[j] = s.get(j).getHeader();
+//				}
+//			}
+//
+//			Arrays.sort(values, (c1, c2) -> c1[0] == c2[0] ? 0 : c1[0] < c2[0] ? 1 : -1);
+//			for (int j = 0; j < values.length; j++) {
+//				StringBuilder sb = new StringBuilder();
+//				sb.append("\t<td id=\"rankingColor").append((int) values[j][1]).append("\" class=\"rankingTableCell\">")
+//						.append(labels[(int) values[j][1]]).append(": ").append(nf.format(values[j][0]))
+//						.append("</td>\n");
+//				cells[j][i] = sb.toString();
+//			}
+//		}
+//		StringBuilder sb = new StringBuilder();
+//		sb.append("<table class=\"rankingTable\">\n<thead>\n");
+//		Arrays.stream(headers)
+//				.forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
+//		sb.append("</thead>\n<tbody>\n");
+//		for (int i = 0; i < cells.length; i++) {
+//			sb.append("<tr>\n");
+//			for (int j = 0; j < columns; j++) {
+//				sb.append(cells[i][j]);
+//			}
+//			sb.append("</tr>\n");
+//		}
+//		sb.append("</tbody></table>\n");
+//		s.clear();
+//		s.add(new OfConstantStrings(sb.toString(), "HTML"));
 
 	}
 

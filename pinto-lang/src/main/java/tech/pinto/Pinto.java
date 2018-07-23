@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -35,7 +36,13 @@ public class Pinto {
 	
 	public List<Table> evaluate(String toEvaluate) {
 		try {
-			return parse(toEvaluate, activeExpression);
+			List<Expression> expressions =  parse(toEvaluate, activeExpression);
+			if(expressions.size() > 0 && !expressions.get(expressions.size()-1).hasTerminal()) {
+				activeExpression = expressions.remove(expressions.size()-1);
+			} else {
+				activeExpression = new Expression(false);
+			}
+			return expressions.stream().map(Expression::evaluate).collect(Collectors.toList());
 		} catch(RuntimeException t) {
 			activeExpression = new Expression(false);
 			throw t;
@@ -43,13 +50,11 @@ public class Pinto {
 	}
 
 	public Expression parseSubExpression(String expression) {
-		Expression e = new Expression(true);
-		parse(expression, e);
-		return e;
+		return parse(expression, new Expression(true)).get(0);
 	}
 
-	public List<Table> parse(String toParse, Expression e) {
-		List<Table> responses = new ArrayList<>();
+	public List<Expression> parse(String toParse, Expression e) {
+		List<Expression> responses = new ArrayList<>();
 		toParse = toParse.replaceAll("\\(", " \\( ").replaceAll("\\)", " \\) ");
 		e.addText(toParse);
 		try (Scanner sc = new Scanner(toParse)) {
@@ -86,19 +91,13 @@ public class Pinto {
 						}
 						e.addFunction(c);
 					} else {
-						if(e.isSubExpression()) {
-							throw new PintoSyntaxException("Sub-expressions cannot include terminal functions");
-						}
-						Table t = new Table();
-						if(!name.isSkipEvaluation()) {
-							e.accept(t);
-						}
-						c.accept(t);
-						responses.add(t);
-						activeExpression = new Expression(false);
+						e.addTerminal(c, name.isSkipEvaluation());
+						responses.add(e);
+						e = new Expression(false);
 					}
 				}
 			}
+			responses.add(e);
 			return responses;
 		} 
 	}
@@ -168,9 +167,21 @@ public class Pinto {
 		private Set<String> dependencies = new HashSet<>();
 		private StringBuilder text = new StringBuilder();
 		private	Optional<String> nameLiteral = Optional.empty();
+		private	Optional<Consumer<Table>> terminalFunction = Optional.empty();
+		private boolean skipEvaluation;
 		
 		public Expression(boolean isSubExpression) {
 			this.isSubExpression = isSubExpression;
+		}
+
+		public Table evaluate() {
+			Consumer<Table> f = terminalFunction.orElseThrow(() -> new PintoSyntaxException("Need terminal to evaluate expression."));
+			Table t = new Table();
+			if(!skipEvaluation) {
+				accept(t);
+			}
+			f.accept(t);
+			return t;
 		}
 
 		@Override
@@ -199,6 +210,14 @@ public class Pinto {
 			functions.add(function);
 		}
 
+		public void addTerminal(Consumer<Table> function, boolean skipEvaluation) {
+			if(isSubExpression) {
+				throw new PintoSyntaxException("Sub-expressions cannot include terminal functions");
+			}
+			this.terminalFunction = Optional.of(function);
+			this.skipEvaluation = skipEvaluation;
+		}
+
 		public ArrayList<Consumer<Table>> getFunctions() {
 			return functions;
 		}
@@ -207,10 +226,6 @@ public class Pinto {
 			return functions.size() == 0;
 		}
 
-		public boolean isSubExpression() {
-			return isSubExpression;
-		}
-		
 		public boolean isNullary() {
 			return isNullary;
 		}
@@ -233,6 +248,10 @@ public class Pinto {
 
 		public void setNameLiteral(String nameLiteral) {
 			this.nameLiteral = Optional.of(nameLiteral);
+		}
+		
+		public boolean hasTerminal() {
+			return terminalFunction.isPresent();
 		}
 
 	}
