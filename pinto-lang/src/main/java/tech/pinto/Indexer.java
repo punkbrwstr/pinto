@@ -14,22 +14,25 @@ import java.util.stream.IntStream;
 
 import tech.pinto.Pinto.Expression;
 
-public class Indexer implements Cloneable {
-
-	public static final Indexer ALL = new Indexer(":");
-	public static final Indexer NONE = new Indexer("");
+public class Indexer implements Cloneable, Consumer<Table> {
 
 	private final List<Index> indexes = new ArrayList<>();
 	private final String indexString;
+	private boolean indexForExpression = false;
 
-	public Indexer(String indexString) {
-		this.indexString = indexString;
+	public Indexer() {
+		indexString = "";
+		indexes.add(new Index(null,null,""));
+	}
+
+	public Indexer(Pinto pinto, Set<String> dependencies, String indexString)  {
+		this.indexString = indexString.trim().replaceAll("^\\[|\\]$", "");
 
 		StringBuilder sb = new StringBuilder();
 		final int[] open = new int[4]; // ", $, {, [
-		for (int i = 0; i < indexString.length(); i++) {
+		for (int i = 0; i < this.indexString.length(); i++) {
 			// first check what's open
-			switch (indexString.charAt(i)) {
+			switch (this.indexString.charAt(i)) {
 			case '"': open[0] = open[0] == 0 ? 1 : 0; break;
 			case '$': open[1] = open[1] == 0 ? 1 : 0; break;
 			case '{': open[2]++; break;
@@ -40,19 +43,19 @@ public class Indexer implements Cloneable {
 
 			// don't count commas if anything's open
 			if (Arrays.stream(open).sum() > 0) {
-				sb.append(indexString.charAt(i));
+				sb.append(this.indexString.charAt(i));
 			} else {
-				if (indexString.charAt(i) == ',') {
-					indexes.add(new Index(sb.toString().trim()));
+				if (this.indexString.charAt(i) == ',') {
+					indexes.add(new Index(pinto, dependencies, sb.toString().trim()));
 					sb = new StringBuilder();
 					Arrays.setAll(open, x -> 0);
 				} else {
-					sb.append(indexString.charAt(i));
+					sb.append(this.indexString.charAt(i));
 				}
 			}
 		}
 		if (Arrays.stream(open).sum() == 0) {
-			indexes.add(new Index(sb.toString().trim()));
+			indexes.add(new Index(pinto, dependencies, sb.toString().trim()));
 		} else {
 			String unmatched = IntStream.range(0, 4)
 					.mapToObj(i -> open[i] == 0 ? "" : new String[] { "\"", "$", "{", "[" }[i])
@@ -64,35 +67,36 @@ public class Indexer implements Cloneable {
 	public boolean isNone() {
 		return indexes.size() == 1 && indexes.get(0).isNone();
 	}
+	
+	public void setIndexForExpression() {
+		this.indexForExpression = true;
+	}
 
-	public Consumer<Table> getConsumer(Pinto pinto, Set<String> dependencies, boolean indexForExpression) {
-		return t -> {
-			LinkedList<LinkedList<Column<?>>> unused = new LinkedList<>();
-			LinkedList<LinkedList<Column<?>>> indexed = new LinkedList<>();
+	public void accept(Table t) {
+		LinkedList<LinkedList<Column<?>>> unused = new LinkedList<>();
+		LinkedList<LinkedList<Column<?>>> indexed = new LinkedList<>();
 
-			for (LinkedList<Column<?>> stack : t.takeTop()) {
-				List<StackOperation> ops = new ArrayList<>();
-				indexed.addLast(operate(pinto, dependencies, stack, ops));
-				Index last = indexes.get(indexes.size() - 1);
-				while (last.isRepeat() && stack.size() > 0) {
-					try {
-						indexed.addLast(operate(pinto, dependencies, stack, last.index(pinto, dependencies, stack)));
-					} catch (IllegalArgumentException pse) {
-						break;
-					}
+		for (LinkedList<Column<?>> stack : t.takeTop()) {
+			List<StackOperation> ops = new ArrayList<>();
+			indexed.addLast(operate(stack, ops));
+			Index last = indexes.get(indexes.size() - 1);
+			while (last.isRepeat() && stack.size() > 0) {
+				try {
+					indexed.addLast(operate(stack, last.index(stack)));
+				} catch (IllegalArgumentException pse) {
+					break;
 				}
-				unused.add(stack);
 			}
-			t.insertAtTop(unused);
-			t.push(indexForExpression, indexed);
-		};
+			unused.add(stack);
+		}
+		t.insertAtTop(unused);
+		t.push(indexForExpression, indexed);
 	}
 
 	@SuppressWarnings("unchecked")
-	private LinkedList<Column<?>> operate(Pinto pinto, Set<String> dependencies,
-					LinkedList<Column<?>> stack, List<StackOperation> ops) {
+	private LinkedList<Column<?>> operate(LinkedList<Column<?>> stack, List<StackOperation> ops) {
 		for(int i = 0; i < indexes.size(); i++) {
-			ops.addAll(indexes.get(i).index(pinto, dependencies, stack));
+			ops.addAll(indexes.get(i).index(stack));
 		}
 		List<StackOperation> indexStringOps = ops.stream().filter(StackOperation::isHeader)
 				.collect(Collectors.toList());
@@ -123,11 +127,11 @@ public class Indexer implements Cloneable {
 		for (StackOperation o : ops) {
 			if (o.isAlternative()) {
 				Table t = new Table();
-				o.getAlternativeFunction().accept(t);
+				o.getAlternativeExpression().accept(t);
 				indexed.addAll(t.flatten());
 				if (o.isCopy()) {
 					t = new Table();
-					o.getAlternativeFunction().accept(t);
+					o.getAlternativeExpression().accept(t);
 					stack.addAll(t.flatten());
 				}
 			} else if ((!alreadyUsed.contains(o.getOrdinal())) && !o.skip()) {
@@ -172,10 +176,9 @@ public class Indexer implements Cloneable {
 		private final Optional<String> header;
 		private final Optional<Integer> sliceStart;
 		private final Optional<Integer> sliceEnd;
-		private final Optional<String> or;
-		private Optional<Consumer<Table>> orFunction = Optional.empty();
+		private final Optional<Expression> orFunction;
 
-		public Index(String s) {
+		public Index(Pinto pinto, Set<String> dependencies, String s) {
 			this.string = s;
 			if (s.contains("&")) {
 				copy = true;
@@ -190,10 +193,12 @@ public class Indexer implements Cloneable {
 							"\"=\" should be followed by alternative expression in index:" + s);
 				}
 				String alt = Arrays.stream(thisOrThat).skip(1).collect(Collectors.joining("="));
-				or = Optional.of(" {" + thisOrThat[0] + ": " + alt + "}");
+				Pinto.Expression e = pinto.parseSubExpression(" {" + thisOrThat[0] + ": " + alt + "}");
+				dependencies.addAll(e.getDependencies());
+				orFunction = Optional.of(e);
 				s = thisOrThat[0];
 			} else {
-				or = Optional.empty();
+				orFunction = Optional.empty();
 			}
 			if (s.contains("+")) {
 				if (copy) {
@@ -240,7 +245,7 @@ public class Indexer implements Cloneable {
 
 		}
 
-		public List<StackOperation> index(Pinto pinto, Set<String> dependencies, LinkedList<Column<?>> stack) {
+		public List<StackOperation> index(LinkedList<Column<?>> stack) {
 			List<StackOperation> ops = new ArrayList<>();
 			if (sliceStart.isPresent()) {
 				if(stack.isEmpty()) {
@@ -290,16 +295,7 @@ public class Indexer implements Cloneable {
 					}
 				}
 				if (!found) {
-					if (or.isPresent()) {
-						if(!orFunction.isPresent()) {
-							Expression e = pinto.parseSubExpression(or.get());
-							dependencies.addAll(e.getDependencies());
-							orFunction = Optional.of(e);
-						}
-						ops.add(new StackOperation(orFunction.get()));
-					} else {
-						throw new IllegalArgumentException("Missing required header \"" + query + "\"");
-					}
+					ops.add(new StackOperation(orFunction.orElseThrow(() -> new IllegalArgumentException("Missing required header \"" + query + "\""))));
 				}
 			}
 			return ops;
@@ -332,7 +328,7 @@ public class Indexer implements Cloneable {
 		private final boolean copy;
 		private boolean skip = false;
 		private boolean needsCloning = false;
-		private Optional<Consumer<Table>> alternative = Optional.empty();
+		private Optional<Pinto.Expression> alternative = Optional.empty();
 
 		public StackOperation(int ordinal, boolean copy, boolean isHeader) {
 			this.ordinal = ordinal;
@@ -340,7 +336,7 @@ public class Indexer implements Cloneable {
 			this.isHeader = isHeader;
 		}
 
-		public StackOperation(Consumer<Table> alternative) {
+		public StackOperation(Pinto.Expression alternative) {
 			this.alternative = Optional.of(alternative);
 			ordinal = -1;
 			copy = false;
@@ -351,7 +347,7 @@ public class Indexer implements Cloneable {
 			return alternative.isPresent();
 		}
 
-		public Consumer<Table> getAlternativeFunction() {
+		public Pinto.Expression getAlternativeExpression() {
 			return alternative.get();
 		}
 

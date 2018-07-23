@@ -1,11 +1,16 @@
 package tech.pinto;
 
 import java.util.TreeMap;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 
-public interface Window {
+public interface Window<T extends Window<T>> {
 	
 	public int viewCount();
 	public View getView(int i);
+	public T apply(DoubleUnaryOperator duo);
+	public T apply(DoubleBinaryOperator duo, Window<?> other);
+
 
 	public static interface View {
 		
@@ -30,7 +35,7 @@ public interface Window {
 		
 		public double update(View v);
 		
-		default public double[] apply(Window w) {
+		default public double[] apply(Window<?> w) {
 			double[] d = new double[w.viewCount()];
 			for(int i = 0; i < d.length; i++) {
 				View v = w.getView(i);
@@ -41,7 +46,7 @@ public interface Window {
 		}
 	}
 	
-	public static class Rolling implements Window {
+	public static class Rolling implements Window<Rolling> {
 		
 		private final double[] d;
 		private final int size;
@@ -91,11 +96,34 @@ public interface Window {
 					return last != last;
 				}};
 		}
+
+		@Override
+		public Rolling apply(DoubleUnaryOperator duo) {
+			double[] newD = new double[d.length];
+			for(int i = 0; i < d.length; i++) {
+				newD[i] = duo.applyAsDouble(d[i]);
+			}
+			return new Rolling(newD, size);
+		}
+
+		@Override
+		public Rolling apply(DoubleBinaryOperator dbo, Window<?> other) {
+			if(!other.getClass().equals(Rolling.class)) {
+				throw new IllegalArgumentException("Incompatible window types.");
+			} else if (((Rolling) other).d.length != d.length || ((Rolling) other).size != size) {
+				throw new IllegalArgumentException("Incompatible window dimensions.");
+			}
+			double[] newD = new double[d.length];
+			for(int i = 0; i < d.length; i++) {
+				newD[i] = dbo.applyAsDouble(d[i], ((Rolling)other).d[i]);
+			}
+			return new Rolling(newD, size);
+		}
 		
 	}
 	
 
-	public static class Expanding implements Window {
+	public static class Expanding implements Window<Expanding> {
 		
 		private final double[] d;
 		private final int offset;
@@ -151,10 +179,33 @@ public interface Window {
 					return last != last;
 				}};
 		}
+
+		@Override
+		public Expanding apply(DoubleUnaryOperator duo) {
+			double[] newD = new double[d.length];
+			for(int i = 0; i < d.length; i++) {
+				newD[i] = duo.applyAsDouble(d[i]);
+			}
+			return new Expanding(newD, offset);
+		}
+
+		@Override
+		public Expanding apply(DoubleBinaryOperator dbo, Window<?> other) {
+			if(!other.getClass().equals(Expanding.class)) {
+				throw new IllegalArgumentException("Incompatible window types.");
+			} else if (((Expanding) other).d.length != d.length || ((Expanding) other).offset != offset) {
+				throw new IllegalArgumentException("Incompatible window dimensions.");
+			}
+			double[] newD = new double[d.length];
+			for(int i = 0; i < d.length; i++) {
+				newD[i] = dbo.applyAsDouble(d[i], ((Expanding)other).d[i]);
+			}
+			return new Expanding(newD, offset);
+		}
 		
 	}
 
-	public static class ReverseExpanding implements Window {
+	public static class ReverseExpanding implements Window<ReverseExpanding> {
 		
 		private final double[] d;
 		
@@ -201,10 +252,33 @@ public interface Window {
 					return false;
 				}};
 		}
+
+		@Override
+		public ReverseExpanding apply(DoubleUnaryOperator duo) {
+			double[] newD = new double[d.length];
+			for(int i = 0; i < d.length; i++) {
+				newD[i] = duo.applyAsDouble(d[i]);
+			}
+			return new ReverseExpanding(newD);
+		}
+
+		@Override
+		public ReverseExpanding apply(DoubleBinaryOperator dbo, Window<?> other) {
+			if(!other.getClass().equals(ReverseExpanding.class)) {
+				throw new IllegalArgumentException("Incompatible window types.");
+			} else if (((ReverseExpanding) other).d.length != d.length) {
+				throw new IllegalArgumentException("Incompatible window dimensions.");
+			}
+			double[] newD = new double[d.length];
+			for(int i = 0; i < d.length; i++) {
+				newD[i] = dbo.applyAsDouble(d[i], ((ReverseExpanding)other).d[i]);
+			}
+			return new ReverseExpanding(newD);
+		}
 		
 	}
 	
-	public static class Cross implements Window {
+	public static class Cross implements Window<Cross> {
 		
 		final double[][] d;
 		
@@ -250,6 +324,35 @@ public interface Window {
 				public Array subtractions() {
 					return new EmptyArray();
 				}};
+		}
+
+		@Override
+		public Cross apply(DoubleUnaryOperator duo) {
+			double[][] newD = new double[d.length][];
+			for(int i = 0; i < d.length; i++) {
+				newD[i] = new double[d[i].length];
+				for(int j = 0; i < d.length; i++) {
+					newD[i][j] = duo.applyAsDouble(d[i][j]);
+				}
+			}
+			return new Cross(newD);
+		}
+
+		@Override
+		public Cross apply(DoubleBinaryOperator duo, Window<?> other) {
+			if(!other.getClass().equals(Cross.class)) {
+				throw new IllegalArgumentException("Incompatible window types.");
+			} else if (((Cross) other).d.length != d.length || (d.length > 0 && ((Cross) other).d[0].length != d[0].length)) {
+				throw new IllegalArgumentException("Incompatible window dimensions.");
+			}
+			double[][] newD = new double[d.length][];
+			for(int i = 0; i < d.length; i++) {
+				newD[i] = new double[d[i].length];
+				for(int j = 0; i < d.length; i++) {
+					newD[i][j] = duo.applyAsDouble(d[i][j], ((Cross)other).d[i][j]);
+				}
+			}
+			return new Cross(newD);
 		}
 		
 	}

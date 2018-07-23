@@ -86,7 +86,7 @@ public class Console implements Runnable {
 					}
 				} else {
 					try {
-						List<Table> l = pinto.eval(line.toString()); 
+						List<Table> l = pinto.evaluate(line.toString()); 
 						if(l.size() == 0) {
 				    		out.println("");
 						} else {

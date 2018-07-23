@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,7 +56,7 @@ public class Servlet extends HttpServlet {
 			os.print(reportTop.get());
 			Table t = new Table();
 			pinto.getNamespace().getName("_rpt-" + request.getParameter("p"))
-					.getConsumer(pinto, new HashSet<>()).accept(t);
+					.getFunction().accept(pinto, t);
 			for(Column<?> c : t.flatten()) {
 				os.print(((Column.OfConstantStrings) c).getValue());
 			}
@@ -116,7 +115,7 @@ public class Servlet extends HttpServlet {
 			nf.setGroupingUsed(false);
             nf.setMinimumFractionDigits(1);
             nf.setMaximumFractionDigits(8);
-			List<Table> l = pinto.eval(request.getParameter("p"));
+			List<Table> l = pinto.evaluate(request.getParameter("p"));
 			if(l.size() > 0) {
 				if(!l.get(l.size() - 1).getStatus().isPresent()) {
 					response.getOutputStream().print(l.get(l.size()-1).toCsv(nf));
@@ -139,7 +138,7 @@ public class Servlet extends HttpServlet {
 			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
 			List<Map<String,Object>> tables = new ArrayList<>();
-			for(Table t : pinto.eval(request.getParameter("p"))) {
+			for(Table t : pinto.evaluate(request.getParameter("p"))) {
 				ImmutableMap.Builder<String,Object> b = new ImmutableMap.Builder<String, Object>();
 				if(!t.getStatus().isPresent()) {
 					b.put("output","<code>" + t.getConsoleText(false).replaceAll(" ", "&nbsp;") + "</code>");

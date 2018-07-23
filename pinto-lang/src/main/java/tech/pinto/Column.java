@@ -185,45 +185,20 @@ public abstract class Column<T> implements Cloneable {
 
 	}
 
-	
-	public static class OfDoubleArray1Ds extends Column<double[][]> {
-
-		public OfDoubleArray1Ds(Function<Column<?>[], String> headerFunction,  Function<Column<?>[], String> traceFunction,
-				RowsFunctionGeneric<double[][]> rowsFunction, Column<?>... inputs) {
-			super(headerFunction, traceFunction, rowsFunction, inputs);
-		}
-		
-		public OfDoubleArray1Ds(Function<Column<?>[], String> headerFunction,  Function<Column<?>[], String> traceFunction,
-				RowsFunction<double[][]> rowsFunction, Column<?>... inputs) {
-			super(headerFunction, traceFunction, rowsFunction, inputs);
-		}
-
-		@Override
-		protected <P extends Period<P>> String[] rowsToStrings(double[][] d, NumberFormat nf) {
-			String[] s = new String[d.length];
-			for(int j = 0; j < d.length; j++) {
-				double[] a = d[j];
-				s[j] = "[" + nf.format(a[0]) + (a.length == 1 ? "" : ", ..., " + nf.format(a[a.length-1]) + "]"); 
-			}
-			return s;
-		}
-		
-	}
-
-	public static class OfWindow extends Column<Window> {
+	public static class OfWindow extends Column<Window<?>> {
 
 		public OfWindow(Function<Column<?>[], String> headerFunction,  Function<Column<?>[], String> traceFunction,
-				RowsFunction<Window> rowsFunction, Column<?>... inputs) {
+				RowsFunction<Window<?>> rowsFunction, Column<?>... inputs) {
 			super(headerFunction, traceFunction, rowsFunction, inputs);
 		}
 
 		public OfWindow(Function<Column<?>[], String> headerFunction,  Function<Column<?>[], String> traceFunction,
-				RowsFunctionGeneric<Window> rowsFunction, Column<?>... inputs) {
+				RowsFunctionGeneric<Window<?>> rowsFunction, Column<?>... inputs) {
 			super(headerFunction, traceFunction, rowsFunction, inputs);
 		}
 
 		@Override
-		protected <P extends Period<P>> String[] rowsToStrings(Window w, NumberFormat nf) {
+		protected <P extends Period<P>> String[] rowsToStrings(Window<?> w, NumberFormat nf) {
 			String[] s = new String[w.viewCount()];
 			Arrays.fill(s, "window");
 			return s;

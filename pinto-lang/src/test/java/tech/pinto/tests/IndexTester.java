@@ -30,7 +30,7 @@ public class IndexTester {
 
 	@Test
 	public void testWildcards() throws Exception {
-		Table t = pinto.eval("1 2 3 {hotdiggitydog,burger,hotdog} [hot*dog] only eval").get(0);
+		Table t = pinto.evaluate("1 2 3 {hotdiggitydog,burger,hotdog} [hot*dog] only eval").get(0);
 		assertEquals("wildcard label", 2, t.getColumnCount());
 	}
 
@@ -47,22 +47,22 @@ public class IndexTester {
 
 	@Test
 	public void testLabels() throws Exception {
-		Table ts = pinto.eval("1 2 3 {a,b,c} [c] eval").get(0);
+		Table ts = pinto.evaluate("1 2 3 {a,b,c} [c] eval").get(0);
 		assertEquals("label index (simple) value", 3.0, first(0,ts), 0.1);
 	}
 
 	@Test
 	public void testCopyAndRepeat() throws Exception {
-		pinto.eval(":function_that_copies [&0] 1 + def");
-		Table t = pinto.eval("98 99 [0+] function_that_copies eval").get(0);
+		pinto.evaluate(":function_that_copies [&0] 1 + def");
+		Table t = pinto.evaluate("98 99 [0+] function_that_copies eval").get(0);
 		assertEquals("Repeat a defined that copies", t.getColumnCount(),4);
 		assertEquals("Repeat a defined that copies", first(1,t),99, 0.1);
 	}
 	
 	@Test
 	public void repeatWithNested() throws Exception {
-		pinto.eval(":test [0] ([0&] ) + def");
-		Table t = pinto.eval("1 2 [0+] test eval").get(0);
+		pinto.evaluate(":test [0] ([0&] ) + def");
+		Table t = pinto.evaluate("1 2 [0+] test eval").get(0);
 		assertEquals("Repeat a defined with nested inline", t.getColumnCount(),2);
 		assertEquals("Repeat a defined with nested inline", first(0,t),4, 0.1);
 	}
@@ -72,7 +72,7 @@ public class IndexTester {
 	}
 	
 	private boolean compareRow(String pintoExpression, double... results) throws Exception {
-		return compareRow(results,pinto.eval(pintoExpression).get(0));
+		return compareRow(results,pinto.evaluate(pintoExpression).get(0));
 	}
 
 	private boolean compareRow(double[] target, Table t) {

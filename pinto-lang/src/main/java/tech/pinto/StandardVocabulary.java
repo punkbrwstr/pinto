@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,8 @@ import tech.pinto.Column.ConstantColumn;
 import tech.pinto.Column.RowsFunction;
 import tech.pinto.Column.RowsFunctionGeneric;
 import tech.pinto.Pinto.StackFunction;
+import tech.pinto.Window.Expanding;
+import tech.pinto.Window.Rolling;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
@@ -51,29 +54,25 @@ import tech.pinto.time.Periodicity;
 
 public class StandardVocabulary extends Vocabulary {
     
-    protected final List<Name> names;
+    protected final List<Name.Builder> names;
 	private static Optional<MessageFormat> chartHTML = Optional.empty();
 	
 	public StandardVocabulary() {
-		names = Arrays.asList(
+		names = new ArrayList<>(Arrays.asList(
 			nameBuilder("def", StandardVocabulary::def)
 				.description("Defines the expression as the preceding name literal.")
-				.indexer(Indexer.NONE)
 				.terminal()
 				.skipEvaluation(),
 			nameBuilder("undef", StandardVocabulary::undef)
 				.description("Defines the expression as the preceding name literal.")
-				.indexer(Indexer.NONE)
 				.terminal()
 				.skipEvaluation(),
 			nameBuilder("help", StandardVocabulary::help)
 				.description("Prints help for the preceding name literal or all names if one has not been specified.")
-				.indexer(Indexer.NONE)
 				.terminal()
 				.skipEvaluation(),
 			nameBuilder("list", StandardVocabulary::list)
 				.description("Shows description for all names.")
-				.indexer(Indexer.NONE)
 				.terminal()
 				.skipEvaluation(),
 			nameBuilder("eval", StandardVocabulary::eval)
@@ -112,13 +111,11 @@ public class StandardVocabulary extends Vocabulary {
 
 	///* dates */
 			nameBuilder("today", StandardVocabulary::today)
-				.indexer(Indexer.NONE)
 				.description("Creates a constant date column with today's date."),
 			nameBuilder("offset", StandardVocabulary::offset)
 				.indexer("[date=today,periodicity=B,c=-1]")
 				.description("Offset a *c* periods of *periodicity* from *date*."),
 			nameBuilder("day_count", StandardVocabulary::dayCount)
-				.indexer(Indexer.NONE)
 				.description("Creates a column with count of days in each period."),
 			nameBuilder("annualization_factor", StandardVocabulary::annualizationFactor)
 				.indexer("[periodicity=\"range\"]")
@@ -129,10 +126,8 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[tickers,fields]")
 				.description("Adds columns for market data specified by *tickers* and *fields*."),
 			nameBuilder("pi", StandardVocabulary::pi)
-				.indexer(Indexer.NONE)
 				.description("Creates a constant double column with the value pi."),
 			nameBuilder("moon", StandardVocabulary::moon)
-				.indexer(Indexer.NONE)
 				.description("Creates a double column with values corresponding the phase of the moon."),
 			nameBuilder("range", StandardVocabulary::range)
 				.indexer("[c=1 4]")
@@ -178,14 +173,12 @@ public class StandardVocabulary extends Vocabulary {
 					.description("Creates a rolling window of size *c* for each input.")
 					.indexer("[c=2,:]"),
 			nameBuilder("cross", StandardVocabulary::cross_window)
-					.description("Creates a cross sectional window from input columns.")
-					.indexer("[:]"),
+					.description("Creates a cross sectional window from input columns."),
 			nameBuilder("expanding", StandardVocabulary::expanding_window)
 					.description("Creates creates an expanding window starting on *start* or the start of the evaluated range.")
 					.indexer("[date=\"range\",:]"),
 			nameBuilder("rev_expanding", StandardVocabulary::rev_expanding_window)
-					.description("Creates a reverse-expanding window containing values from the current period to the end of the range.")
-					.indexer("[:]"),
+					.description("Creates a reverse-expanding window containing values from the current period to the end of the range."),
 			getStatisticName("sum", () -> new Window.Sum()),
 			getStatisticName("mean", () -> new Window.Mean()),
 			getStatisticName("zscore", () -> new Window.ZScore()),
@@ -214,12 +207,11 @@ public class StandardVocabulary extends Vocabulary {
 			nameBuilder("rt", StandardVocabulary::rt)
 				.indexer("[functions=\" BA-DEC offset expanding pct_change {YTD} today today eval\",format=\"percent\",digits=2,:]")
 				.description("Creates a const string column with code for an HTML ranking table, applying each *function* to input columns and ranking the results.")
-		).stream().map(Name.Builder::build).collect(Collectors.toList());
+		));
 
 		for(Entry<String, Supplier<Periodicity<?>>> e : Periodicities.map.entrySet()) {
 			names.add(nameBuilder(e.getKey(), periodicityConstantFunction.apply(e.getValue().get()))
-						.indexer(Indexer.NONE)
-						.description( "Creates a constant periodcities column for " + e.getKey()).build());
+						.description( "Creates a constant periodcities column for " + e.getKey()));
 		}
 
     	names.add(getBinaryOperatorName("+", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x + y));
@@ -289,10 +281,10 @@ public class StandardVocabulary extends Vocabulary {
 		});
 	}
 	
-	private static RowsFunctionGeneric<Window> getRollingWindowFunction(int size) {
-		return new RowsFunctionGeneric<Window>(){
+	private static RowsFunctionGeneric<Window<?>> getRollingWindowFunction(int size) {
+		return new RowsFunctionGeneric<Window<?>>(){
 			@Override
-			public <P extends Period<P>> Window getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
+			public <P extends Period<P>> Window<Rolling> getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
 				P expandedWindowStart = range.periodicity().offset(-1 * (size - 1), range.start());
 				PeriodicRange<P> expandedWindow = range.periodicity().range(expandedWindowStart, range.end());
 				return new Window.Rolling(castColumn(columns[0], OfDoubles.class).rows(expandedWindow), size);
@@ -305,7 +297,7 @@ public class StandardVocabulary extends Vocabulary {
 		s.add(new OfWindow(inputs -> "cross", inputs -> "cross", StandardVocabulary::crossWindowRowsFunction, a));
 	}
 	
-	private static Window crossWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
+	private static Window<?> crossWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
 		double[][] d = new double[columns.length][];
 		for(int i = 0; i < d.length; i++) {
 			d[i] = castColumn(columns[i], OfDoubles.class).rows(range);
@@ -317,7 +309,7 @@ public class StandardVocabulary extends Vocabulary {
 		s.replaceAll(c -> new OfWindow(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " rev_expanding", StandardVocabulary::revExpandingWindowRowsFunction, c));
 	}
 	
-	private static Window revExpandingWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
+	private static Window<?> revExpandingWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
 		return new Window.ReverseExpanding(castColumn(columns[0], OfDoubles.class).rows(range));
 	}
 
@@ -331,10 +323,10 @@ public class StandardVocabulary extends Vocabulary {
 		});
 	}
 	
-	private static RowsFunctionGeneric<Window> getExpandingWindowFunction(Optional<LocalDate> start) {
-		return new RowsFunctionGeneric<Window>(){
+	private static RowsFunctionGeneric<Window<?>> getExpandingWindowFunction(Optional<LocalDate> start) {
+		return new RowsFunctionGeneric<Window<?>>(){
 			@Override
-			public <P extends Period<P>> Window getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
+			public <P extends Period<P>> Window<Expanding> getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
 				P expandedStart = start.isPresent() ? range.periodicity().from(start.get()) : range.start();
 				int offset;
 				double d[];
@@ -363,30 +355,30 @@ public class StandardVocabulary extends Vocabulary {
 	}
 	
 
-	private static final void def(Pinto p, Table t) {
-		t.setStatus("Defined " + p.getNamespace().define(p, p.getExpression()));
+	private static final void def(Pinto pinto, Table t) {
+		t.setStatus("Defined " + pinto.getNamespace().define(pinto, pinto.getExpression()));
 	}
 
-	private static void undef(Pinto p, Table t) {
-		String name = p.getExpression().getNameLiteral()
+	private static void undef(Pinto pinto, Table t) {
+		String name = pinto.getExpression().getNameLiteral()
 				.orElseThrow(() -> new PintoSyntaxException("del requires a name literal."));
-		p.getNamespace().undefine(name);
+		pinto.getNamespace().undefine(name);
 		t.setStatus("Undefined " + name);
 	}
 
-	private static void help(Pinto p, Table t) {
+	private static void help(Pinto pinto, Table t) {
 		StringBuilder sb = new StringBuilder();
 		String crlf = System.getProperty("line.separator");
-		if (p.getExpression().getNameLiteral().isPresent()) {
-			String n = p.getExpression().getNameLiteral().get();
-			sb.append(p.getNamespace().getName(n).getHelp(n)).append(crlf);
+		if (pinto.getExpression().getNameLiteral().isPresent()) {
+			String n = pinto.getExpression().getNameLiteral().get();
+			sb.append(pinto.getNamespace().getName(n).getHelp(n)).append(crlf);
 		} else {
 			sb.append("Pinto help").append(crlf);
 			sb.append("Built-in names:").append(crlf);
-			List<String> l = new ArrayList<>(p.getNamespace().getNames());
+			List<String> l = new ArrayList<>(pinto.getNamespace().getNames());
 			List<String> l2 = new ArrayList<>();
 			for (int i = 0; i < l.size(); i++) {
-				if (p.getNamespace().getName(l.get(i)).builtIn()) {
+				if (pinto.getNamespace().getName(l.get(i)).isBuiltIn()) {
 					sb.append(l.get(i)).append(i == l.size() - 1 || i > 0 && i % 7 == 0 ? crlf : ", ");
 				} else {
 					l2.add(l.get(i));
@@ -401,17 +393,17 @@ public class StandardVocabulary extends Vocabulary {
 		t.setStatus(sb.toString());
 	}
 
-	private static void list(Pinto p, Table t) {
+	private static void list(Pinto pinto, Table t) {
 		StringBuilder sb = new StringBuilder();
 		String crlf = System.getProperty("line.separator");
-		p.getNamespace().getNames().stream().map(s -> p.getNamespace().getName(s)).forEach(name -> {
+		pinto.getNamespace().getNames().stream().map(s -> pinto.getNamespace().getName(s)).forEach(name -> {
 			sb.append(name.toString()).append("|").append(name.getIndexString()).append("|")
 					.append(name.getDescription()).append(crlf);
 		});
 		t.setStatus(sb.toString());
 	}
 
-	private static void eval(Pinto p, Table t) {
+	private static void eval(Pinto pinto, Table t) {
 		LinkedList<Column<?>> s = t.flatten();
 		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
 		LinkedList<LocalDate> dates = new LinkedList<>();
@@ -421,17 +413,17 @@ public class StandardVocabulary extends Vocabulary {
 		t.evaluate(periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek()));
 	}
 
-	private static void imp(Pinto p, Table t) {
+	private static void imp(Pinto pinto, Table t) {
 		for (LinkedList<Column<?>> s : t.takeTop()) {
 			while (!s.isEmpty()) {
 				String filename = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 				int lineNumber = 0;
 				try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
 					String line = null;
-					p.activeExpression = new Pinto.Expression(p, false);
+					pinto.activeExpression = new Pinto.Expression(false);
 					while ((line = reader.readLine()) != null) {
 						lineNumber++;
-						p.eval(line);
+						pinto.evaluate(line);
 					}
 				} catch (FileNotFoundException e) {
 					throw new IllegalArgumentException("Cannot find pinto file \"" + filename + "\" to execute");
@@ -447,7 +439,7 @@ public class StandardVocabulary extends Vocabulary {
 		t.setStatus("Successfully executed");
 	}
 
-	private static void to_csv(Pinto p, Table t) {
+	private static void to_csv(Pinto pinto, Table t) {
 		LinkedList<Column<?>> s = t.flatten();
 		String filename = castColumn(s.removeFirst(),OfConstantStrings.class).getValue();
 		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
@@ -464,25 +456,38 @@ public class StandardVocabulary extends Vocabulary {
 		t.setStatus("Successfully exported");
 	}
 
-	private static void only(Pinto p, Table t) {
+	private static void report(Pinto p, Table t) {
+		Pinto.Expression state = p.getExpression();
+		String id = getId();
+		state.setNameLiteral("_rpt-" + id);
+		t.setStatus("Report id: " + p.getNamespace().define(p, state));
+		try {
+			int port = p.getPort();
+			Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + port + "/pinto/report?p=" + id));
+		} catch (Exception e) {
+			throw new PintoSyntaxException("Unable to open report", e);
+		}
+	}
+
+	private static void only(Pinto pinto, Table t) {
 		List<LinkedList<Column<?>>> indexed = t.takeTop();
 		t.clearTop();
 		t.insertAtTop(indexed);
 	}
 
-	private static void clear(Pinto p, LinkedList<Column<?>> s) {
+	private static void clear(Pinto pinto, LinkedList<Column<?>> s) {
 		s.clear();
 	}
 
-	private static void rev(Pinto p, LinkedList<Column<?>> s) {
+	private static void rev(Pinto pinto, LinkedList<Column<?>> s) {
 		Collections.reverse(s);
 	}
 
-	private static void pull(Pinto p, LinkedList<Column<?>> s) {
+	private static void pull(Pinto pinto, LinkedList<Column<?>> s) {
 		;
 	}
 
-	private static void copy(Pinto p, LinkedList<Column<?>> s) {
+	private static void copy(Pinto pinto, LinkedList<Column<?>> s) {
 		int times = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
 		LinkedList<Column<?>> temp = new LinkedList<>();
 		s.stream().forEach(temp::addFirst);
@@ -491,14 +496,14 @@ public class StandardVocabulary extends Vocabulary {
 		}
 	}
 
-	private static void roll(Pinto p, LinkedList<Column<?>> s) {
+	private static void roll(Pinto pinto, LinkedList<Column<?>> s) {
 		int times = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
 		for (int j = 0; j < times; j++) {
 			s.addLast(s.removeFirst());
 		}
 	}
 
-	private static void columns(Pinto p, LinkedList<Column<?>> s) {
+	private static void columns(Pinto pinto, LinkedList<Column<?>> s) {
 		s.addFirst(new OfConstantDoubles(s.size()));
 	}
 
@@ -511,21 +516,21 @@ public class StandardVocabulary extends Vocabulary {
 		}
 		t.insertAtTop(s);
 		String index = endpoints.size() == 1 ? ":" + endpoints.get(0) : endpoints.get(1) + ":" + endpoints.get(0);
-		new Indexer(index).getConsumer(p,p.activeExpression.getDependencies(),false).accept(t);
+		new Indexer(p, new HashSet<>(),index).accept(t);
 	}
 
 	private static void today(Pinto p, LinkedList<Column<?>> s) {
 		s.addFirst(new OfConstantDates(LocalDate.now()));
 	}
 
-	private static void offset(Pinto p, LinkedList<Column<?>> s) {
+	private static void offset(Pinto pinto, LinkedList<Column<?>> s) {
 		LocalDate date = castColumn(s.removeFirst(), OfConstantDates.class).getValue();
 		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
 		int count = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().intValue();
 		s.addFirst(new OfConstantDates(periodicity.offset(count, date)));
 	}
 
-	private static void dayCount(Pinto p, LinkedList<Column<?>> s) {
+	private static void dayCount(Pinto pinto, LinkedList<Column<?>> s) {
 		s.addFirst(new OfDoubles(c -> "day_count", StandardVocabulary::dayCountRowFunction));
 	}
 
@@ -551,17 +556,17 @@ public class StandardVocabulary extends Vocabulary {
 		s.addFirst(new OfDoubles(c -> "annualization_factor", function.apply(periodicity)));
 	}
 	
-	private static void mkt(Pinto p, LinkedList<Column<?>> s) {
+	private static void mkt(Pinto pinto, LinkedList<Column<?>> s) {
 		String tickers = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 		String fields = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
-		p.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(s);
+		pinto.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(s);
 	}
 
-	private static void pi(Pinto p, LinkedList<Column<?>> s) {
+	private static void pi(Pinto pinto, LinkedList<Column<?>> s) {
 		s.addFirst(new OfConstantDoubles(Math.PI));
 	}
 
-	private static void moon(Pinto p, LinkedList<Column<?>> s) {
+	private static void moon(Pinto pinto, LinkedList<Column<?>> s) {
 		s.addFirst(new OfDoubles(i -> "moon", StandardVocabulary::moonRowFunction));
 	}
 
@@ -571,7 +576,7 @@ public class StandardVocabulary extends Vocabulary {
 		}).toArray();
 	}
 
-	private static void range(Pinto p, LinkedList<Column<?>> s) {
+	private static void range(Pinto pinto, LinkedList<Column<?>> s) {
 		LinkedList<Integer> endpoints = new LinkedList<Integer>();
 		while (!s.isEmpty() && endpoints.size() < 2 && s.peekFirst().getHeader().equals("c")) {
 			endpoints.addLast((int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue());
@@ -582,7 +587,7 @@ public class StandardVocabulary extends Vocabulary {
 				.forEach(s::addFirst);
 	}
 
-	private static void readCsv(Pinto p, LinkedList<Column<?>> s) {
+	private static void readCsv(Pinto pinto, LinkedList<Column<?>> s) {
 		String source = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 		boolean includesHeader = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
 		try {
@@ -796,18 +801,6 @@ public class StandardVocabulary extends Vocabulary {
 		s.addFirst(new OfConstantStrings(l.stream().collect(Collectors.joining(sep))));
 	}
 
-	private static void report(Pinto p, Table t) {
-		Pinto.Expression state = p.getExpression();
-		String id = getId();
-		state.setNameLiteral("_rpt-" + id);
-		t.setStatus("Report id: " + p.getNamespace().define(p, state));
-		try {
-			int port = p.getPort();
-			Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + port + "/pinto/report?p=" + id));
-		} catch (Exception e) {
-			throw new PintoSyntaxException("Unable to open report", e);
-		}
-	}
 
 	private static void chart(Pinto pinto, LinkedList<Column<?>> s) {
 		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
@@ -926,12 +919,12 @@ public class StandardVocabulary extends Vocabulary {
 		for (int i = 0; i < columns; i++) {
 			double[][] values = new double[s.size()][2];
 			for (int j = 0; j < s.size(); j++) {
-				Pinto.Expression expression = new Pinto.Expression(pinto, false);
+				Pinto.Expression expression = new Pinto.Expression(false);
 				final int J = j;
 				expression.addFunction(Pinto.toTableConsumer(stack -> {
 					stack.add(s.get(J).clone());
 				}));
-				Table t = pinto.evaluate(functions.get(i), expression).get(0);
+				Table t = pinto.parse(functions.get(i), expression).get(0);
 				double[][] d = t.toColumnMajorArray();
 				values[j][0] = d[0][d[0].length - 1];
 				values[j][1] = (int) j;
@@ -973,7 +966,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static Function<Periodicity<?>, StackFunction> periodicityConstantFunction = per -> (p, s) -> s
 			.addFirst(new Column.OfConstantPeriodicities(per));
 
-	private static Name getBinaryOperatorName(String name, DoubleBinaryOperator dbo) {
+	private static Name.Builder getBinaryOperatorName(String name, DoubleBinaryOperator dbo) {
 		Function<DoubleBinaryOperator, RowsFunction<double[]>> doubledouble = o -> (range, inputs) -> {
 			double[] l = castColumn(inputs[1], Column.OfDoubles.class).rows(range);
 			double[] r = castColumn(inputs[0], Column.OfDoubles.class).rows(range);
@@ -982,38 +975,10 @@ public class StandardVocabulary extends Vocabulary {
 			}
 			return l;
 		};
-		Function<DoubleBinaryOperator, RowsFunction<double[][]>> arrayarray = o -> (range, inputs) -> {
-			double[][] l = castColumn(inputs[1], OfDoubleArray1Ds.class).rows(range);
-			double[][] r = castColumn(inputs[0], OfDoubleArray1Ds.class).rows(range);
-			for (int x = 0; x < l.length; x++) {
-				if (l[x].length != r[x].length) {
-					throw new IllegalArgumentException("Length mismatch to apply " + name + " for array values.");
-				}
-				for (int y = 0; y < l[x].length; y++) {
-					l[x][y] = o.applyAsDouble(l[x][y], r[x][y]);
-				}
-			}
-			return l;
-		};
-		Function<DoubleBinaryOperator, RowsFunction<double[][]>> doublearray = o -> (range, inputs) -> {
-			double[][] r = castColumn(inputs[0], OfDoubleArray1Ds.class).rows(range);
-			double[] l = castColumn(inputs[1], OfDoubles.class).rows(range);
-			for (int x = 0; x < l.length; x++) {
-				for (int y = 0; y < r[x].length; y++) {
-					r[x][y] = o.applyAsDouble(r[x][y], l[x]);
-				}
-			}
-			return r;
-		};
-		Function<DoubleBinaryOperator, RowsFunction<double[][]>> arraydouble = o -> (range, inputs) -> {
-			double[][] l = castColumn(inputs[1], OfDoubleArray1Ds.class).rows(range);
-			double[] r = castColumn(inputs[0], OfDoubles.class).rows(range);
-			for (int x = 0; x < l.length; x++) {
-				for (int y = 0; y < l[x].length; y++) {
-					l[x][y] = o.applyAsDouble(l[x][y], r[x]);
-				}
-			}
-			return l;
+		Function<DoubleBinaryOperator, RowsFunction<Window<?>>> arrayarray = o -> (range, inputs) -> {
+			Window<?> l = castColumn(inputs[1], OfWindow.class).rows(range);
+			Window<?> r = castColumn(inputs[0], OfWindow.class).rows(range);
+			return l.apply(o, r);
 		};
 		Function<DoubleBinaryOperator, StackFunction> function = dc -> (p, stack) -> {
 			int rightCount = (int) castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
@@ -1034,19 +999,11 @@ public class StandardVocabulary extends Vocabulary {
 					stack.add(new OfDoubles(inputs -> inputs[1].getHeader(),
 							inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
 							doubledouble.apply(dc), right, lefts.get(i)));
-				} else if (right instanceof OfDoubleArray1Ds
-						&& lefts.get(i) instanceof OfDoubleArray1Ds) {
-					stack.add(new OfDoubleArray1Ds(inputs -> inputs[1].getHeader(),
+				} else if (right instanceof OfWindow
+						&& lefts.get(i) instanceof OfWindow) {
+					stack.add(new OfWindow(inputs -> inputs[1].getHeader(),
 							inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
 							arrayarray.apply(dc), right, lefts.get(i)));
-				} else if (right instanceof OfDoubles && lefts.get(i) instanceof OfDoubleArray1Ds) {
-					stack.add(new OfDoubleArray1Ds(inputs -> inputs[1].getHeader(),
-							inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
-							arraydouble.apply(dc), right, lefts.get(i)));
-				} else if (right instanceof OfDoubleArray1Ds && lefts.get(i) instanceof OfDoubles) {
-					stack.add(new OfDoubleArray1Ds(inputs -> inputs[1].getHeader(),
-							inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
-							doublearray.apply(dc), right, lefts.get(i)));
 				} else {
 					throw new IllegalArgumentException(
 							"Operator " + name + " can only operate on columns of doubles or double arrays.");
@@ -1057,10 +1014,10 @@ public class StandardVocabulary extends Vocabulary {
 		return nameBuilder(name, function.apply(dbo))
 				.description("Binary operator " + name
 						+ " that operates on *width* columns at a time with fixed right-side operand.")
-				.indexer("[width=1,:]").build();
+				.indexer("[width=1,:]");
 	}
 
-	private static Name getUnaryOperatorName(String name, DoubleUnaryOperator duo) {
+	private static Name.Builder getUnaryOperatorName(String name, DoubleUnaryOperator duo) {
 		Function<DoubleUnaryOperator, RowsFunction<double[]>> doubleFunction = o -> (range, inputs) -> {
 			double d[] = castColumn(inputs[0], OfDoubles.class).rows(range);
 			for (int i = 0; i < d.length; i++) {
@@ -1068,22 +1025,17 @@ public class StandardVocabulary extends Vocabulary {
 			}
 			return d;
 		};
-		Function<DoubleUnaryOperator, RowsFunction<double[][]>> arrayFunction = o -> (range, inputs) -> {
-			double d[][] = castColumn(inputs[0], OfDoubleArray1Ds.class).rows(range);
-			for (int i = 0; i < d.length; i++) {
-				for (int j = 0; j < d[i].length; j++) {
-					d[i][j] = o.applyAsDouble(d[i][j]);
-				}
-			}
-			return d;
+		Function<DoubleUnaryOperator, RowsFunction<Window<?>>> arrayFunction = o -> (range, inputs) -> {
+			Window<?> w = castColumn(inputs[0], OfWindow.class).rows(range);
+			return w.apply(o);
 		};
 		Function<DoubleUnaryOperator, StackFunction> function = dc -> (p, s) -> {
 			s.replaceAll(c -> {
 				if (c instanceof OfDoubles) {
 					return new OfDoubles(inputs -> inputs[0].getHeader(),
 							inputs -> inputs[0].getTrace() + " " + name, doubleFunction.apply(duo), c);
-				} else if (c instanceof OfDoubleArray1Ds) {
-					return new OfDoubleArray1Ds(inputs -> inputs[0].getHeader(),
+				} else if (c instanceof OfWindow) {
+					return new OfWindow(inputs -> inputs[0].getHeader(),
 							inputs -> inputs[0].getTrace() + " " + name, arrayFunction.apply(duo), c);
 				} else {
 					throw new IllegalArgumentException(
@@ -1092,7 +1044,7 @@ public class StandardVocabulary extends Vocabulary {
 
 			});
 		};
-		return nameBuilder(name, function.apply(duo)).description("Unary operator " + name + ".").build();
+		return nameBuilder(name, function.apply(duo)).description("Unary operator " + name + ".");
 	}
 
 	private static String getId() {
@@ -1116,7 +1068,7 @@ public class StandardVocabulary extends Vocabulary {
 
 	@Override
 	protected List<Name> getNames() {
-		return names;
+		return names.stream().map(b -> b.build()).collect(Collectors.toList());
 	}
 
 }

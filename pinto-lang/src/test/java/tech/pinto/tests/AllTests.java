@@ -81,7 +81,7 @@ public class AllTests {
 					return Cache.getCachedRows("counter", 0, range);
 					
 				}));
-			}).build());
+			}));
 		}
 
 	}

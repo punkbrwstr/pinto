@@ -32,31 +32,31 @@ public class FunctionTester {
 
 	@Test
 	public void testDefine() throws Exception {
-		pinto.eval(":thing 1.1 def");
-		pinto.eval(":thing2 thing 1.2 + def");
-		assertEquals("Nested save ref", 3.4, sumRow(0,pinto.eval("thing2 thing + eval").get(0)), 0.001d);
-		pinto.eval(":thing 2 def");
-		assertEquals("Update nested ref", 5.2, sumRow(0,pinto.eval("thing2 thing +" + EVAL).get(0)), 0.001d);
-		pinto.eval(":increment [0] 1 + def");
-		assertEquals("Saved function", 7.0, sumRow(0,pinto.eval("6 increment" + EVAL).get(0)), 0.001d);
+		pinto.evaluate(":thing 1.1 def");
+		pinto.evaluate(":thing2 thing 1.2 + def");
+		assertEquals("Nested save ref", 3.4, sumRow(0,pinto.evaluate("thing2 thing + eval").get(0)), 0.001d);
+		pinto.evaluate(":thing 2 def");
+		assertEquals("Update nested ref", 5.2, sumRow(0,pinto.evaluate("thing2 thing +" + EVAL).get(0)), 0.001d);
+		pinto.evaluate(":increment [0] 1 + def");
+		assertEquals("Saved function", 7.0, sumRow(0,pinto.evaluate("6 increment" + EVAL).get(0)), 0.001d);
 	}
 
 	@Test
 	public void testCacheClearing() throws Exception {
-		pinto.eval(":a [] 5 def");
-		pinto.eval(":b [] a 10 + def");
-		pinto.eval(":c [] b 5 + def");
-		assertEquals("Nested defined", 20, sumRow(0,pinto.eval("c eval").get(0)), 0.001d);
-		pinto.eval(":a [] 4 def");
-		assertEquals("Nested defined after dependency change", 19, sumRow(0,pinto.eval("c eval").get(0)), 0.001d);
+		pinto.evaluate(":a [] 5 def");
+		pinto.evaluate(":b [] a 10 + def");
+		pinto.evaluate(":c [] b 5 + def");
+		assertEquals("Nested defined", 20, sumRow(0,pinto.evaluate("c eval").get(0)), 0.001d);
+		pinto.evaluate(":a [] 4 def");
+		assertEquals("Nested defined after dependency change", 19, sumRow(0,pinto.evaluate("c eval").get(0)), 0.001d);
 	}
 
 	@Test
 	public void testCopy() throws Exception {
-		Table t = pinto.eval("{test: 1 2} copy copy +" + EVAL).get(0);
+		Table t = pinto.evaluate("{test: 1 2} copy copy +" + EVAL).get(0);
 		assertEquals("Correct # dup outputs", 7, t.getColumnCount());
 		assertEquals("Dup output works in plus", 3.0, t.toRowMajorArray()[0][6], 0.001d);
-		t = pinto.eval("1 2 3 copy" + EVAL).get(0);
+		t = pinto.evaluate("1 2 3 copy" + EVAL).get(0);
 		assertEquals("Correct # dup outputs with params", 6, t.getColumnCount());
 
 	}
@@ -65,42 +65,42 @@ public class FunctionTester {
 
 	@Test(expected=PintoSyntaxException.class)
 	public void testDelete() throws Exception {
-		pinto.eval("1 \"deleteme\" def");
-		pinto.eval("\"deleteme\" del");
-		pinto.eval("deleteme \"blah\" def");
+		pinto.evaluate("1 \"deleteme\" def");
+		pinto.evaluate("\"deleteme\" del");
+		pinto.evaluate("deleteme \"blah\" def");
 	}
 
 	@Test(expected=Exception.class)
 	public void testDeleteFail() throws Exception {
-		pinto.eval("1 \"dontdeleteme\" def");
-		pinto.eval("dontdeleteme 1 + \"needsdeleteme\" def");
-		pinto.eval("\"dontdeleteme\" del");
+		pinto.evaluate("1 \"dontdeleteme\" def");
+		pinto.evaluate("dontdeleteme 1 + \"needsdeleteme\" def");
+		pinto.evaluate("\"dontdeleteme\" del");
 	}
 	
 	@Test
 	public void testNoInputsToDefined() throws Exception {
-		pinto.eval(":a [] {test: 2} 20 rolling mean def");
-		pinto.eval(":b [] {test: 3} 30 rolling mean def");
-		pinto.eval(":c a b def");
-		Table  c = pinto.eval("c eval").get(0);
+		pinto.evaluate(":a [] {test: 2} 20 rolling mean def");
+		pinto.evaluate(":b [] {test: 3} 30 rolling mean def");
+		pinto.evaluate(":c a b def");
+		Table  c = pinto.evaluate("c eval").get(0);
 		assertEquals("defineNoInputs count",c.getColumnCount(),2);
 		assertEquals("definedNoInputs output",sumRow(0,c),5.0,0.01);
 	}
 	
 	
 	public void testRolling() throws Exception {
-		Table d = pinto.eval("moon \"10\" r_mean \"2016-09-06,2016-09-09,B\" eval").get(0);
+		Table d = pinto.evaluate("moon \"10\" r_mean \"2016-09-06,2016-09-09,B\" eval").get(0);
 		assertEquals("rolling mean", 12.0096, d.toRowMajorArray()[3][0],0.001d);
 
-		d =pinto.eval("moon \"10,B\" r_mean \"2016-08-06,2016-09-02,W-FRI \"eval").get(0);
+		d =pinto.evaluate("moon \"10,B\" r_mean \"2016-08-06,2016-09-02,W-FRI \"eval").get(0);
 		assertEquals("rolling mean (diff freqs window < range)", -33.2738, last(0,d),0.001d);
 
-		d =pinto.eval("moon \"1,BM\" r_lag \"2016-08-06,2016-09-09,B\" eval").get(0);
+		d =pinto.evaluate("moon \"1,BM\" r_lag \"2016-08-06,2016-09-09,B\" eval").get(0);
 		assertEquals("lag (diff freqs range > window)", -27.3281, first(0,d),0.001d);
 	}
 	
 	public void testExpanding() throws Exception {
-		Table d = pinto.eval("1 \"2016-09-14\" e_sum \"2016-09-12,2016-09-23,B\" eval").get(0);
+		Table d = pinto.evaluate("1 \"2016-09-14\" e_sum \"2016-09-12,2016-09-23,B\" eval").get(0);
 		assertEquals("NAs before expanding start", Double.NaN, sumRow(0,d),0.001d);
 		assertEquals("sum from expanding start", 8.0, last(0,d), 0.001d);
 		
@@ -132,13 +132,13 @@ public class FunctionTester {
 	public void testCaching() throws Exception {
 		String formula = "counter ";
 		// 5 * 0.0
-		assertEquals("Range B", 0.0, sumColumn(0,pinto.eval(formula + B).get(0)), 0.001d);
+		assertEquals("Range B", 0.0, sumColumn(0,pinto.evaluate(formula + B).get(0)), 0.001d);
 		// 1 * 1.0
-		assertEquals("Range C", 1.0, sumColumn(0,pinto.eval(formula + C).get(0)), 0.001d);
+		assertEquals("Range C", 1.0, sumColumn(0,pinto.evaluate(formula + C).get(0)), 0.001d);
 		// 3 * 2.0
-		assertEquals("Range D", 6.0, sumColumn(0, pinto.eval(formula + D).get(0)), 0.001d);
+		assertEquals("Range D", 6.0, sumColumn(0, pinto.evaluate(formula + D).get(0)), 0.001d);
 		// 0, 3, 1, 4, 2
-		assertEquals("Range A", 10.0, sumColumn(0, pinto.eval(formula + A).get(0)), 0.001d);
+		assertEquals("Range A", 10.0, sumColumn(0, pinto.evaluate(formula + A).get(0)), 0.001d);
 		
 		log.info("END testRanges");
 	}

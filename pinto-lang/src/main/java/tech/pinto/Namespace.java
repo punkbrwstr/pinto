@@ -19,13 +19,15 @@ import tech.pinto.Pinto.TableFunction;
 public class Namespace implements Completer {
 	private final String DELIMITER = "::";	
 	
-	protected TreeMap<String,Name> names = new TreeMap<>();
-	protected TreeSet<String> dependencyGraph = new TreeSet<>();
+	private final TreeMap<String,Name> names = new TreeMap<>();
+	private final TreeSet<String> dependencyGraph = new TreeSet<>();
 
 	@Inject
 	public Namespace(Vocabulary vocabulary) {
-		for(Name name : vocabulary.getNames()) {
-			names.put(name.toString(), name);
+		if(names.isEmpty()) {
+			for(Name name : vocabulary.getNames()) {
+				names.put(name.toString(), name);
+			}
 		}
 	}
 	
@@ -37,7 +39,7 @@ public class Namespace implements Completer {
 		String name = expression.getNameLiteral()
 				.orElseThrow(() -> new PintoSyntaxException("A name literal is required to define a name."));
 		if(names.containsKey(name)) {
-			if(names.get(name).builtIn()) {
+			if(names.get(name).isBuiltIn()) {
 				throw new IllegalArgumentException("Cannot redefine built-in name " + name + ".");
 			}
 			clearCache(name);

@@ -17,46 +17,42 @@ import javax.inject.Inject;
 
 public class Pinto {
 	
-	static Pattern STRING_LITERAL = Pattern.compile("\"(.*?)\"");
-	static Pattern INDEXER = Pattern.compile("\\[(.*?)\\]");
-	static Pattern HEADER_LITERAL = Pattern.compile("\\{(.*)\\}");
-	static Pattern NAME_LITERAL = Pattern.compile(":(\\S+)");
-	static Pattern DATE_LITERAL = Pattern.compile("\\d{4}-[01]\\d-[0-3]\\d");
-	static Pattern ILLEGAL_NAME = Pattern.compile(".*[\\{\\}\\[\\]\"\\s:].*");
+	static private Pattern NAME_LITERAL = Pattern.compile(":(\\S+)");
+	static private Pattern DATE_LITERAL = Pattern.compile("\\d{4}-[01]\\d-[0-3]\\d");
+	static private Pattern ILLEGAL_NAME = Pattern.compile(".*[\\{\\}\\[\\]\"\\s:].*");
 	private static int port;
-	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
+	//private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
 	@Inject
 	Namespace namespace;
 	@Inject	
 	MarketData marketdata;
-	Expression activeExpression = new Expression(this, false);
+	Expression activeExpression = new Expression(false);
 
 	@Inject
 	public Pinto() {
 	}
-
-	public List<Table> eval(String toEvaluate) {
+	
+	public List<Table> evaluate(String toEvaluate) {
 		try {
-			return evaluate(toEvaluate, activeExpression);
+			return parse(toEvaluate, activeExpression);
 		} catch(RuntimeException t) {
-			activeExpression = new Expression(this, false);
+			activeExpression = new Expression(false);
 			throw t;
 		}
 	}
 
 	public Expression parseSubExpression(String expression) {
-		Expression e = new Expression(this, true);
-		evaluate(expression, e);
+		Expression e = new Expression(true);
+		parse(expression, e);
 		return e;
-
 	}
 
-	public List<Table> evaluate(String toEvaluate, Expression e) {
+	public List<Table> parse(String toParse, Expression e) {
 		List<Table> responses = new ArrayList<>();
-		toEvaluate = toEvaluate.replaceAll("\\(", " \\( ").replaceAll("\\)", " \\) ");
-		e.addText(toEvaluate);
-		try (Scanner sc = new Scanner(toEvaluate)) {
+		toParse = toParse.replaceAll("\\(", " \\( ").replaceAll("\\)", " \\) ");
+		e.addText(toParse);
+		try (Scanner sc = new Scanner(toParse)) {
 			while (sc.hasNext()) {
 				if(sc.hasNext(Pattern.compile("#.*"))) { // comment
 					sc.nextLine();
@@ -65,7 +61,7 @@ public class Pinto {
 				} else if (sc.hasNext(Pattern.compile("\\(.*?"))) { // add inline function
 					e.addFunction(parseSubExpression(parseBlock(sc,"\\(","\\)")));
 				} else if (sc.hasNext(Pattern.compile("\\[.*?"))) { // indexer
-					e.addIndexer(new Indexer(parseBlock(sc, "\\[", "\\]")));
+					e.addIndexer(new Indexer(this, e.getDependencies(), parseBlock(sc, "\\[", "\\]")));
 				} else if (sc.hasNext(Pattern.compile("\\{.*?"))) { // header literal
 					e.addFunction(toTableConsumer(new HeaderLiteral(this, e.getDependencies(), parseBlock(sc, "\\{", "\\}"))));
 				} else if (sc.hasNext(Pattern.compile("\\$.*?"))) { // market literal
@@ -77,20 +73,29 @@ public class Pinto {
 				} else if (sc.hasNext(DATE_LITERAL)) { // date literal
 					e.addFunction(toTableConsumer(new tech.pinto.Column.OfConstantDates(LocalDate.parse(sc.next(DATE_LITERAL)))));
 				} else { // name
-					Name name = namespace.getName(sc.next());
-					if(!name.terminal()) {
-						if(!name.builtIn()) {
+					String n = sc.next();
+					Consumer<Table> c = t -> {
+						Name name = namespace.getName(n);
+						name.getIndexer(this).accept(t);
+						name.getFunction().accept(this, t);
+					};
+					Name name = namespace.getName(n);
+					if(!name.isTerminal()) {
+						if(!name.isBuiltIn()) {
 							e.getDependencies().add(name.toString());
 						}
-						e.addFunction(getNamedConsumer(this, e.getDependencies(), name));
+						e.addFunction(c);
 					} else {
 						if(e.isSubExpression()) {
 							throw new PintoSyntaxException("Sub-expressions cannot include terminal functions");
 						}
 						Table t = new Table();
-						getNamedConsumer(this, e.getDependencies(), name).accept(t);
+						if(!name.isSkipEvaluation()) {
+							e.accept(t);
+						}
+						c.accept(t);
 						responses.add(t);
-						activeExpression = new Expression(this, false);
+						activeExpression = new Expression(false);
 					}
 				}
 			}
@@ -128,17 +133,6 @@ public class Pinto {
 		};
 	}
 
-	private static Consumer<Table> getNamedConsumer(Pinto pinto, Set<String> dependencies, Name name) {
-		return t -> {
-			try {
-				System.out.println(name);
-				name.getConsumer(pinto, dependencies).accept(t);
-			} catch(Throwable throwable) {
-				throw new PintoSyntaxException("Error for \"" + name.toString() + "\": " + throwable.getLocalizedMessage() , throwable);
-			}
-		};
-	}
-
 	private static String checkName(String name) {
 		if(ILLEGAL_NAME.matcher(name).matches()) {
 			throw new PintoSyntaxException("Illegal character in name literal \"" + name + "\"");
@@ -168,7 +162,6 @@ public class Pinto {
 	
 	public static class Expression implements Consumer<Table> {
 		
-		private final Pinto pinto;
 		private final boolean isSubExpression;
 		private boolean isNullary = false;
 		private ArrayList<Consumer<Table>>  functions = new ArrayList<>();
@@ -176,14 +169,12 @@ public class Pinto {
 		private StringBuilder text = new StringBuilder();
 		private	Optional<String> nameLiteral = Optional.empty();
 		
-		public Expression(Pinto pinto, boolean isSubExpression) {
-			this.pinto = pinto;
+		public Expression(boolean isSubExpression) {
 			this.isSubExpression = isSubExpression;
 		}
 
 		@Override
 		public void accept(Table t) {
-			pinto.log.info("expression: {}", getText());
 			for(int i = 0; i < functions.size(); i++) {
 				functions.get(i).accept(t);
 			}
@@ -193,14 +184,17 @@ public class Pinto {
 		public void addIndexer(Indexer indexer) {
 			if(functions.isEmpty()) {
 				isNullary = indexer.isNone();
+				indexer.setIndexForExpression();
 			}
-			functions.add(indexer.getConsumer(pinto, dependencies, functions.isEmpty()));
+			functions.add(indexer);
 		}
 
 		public void addFunction(Consumer<Table> function) {
-			if(functions.isEmpty()) {
+			if(functions.isEmpty() && !isSubExpression) {
 				isNullary = true;
-				functions.add(Indexer.NONE.getConsumer(pinto, dependencies, true));
+				Indexer i = new Indexer();
+				i.setIndexForExpression();
+				functions.add(i);
 			}
 			functions.add(function);
 		}
