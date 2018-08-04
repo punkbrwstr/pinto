@@ -3,16 +3,18 @@ package tech.pinto;
 import java.util.ArrayList;
 
 
+
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class HeaderLiteral implements Consumer<LinkedList<Column<?>>> {
+import tech.pinto.Pinto.StackFunction;
+
+public class HeaderLiteral implements StackFunction {
 	
 	private final List<Header> headers;
 	
@@ -62,7 +64,7 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?>>> {
 	}
 
 	@Override
-	public void accept(LinkedList<Column<?>> stack) {
+	public void accept(Pinto pinto, LinkedList<Column<?>> stack) {
 		LinkedList<Column<?>> newStack = new LinkedList<>();
 		for(int i = headers.size() - 1; i >= 0; i--) {
 			if(!headers.get(i).getDefaultColumns().isPresent()) {
@@ -74,7 +76,7 @@ public class HeaderLiteral implements Consumer<LinkedList<Column<?>>> {
 			} else {
 				Table t = new Table();
 				final String header = headers.get(i).getHeader();
-				headers.get(i).getDefaultColumns().get().accept(t);
+				headers.get(i).getDefaultColumns().get().accept(pinto, t);
 				t.flatten().stream().peek(c -> c.setHeader(header)).forEach(newStack::add);
 			}
 		}

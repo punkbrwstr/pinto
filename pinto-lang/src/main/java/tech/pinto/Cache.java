@@ -7,7 +7,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.google.common.collect.Range;
@@ -15,6 +14,7 @@ import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
 
 import tech.pinto.Pinto.StackFunction;
+import tech.pinto.Pinto.TableFunction;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
@@ -27,7 +27,7 @@ public class Cache {
 	private static final HashMap<String, RangeMap<Long, CachedSeriesList>> rowCache = new HashMap<>();
 	private static final HashMap<String, LinkedList<Column<?>>> columns = new HashMap<>();
 	private static final HashMap<String, LinkedList<Column<?>>> uncachedColumns = new HashMap<>();
-	private static final HashMap<String, Consumer<Table>> nullaryFunctions = new HashMap<>();
+	private static final HashMap<String, TableFunction> nullaryFunctions = new HashMap<>();
 	private static final HashMap<String, Integer> columnCounts = new HashMap<>();
 	private static final HashMap<String, Function<PeriodicRange<?>,double[][]>> rowFunctions = new HashMap<>();
 
@@ -41,16 +41,16 @@ public class Cache {
 		}
 	}
 	
-	public static StackFunction cacheNullaryFunction(String key, Consumer<Table> uncached) {
+	public static StackFunction cacheNullaryFunction(String key, TableFunction uncached) {
 		nullaryFunctions.put(key, uncached);
 		return (p,s) -> {
-			s.addAll(0, getCachedColumns(key));
+			s.addAll(0, getCachedColumns(p, key));
 		};
 	}
 	
-	private static void loadCachedColumns(String key) {
+	private static void loadCachedColumns(Pinto pinto, String key) {
 		Table t = new Table();
-		nullaryFunctions.get(key).accept(t);
+		nullaryFunctions.get(key).accept(pinto, t);
 		LinkedList<Column<?>> cols = t.flatten();
 		columnCounts.put(key, cols.size());
 		boolean rowCacheable = true;
@@ -72,9 +72,9 @@ public class Cache {
 		}
 	}
 	
-	public static LinkedList<Column<?>> getCachedColumns(String key) {
+	public static LinkedList<Column<?>> getCachedColumns(Pinto pinto, String key) {
 		if(!columns.containsKey(key)) {
-			loadCachedColumns(key);
+			loadCachedColumns(pinto, key);
 		}
 		LinkedList<Column<?>> cols = new LinkedList<>(columns.get(key));
 		cols.replaceAll(c -> c.clone());

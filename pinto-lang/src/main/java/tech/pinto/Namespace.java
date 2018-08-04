@@ -56,7 +56,7 @@ public class Namespace implements Completer {
 			names.put(name, Name.nameBuilder(name,Cache.cacheNullaryFunction(name, expression))
 					.defined().description(expression.getText()).build());
 		} else {
-			names.put(name, Name.nameBuilder(name, (TableFunction) (p,t) -> expression.accept(t))
+			names.put(name, Name.nameBuilder(name, (TableFunction) (p,t) -> expression.accept(p, t))
 					.defined().description(expression.getText()).build());
 		}
 		return name;

@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -28,7 +28,7 @@ public class Pinto {
 	Namespace namespace;
 	@Inject	
 	MarketData marketdata;
-	Expression activeExpression = new Expression(false);
+	private Expression activeExpression = new Expression(false);
 
 	@Inject
 	public Pinto() {
@@ -37,12 +37,15 @@ public class Pinto {
 	public List<Table> evaluate(String toEvaluate) {
 		try {
 			List<Expression> expressions =  parse(toEvaluate, activeExpression);
-			if(expressions.size() > 0 && !expressions.get(expressions.size()-1).hasTerminal()) {
-				activeExpression = expressions.remove(expressions.size()-1);
-			} else {
-				activeExpression = new Expression(false);
+			Expression next = expressions.size() > 0 
+					&& !expressions.get(expressions.size()-1).hasTerminal() ?
+							expressions.remove(expressions.size()-1) : new Expression(false);
+			List<Table> tables =  new ArrayList<>();
+			for(int i = 0; i < expressions.size(); i++) {
+				tables.add(expressions.get(i).evaluate(this));
 			}
-			return expressions.stream().map(Expression::evaluate).collect(Collectors.toList());
+			activeExpression = next;
+			return tables;
 		} catch(RuntimeException t) {
 			activeExpression = new Expression(false);
 			throw t;
@@ -79,19 +82,19 @@ public class Pinto {
 					e.addFunction(toTableConsumer(new tech.pinto.Column.OfConstantDates(LocalDate.parse(sc.next(DATE_LITERAL)))));
 				} else { // name
 					String n = sc.next();
-					Consumer<Table> c = t -> {
-						Name name = namespace.getName(n);
-						name.getIndexer(this).accept(t);
-						name.getFunction().accept(this, t);
-					};
+					e.addFunction((p, t) -> {
+						namespace.getName(n).getIndexer(this).accept(p, t);
+					});
 					Name name = namespace.getName(n);
 					if(!name.isTerminal()) {
 						if(!name.isBuiltIn()) {
 							e.getDependencies().add(name.toString());
 						}
-						e.addFunction(c);
+						e.addFunction((p,t) -> {
+							namespace.getName(n).getTableFunction().accept(p, t);
+						});
 					} else {
-						e.addTerminal(c, name.isSkipEvaluation());
+						e.setTerminal(name.getTerminalFunction());
 						responses.add(e);
 						e = new Expression(false);
 					}
@@ -106,10 +109,6 @@ public class Pinto {
 		return namespace;
 	}
 	
-	public Expression getExpression() {
-		return activeExpression;
-	}
-	
 	public void setPort(int port) {
 		Pinto.port = port;
 	}
@@ -118,15 +117,15 @@ public class Pinto {
 		return port;
 	}
 	
-	public static Consumer<Table> toTableConsumer(Column<?> col) {
-		return toTableConsumer(s -> s.addFirst(col));
+	public static TableFunction toTableConsumer(Column<?> col) {
+		return toTableConsumer((p,s) -> s.addFirst(col));
 	}
 
-	public static Consumer<Table> toTableConsumer(Consumer<LinkedList<Column<?>>> colsFunction) {
-		return t -> {
+	public static TableFunction toTableConsumer(StackFunction colsFunction) {
+		return (p, t) -> {
 			List<LinkedList<Column<?>>> stacksBefore = t.takeTop();
 			for(LinkedList<Column<?>> s : stacksBefore) {
-				colsFunction.accept(s);
+				colsFunction.accept(p, s);
 			}
 			t.insertAtTop(stacksBefore);
 		};
@@ -139,14 +138,11 @@ public class Pinto {
 		return name;
 	}
 	
-	@FunctionalInterface
-	public static interface TableFunction {
-		public void accept(Pinto pinto, Table table);
-	}
+	public static interface TerminalFunction extends BiFunction<Pinto,Expression,Table> {}
+	public static interface TableFunction extends BiConsumer<Pinto,Table> {}
 
 	@FunctionalInterface
-	public static interface StackFunction {
-		public void accept(Pinto pinto, LinkedList<Column<?>> stack);
+	public static interface StackFunction extends BiConsumer<Pinto,LinkedList<Column<?>>> {
 		default TableFunction toTableFunction() {
 			return (p,t) -> {
 				List<LinkedList<Column<?>>> inputs = t.takeTop();
@@ -159,66 +155,64 @@ public class Pinto {
 		}
 	}
 	
-	public static class Expression implements Consumer<Table> {
+	public static class Expression implements TableFunction {
 		
 		private final boolean isSubExpression;
-		private boolean isNullary = false;
-		private ArrayList<Consumer<Table>>  functions = new ArrayList<>();
+		private ArrayList<TableFunction>  functions = new ArrayList<>();
+		private	Optional<Indexer> indexer = null;
+		private	Optional<TerminalFunction> terminalFunction = Optional.empty();
 		private Set<String> dependencies = new HashSet<>();
 		private StringBuilder text = new StringBuilder();
 		private	Optional<String> nameLiteral = Optional.empty();
-		private	Optional<Consumer<Table>> terminalFunction = Optional.empty();
-		private boolean skipEvaluation;
 		
 		public Expression(boolean isSubExpression) {
 			this.isSubExpression = isSubExpression;
 		}
 
-		public Table evaluate() {
-			Consumer<Table> f = terminalFunction.orElseThrow(() -> new PintoSyntaxException("Need terminal to evaluate expression."));
-			Table t = new Table();
-			if(!skipEvaluation) {
-				accept(t);
+		public Table evaluate(Pinto pinto) {
+			if(!terminalFunction.isPresent()) {
+				throw new PintoSyntaxException("Need terminal to evaluate expression.");
 			}
-			f.accept(t);
-			return t;
+			return terminalFunction.get().apply(pinto, this);
 		}
 
 		@Override
-		public void accept(Table t) {
-			for(int i = 0; i < functions.size(); i++) {
-				functions.get(i).accept(t);
+		public void accept(Pinto pinto, Table table) {
+			try {
+				this.indexer.orElse(new Indexer(true)).accept(pinto, table);
+				for(int i = 0; i < functions.size(); i++) {
+					functions.get(i).accept(pinto, table);
+				}
+				table.collapseFunction();
+			} catch(RuntimeException e) {
+				throw new PintoSyntaxException("Error in expression: \"" + getText() + "\": ",e);
 			}
-			t.collapseFunction();
 		}
 		
 		public void addIndexer(Indexer indexer) {
-			if(functions.isEmpty()) {
-				isNullary = indexer.isNone();
+			if(this.indexer == null) {
 				indexer.setIndexForExpression();
+				this.indexer = Optional.of(indexer);
+			} else {
+				functions.add(indexer);
 			}
-			functions.add(indexer);
 		}
 
-		public void addFunction(Consumer<Table> function) {
-			if(functions.isEmpty() && !isSubExpression) {
-				isNullary = true;
-				Indexer i = new Indexer();
-				i.setIndexForExpression();
-				functions.add(i);
+		public void addFunction(TableFunction function) {
+			if(this.indexer == null) {
+				this.indexer = Optional.empty();
 			}
 			functions.add(function);
 		}
 
-		public void addTerminal(Consumer<Table> function, boolean skipEvaluation) {
+		public void setTerminal(TerminalFunction function) {
 			if(isSubExpression) {
 				throw new PintoSyntaxException("Sub-expressions cannot include terminal functions");
 			}
 			this.terminalFunction = Optional.of(function);
-			this.skipEvaluation = skipEvaluation;
 		}
 
-		public ArrayList<Consumer<Table>> getFunctions() {
+		public ArrayList<TableFunction> getFunctions() {
 			return functions;
 		}
 		
@@ -227,7 +221,7 @@ public class Pinto {
 		}
 
 		public boolean isNullary() {
-			return isNullary;
+			return (!indexer.isPresent()) || indexer.get().isNone();
 		}
 
 		public Set<String> getDependencies() {

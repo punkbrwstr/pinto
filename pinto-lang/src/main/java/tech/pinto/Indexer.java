@@ -7,22 +7,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import tech.pinto.Pinto.Expression;
+import tech.pinto.Pinto.TableFunction;
 
-public class Indexer implements Cloneable, Consumer<Table> {
+public class Indexer implements Cloneable, TableFunction {
 
 	private final List<Index> indexes = new ArrayList<>();
 	private final String indexString;
 	private boolean indexForExpression = false;
 
-	public Indexer() {
+	public Indexer(boolean indexForExpression) {
 		indexString = "";
 		indexes.add(new Index(null,null,""));
+		this.indexForExpression = indexForExpression;
 	}
 
 	public Indexer(Pinto pinto, Set<String> dependencies, String indexString)  {
@@ -72,17 +73,17 @@ public class Indexer implements Cloneable, Consumer<Table> {
 		this.indexForExpression = true;
 	}
 
-	public void accept(Table t) {
+	public void accept(Pinto pinto, Table t) {
 		LinkedList<LinkedList<Column<?>>> unused = new LinkedList<>();
 		LinkedList<LinkedList<Column<?>>> indexed = new LinkedList<>();
 
 		for (LinkedList<Column<?>> stack : t.takeTop()) {
 			List<StackOperation> ops = new ArrayList<>();
-			indexed.addLast(operate(stack, ops));
+			indexed.addLast(operate(pinto, stack, ops));
 			Index last = indexes.get(indexes.size() - 1);
 			while (last.isRepeat() && stack.size() > 0) {
 				try {
-					indexed.addLast(operate(stack, last.index(stack)));
+					indexed.addLast(operate(pinto, stack, last.index(stack)));
 				} catch (IllegalArgumentException pse) {
 					break;
 				}
@@ -94,7 +95,7 @@ public class Indexer implements Cloneable, Consumer<Table> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private LinkedList<Column<?>> operate(LinkedList<Column<?>> stack, List<StackOperation> ops) {
+	private LinkedList<Column<?>> operate(Pinto pinto, LinkedList<Column<?>> stack, List<StackOperation> ops) {
 		for(int i = 0; i < indexes.size(); i++) {
 			ops.addAll(indexes.get(i).index(stack));
 		}
@@ -127,11 +128,11 @@ public class Indexer implements Cloneable, Consumer<Table> {
 		for (StackOperation o : ops) {
 			if (o.isAlternative()) {
 				Table t = new Table();
-				o.getAlternativeExpression().accept(t);
+				o.getAlternativeExpression().accept(pinto, t);
 				indexed.addAll(t.flatten());
 				if (o.isCopy()) {
 					t = new Table();
-					o.getAlternativeExpression().accept(t);
+					o.getAlternativeExpression().accept(pinto, t);
 					stack.addAll(t.flatten());
 				}
 			} else if ((!alreadyUsed.contains(o.getOrdinal())) && !o.skip()) {

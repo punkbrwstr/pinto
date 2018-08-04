@@ -32,7 +32,6 @@ import tech.pinto.time.PeriodicRange;
 	FunctionTester.class,
     IndexTester.class,
     SyntaxTester.class,
-	SearchableMultiMapTester.class,
 	WindowTester.class
 })
 public class AllTests {

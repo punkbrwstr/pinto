@@ -56,7 +56,7 @@ public class Servlet extends HttpServlet {
 			os.print(reportTop.get());
 			Table t = new Table();
 			pinto.getNamespace().getName("~report-" + request.getParameter("p"))
-					.getFunction().accept(pinto, t);
+					.getTableFunction().accept(pinto, t);
 			for(Column<?> c : t.flatten()) {
 				os.print(((Column.OfConstantStrings) c).getValue());
 			}

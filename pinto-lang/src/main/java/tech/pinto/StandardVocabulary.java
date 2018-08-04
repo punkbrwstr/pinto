@@ -1,6 +1,7 @@
 package tech.pinto;
 
 import static tech.pinto.Name.nameBuilder;
+import static tech.pinto.Name.terminalNameBuilder;
 import static tech.pinto.Column.*;
 
 import java.awt.Desktop;
@@ -44,6 +45,7 @@ import java.util.stream.IntStream;
 import tech.pinto.Column.ConstantColumn;
 import tech.pinto.Column.RowsFunction;
 import tech.pinto.Column.RowsFunctionGeneric;
+import tech.pinto.Pinto.Expression;
 import tech.pinto.Pinto.StackFunction;
 import tech.pinto.Window.Expanding;
 import tech.pinto.Window.Rolling;
@@ -59,36 +61,24 @@ public class StandardVocabulary extends Vocabulary {
 	
 	public StandardVocabulary() {
 		names = new ArrayList<>(Arrays.asList(
-			nameBuilder("def", StandardVocabulary::def)
-				.description("Defines the expression as the preceding name literal.")
-				.terminal()
-				.skipEvaluation(),
-			nameBuilder("undef", StandardVocabulary::undef)
-				.description("Defines the expression as the preceding name literal.")
-				.terminal()
-				.skipEvaluation(),
-			nameBuilder("help", StandardVocabulary::help)
-				.description("Prints help for the preceding name literal or all names if one has not been specified.")
-				.terminal()
-				.skipEvaluation(),
-			nameBuilder("list", StandardVocabulary::list)
-				.description("Shows description for all names.")
-				.terminal()
-				.skipEvaluation(),
-			nameBuilder("eval", StandardVocabulary::eval)
+			terminalNameBuilder("def", StandardVocabulary::def)
+				.description("Defines the expression as the preceding name literal."),
+			terminalNameBuilder("undef", StandardVocabulary::undef)
+				.description("Defines the expression as the preceding name literal."),
+			terminalNameBuilder("help", StandardVocabulary::help)
+				.description("Prints help for the preceding name literal or all names if one has not been specified."),
+			terminalNameBuilder("list", StandardVocabulary::list)
+				.description("Shows description for all names."),
+			terminalNameBuilder("eval", StandardVocabulary::eval)
 				.description("Evaluates the expression over date range between two *date* columns over *periodicity*.")
-				.indexer("[periodicity=B,date=today today,:]")
-				.terminal(),
-			nameBuilder("import", StandardVocabulary::imp)
-				.description("Executes pinto expressions contained files specified by file names in string columns.")
-				.terminal(),
-			nameBuilder("to_csv", StandardVocabulary::to_csv)
+				.indexer("[periodicity=B,date=today today,:]"),
+			terminalNameBuilder("import", StandardVocabulary::imp)
+				.description("Executes pinto expressions contained files specified by file names in string columns."),
+			terminalNameBuilder("to_csv", StandardVocabulary::to_csv)
 				.indexer("[filename,periodicity=B,date=today today,:]")
-				.description("Evaluates the expression over the date range specified by *start, *end* and *freq* columns, exporting the resulting table to csv *filename*.")
-				.terminal(),
-			nameBuilder("report", StandardVocabulary::report)
+				.description("Evaluates the expression over the date range specified by *start, *end* and *freq* columns, exporting the resulting table to csv *filename*."),
+			terminalNameBuilder("report", StandardVocabulary::report)
 				.indexer("[HTML]")
-				.terminal()
 				.description("Creates an HTML report from any columns labelled HTML."),
 
 
@@ -355,22 +345,21 @@ public class StandardVocabulary extends Vocabulary {
 	}
 	
 
-	private static final void def(Pinto pinto, Table t) {
-		t.setStatus("Defined " + pinto.getNamespace().define(pinto, pinto.getExpression()));
+	private static final Table def(Pinto pinto, Expression expression) {
+		return new Table("Defined " + pinto.getNamespace().define(pinto, expression));
 	}
 
-	private static void undef(Pinto pinto, Table t) {
-		String name = pinto.getExpression().getNameLiteral()
-				.orElseThrow(() -> new PintoSyntaxException("del requires a name literal."));
+	private static Table undef(Pinto pinto, Expression e) {
+		String name = e.getNameLiteral() .orElseThrow(() -> new PintoSyntaxException("del requires a name literal."));
 		pinto.getNamespace().undefine(name);
-		t.setStatus("Undefined " + name);
+		return new Table("Undefined " + name);
 	}
 
-	private static void help(Pinto pinto, Table t) {
+	private static Table help(Pinto pinto, Expression e) {
 		StringBuilder sb = new StringBuilder();
 		String crlf = System.getProperty("line.separator");
-		if (pinto.getExpression().getNameLiteral().isPresent()) {
-			String n = pinto.getExpression().getNameLiteral().get();
+		if (e.getNameLiteral().isPresent()) {
+			String n = e.getNameLiteral().get();
 			sb.append(pinto.getNamespace().getName(n).getHelp(n)).append(crlf);
 		} else {
 			sb.append("Pinto help").append(crlf);
@@ -390,20 +379,22 @@ public class StandardVocabulary extends Vocabulary {
 			}
 			sb.append(crlf).append("For help with a specific function type \":function help\"").append(crlf);
 		}
-		t.setStatus(sb.toString());
+		return new Table(sb.toString());
 	}
 
-	private static void list(Pinto pinto, Table t) {
+	private static Table list(Pinto pinto, Expression e) {
 		StringBuilder sb = new StringBuilder();
 		String crlf = System.getProperty("line.separator");
 		pinto.getNamespace().getNames().stream().map(s -> pinto.getNamespace().getName(s)).forEach(name -> {
 			sb.append(name.toString()).append("|").append(name.getIndexString()).append("|")
 					.append(name.getDescription()).append(crlf);
 		});
-		t.setStatus(sb.toString());
+		return new Table(sb.toString());
 	}
 
-	private static void eval(Pinto pinto, Table t) {
+	private static Table eval(Pinto pinto, Expression e) {
+		Table t = new Table();
+		e.accept(pinto, t);
 		LinkedList<Column<?>> s = t.flatten();
 		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
 		LinkedList<LocalDate> dates = new LinkedList<>();
@@ -411,19 +402,29 @@ public class StandardVocabulary extends Vocabulary {
 			dates.add(((Column.OfConstantDates) s.removeFirst()).getValue());
 		}
 		t.evaluate(periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek()));
+		return t;
 	}
 
-	private static void imp(Pinto pinto, Table t) {
+	private static Table imp(Pinto pinto, Expression expression) {
+		Table t = new Table();
+		expression.accept(pinto, t);
 		for (LinkedList<Column<?>> s : t.takeTop()) {
 			while (!s.isEmpty()) {
 				String filename = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 				int lineNumber = 0;
 				try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
 					String line = null;
-					pinto.activeExpression = new Pinto.Expression(false);
+					Pinto.Expression e = new Pinto.Expression(false);
 					while ((line = reader.readLine()) != null) {
 						lineNumber++;
-						pinto.evaluate(line);
+						List<Pinto.Expression> expressions =  pinto.parse(line, e);
+						Expression next = expressions.size() > 0 
+								&& !expressions.get(expressions.size()-1).hasTerminal() ?
+										expressions.remove(expressions.size()-1) : new Expression(false);
+						for(int i = 0; i < expressions.size(); i++) {
+							expressions.get(i).evaluate(pinto);
+						}
+						e = next;
 					}
 				} catch (FileNotFoundException e) {
 					throw new IllegalArgumentException("Cannot find pinto file \"" + filename + "\" to execute");
@@ -436,10 +437,12 @@ public class StandardVocabulary extends Vocabulary {
 				}
 			}
 		}
-		t.setStatus("Successfully executed");
+		return new Table("Successfully executed");
 	}
 
-	private static void to_csv(Pinto pinto, Table t) {
+	private static Table to_csv(Pinto pinto, Expression e) {
+		Table t = new Table();
+		e.accept(pinto, t);
 		LinkedList<Column<?>> s = t.flatten();
 		String filename = castColumn(s.removeFirst(),OfConstantStrings.class).getValue();
 		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
@@ -450,26 +453,22 @@ public class StandardVocabulary extends Vocabulary {
 		t.evaluate(periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek()));
 		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)))) {
 			out.print(t.toCsv());
-		} catch (IOException e) {
+		} catch (IOException err) {
 			throw new IllegalArgumentException("Unable to open file \"" + filename + "\" for export");
 		}
-		t.setStatus("Successfully exported");
+		return new Table("Successfully exported");
 	}
 
-	private static void report(Pinto pinto, Table t) {
-		Pinto.Expression e = new Pinto.Expression(false);
-		final LinkedList<Column<?>> stackCopy = new LinkedList<>();
-		stackCopy.addAll(t.takeTop().get(0));
-		e.addFunction(Pinto.toTableConsumer(s -> s.addAll(stackCopy)));
+	private static Table report(Pinto pinto, Expression e) {
 		String id = getId();
 		e.setNameLiteral("~report-" + id);
 		pinto.getNamespace().define(pinto, e);
-		t.setStatus("Report id: " + id);
 		try {
 			Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + pinto.getPort() + "/pinto/report?p=" + id));
 		} catch (Exception err) {
 			throw new PintoSyntaxException("Unable to open report", err);
 		}
+		return new Table("Report id: " + id);
 	}
 
 	private static void only(Pinto pinto, Table t) {
@@ -510,7 +509,7 @@ public class StandardVocabulary extends Vocabulary {
 		s.addFirst(new OfConstantDoubles(s.size()));
 	}
 
-	private static void index(Pinto p, Table t) {
+	private static void index(Pinto pinto, Table t) {
 		LinkedList<Column<?>> s = t.takeTop().get(0);
 		List<String> endpoints = new LinkedList<>();
 		while (!s.isEmpty() && endpoints.size() < 2 && s.peekFirst().getHeader().equals("c")) {
@@ -519,7 +518,7 @@ public class StandardVocabulary extends Vocabulary {
 		}
 		t.insertAtTop(s);
 		String index = endpoints.size() == 1 ? ":" + endpoints.get(0) : endpoints.get(1) + ":" + endpoints.get(0);
-		new Indexer(p, new HashSet<>(),index).accept(t);
+		new Indexer(pinto, new HashSet<>(),index).accept(pinto, t);
 	}
 
 	private static void today(Pinto p, LinkedList<Column<?>> s) {
@@ -562,7 +561,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static void mkt(Pinto pinto, LinkedList<Column<?>> s) {
 		String tickers = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 		String fields = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
-		pinto.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(s);
+		pinto.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(pinto,s);
 	}
 
 	private static void pi(Pinto pinto, LinkedList<Column<?>> s) {
@@ -812,7 +811,7 @@ public class StandardVocabulary extends Vocabulary {
 		final LinkedList<Column<?>> s3 = new LinkedList<>();
 		s3.addAll(s);
 		s.clear();
-		e.addFunction(Pinto.toTableConsumer(s2 -> s2.addAll(s3)));
+		e.addFunction(Pinto.toTableConsumer((p, s2) -> s2.addAll(s3)));
 		String id = "~chart-" + getId();
 		e.setNameLiteral(id);
 		pinto.getNamespace().define(pinto, e);
@@ -899,64 +898,65 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void rt(Pinto pinto, LinkedList<Column<?>> s) {
-//		LinkedList<String> functions = new LinkedList<>();
-//		while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("functions")) {
-//			functions.addFirst(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
-//		}
-//		NumberFormat nf = castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
-//				? NumberFormat.getPercentInstance()
-//				: NumberFormat.getNumberInstance();
-//		int digits = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().intValue();
-//		nf.setMaximumFractionDigits(digits);
-//		int columns = functions.size();
-//		int rows = s.size();
-//		String[] labels = new String[rows];
-//		String[] headers = new String[columns];
-//		String[][] cells = new String[rows][columns];
-//		for (int i = 0; i < columns; i++) {
-//			double[][] values = new double[s.size()][2];
-//			for (int j = 0; j < s.size(); j++) {
-//				Pinto.Expression expression = new Pinto.Expression(false);
-//				final int J = j;
-//				expression.addFunction(Pinto.toTableConsumer(stack -> {
-//					stack.add(s.get(J).clone());
-//				}));
-//				Table t = pinto.parse(functions.get(i), expression).get(0);
-//				double[][] d = t.toColumnMajorArray();
-//				values[j][0] = d[0][d[0].length - 1];
-//				values[j][1] = (int) j;
-//				if (j == 0) {
-//					headers[i] = t.getHeaders(false, false).get(0);
-//				}
-//				if (i == 0) {
-//					labels[j] = s.get(j).getHeader();
-//				}
-//			}
-//
-//			Arrays.sort(values, (c1, c2) -> c1[0] == c2[0] ? 0 : c1[0] < c2[0] ? 1 : -1);
-//			for (int j = 0; j < values.length; j++) {
-//				StringBuilder sb = new StringBuilder();
-//				sb.append("\t<td id=\"rankingColor").append((int) values[j][1]).append("\" class=\"rankingTableCell\">")
-//						.append(labels[(int) values[j][1]]).append(": ").append(nf.format(values[j][0]))
-//						.append("</td>\n");
-//				cells[j][i] = sb.toString();
-//			}
-//		}
-//		StringBuilder sb = new StringBuilder();
-//		sb.append("<table class=\"rankingTable\">\n<thead>\n");
-//		Arrays.stream(headers)
-//				.forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
-//		sb.append("</thead>\n<tbody>\n");
-//		for (int i = 0; i < cells.length; i++) {
-//			sb.append("<tr>\n");
-//			for (int j = 0; j < columns; j++) {
-//				sb.append(cells[i][j]);
-//			}
-//			sb.append("</tr>\n");
-//		}
-//		sb.append("</tbody></table>\n");
-//		s.clear();
-//		s.add(new OfConstantStrings(sb.toString(), "HTML"));
+		LinkedList<String> functions = new LinkedList<>();
+		while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("functions")) {
+			functions.addFirst(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
+		}
+		NumberFormat nf = castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
+				? NumberFormat.getPercentInstance()
+				: NumberFormat.getNumberInstance();
+		int digits = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		nf.setMaximumFractionDigits(digits);
+		int columns = functions.size();
+		int rows = s.size();
+		String[] labels = new String[rows];
+		String[] headers = new String[columns];
+		String[][] cells = new String[rows][columns];
+		for (int i = 0; i < columns; i++) {
+			double[][] values = new double[s.size()][2];
+			for (int j = 0; j < s.size(); j++) {
+				Pinto.Expression expression = new Pinto.Expression(false);
+				final int J = j;
+				expression.addFunction(Pinto.toTableConsumer((p, stack) -> {
+					stack.add(s.get(J).clone());
+				}));
+				pinto.parse(functions.get(i), expression);
+				Table t = expression.evaluate(pinto);
+				double[][] d = t.toColumnMajorArray();
+				values[j][0] = d[0][d[0].length - 1];
+				values[j][1] = (int) j;
+				if (j == 0) {
+					headers[i] = t.getHeaders(false, false).get(0);
+				}
+				if (i == 0) {
+					labels[j] = s.get(j).getHeader();
+				}
+			}
+
+			Arrays.sort(values, (c1, c2) -> c1[0] == c2[0] ? 0 : c1[0] < c2[0] ? 1 : -1);
+			for (int j = 0; j < values.length; j++) {
+				StringBuilder sb = new StringBuilder();
+				sb.append("\t<td id=\"rankingColor").append((int) values[j][1]).append("\" class=\"rankingTableCell\">")
+						.append(labels[(int) values[j][1]]).append(": ").append(nf.format(values[j][0]))
+						.append("</td>\n");
+				cells[j][i] = sb.toString();
+			}
+		}
+		StringBuilder sb = new StringBuilder();
+		sb.append("<table class=\"rankingTable\">\n<thead>\n");
+		Arrays.stream(headers)
+				.forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
+		sb.append("</thead>\n<tbody>\n");
+		for (int i = 0; i < cells.length; i++) {
+			sb.append("<tr>\n");
+			for (int j = 0; j < columns; j++) {
+				sb.append(cells[i][j]);
+			}
+			sb.append("</tr>\n");
+		}
+		sb.append("</tbody></table>\n");
+		s.clear();
+		s.add(new OfConstantStrings(sb.toString(), "HTML"));
 
 	}
 

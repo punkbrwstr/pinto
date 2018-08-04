@@ -5,35 +5,30 @@ import java.util.Optional;
 
 import tech.pinto.Pinto.StackFunction;
 import tech.pinto.Pinto.TableFunction;
+import tech.pinto.Pinto.TerminalFunction;
 
 public class Name {
 
 	final private String name;
-	final private Pinto.TableFunction function;
+	final private Optional<TableFunction> tableFunction;
+	final private Optional<TerminalFunction> terminalFunction;
 	final private Optional<String> indexString;
-	final private boolean isTerminal;
 	final private boolean isBuiltIn;
-	final private boolean isSkipEvaluation;
 	final private String description;
 	private Indexer indexer = null;
-
-	public Name(String name, Pinto.TableFunction function, Optional<String> indexer,
-			boolean isTerminal, boolean isBuiltIn, boolean isSkipEvaluation, String description) {
-		this.name = name;
-		this.function = function;
-		this.indexString = indexer;
-		this.isTerminal = isTerminal;
-		this.description = description;
-		this.isBuiltIn = isBuiltIn;
-		this.isSkipEvaluation = isSkipEvaluation;
-	}
 	
+	public Name(String name, Optional<TableFunction> tableFunction, Optional<TerminalFunction> terminalFunction,
+			Optional<String> indexString, boolean isBuiltIn, String description) {
+		this.name = name;
+		this.tableFunction = tableFunction;
+		this.terminalFunction = terminalFunction;
+		this.indexString = indexString;
+		this.isBuiltIn = isBuiltIn;
+		this.description = description;
+	}
+
 	public String getName() {
 		return name;
-	}
-
-	public Pinto.TableFunction getFunction() {
-		return function;
 	}
 
 	public Indexer getIndexer(Pinto pinto) {
@@ -44,16 +39,21 @@ public class Name {
 		return indexer;
 	}
 
+
+	public TableFunction getTableFunction() {
+		return tableFunction.get();
+	}
+
+	public TerminalFunction getTerminalFunction() {
+		return terminalFunction.get();
+	}
+
 	public boolean isTerminal() {
-		return isTerminal;
+		return terminalFunction.isPresent();
 	}
 
 	public boolean isBuiltIn() {
 		return isBuiltIn;
-	}
-
-	public boolean isSkipEvaluation() {
-		return isSkipEvaluation;
 	}
 
 	public String getDescription() {
@@ -87,22 +87,29 @@ public class Name {
 	public static Builder nameBuilder(String name, TableFunction function) {
 		return new Builder(name, function);
 	}
+
+	public static Builder terminalNameBuilder(String name, TerminalFunction function) {
+		return new Builder(name, function);
+	}
 	
 	public static class Builder {
-		final private String name;
-		final private Pinto.TableFunction function;
+		private final String name;
+		private final Optional<TableFunction> tableFunction;
+		private final Optional<TerminalFunction> terminalFunction;
 		private Optional<String> indexer = Optional.empty();
-		private boolean isTerminal;
-		private boolean isBuiltIn;
-		private boolean isSkipEvaluation;
-		private String description;
+		private boolean isBuiltIn = true;
+		private String description = "";
 
-		public Builder(String name, TableFunction function) {
+		public Builder(String name, TableFunction tableFunction) {
 			this.name = name;
-			this.function = function;
-			this.isBuiltIn = true;
-			this.isTerminal = false;
-			this.isSkipEvaluation = false;
+			this.tableFunction = Optional.of(tableFunction);
+			this.terminalFunction = Optional.empty();
+		}
+
+		public Builder(String name, TerminalFunction terminalFunction) {
+			this.name = name;
+			this.terminalFunction = Optional.of(terminalFunction);
+			this.tableFunction = Optional.empty();
 		}
 		
 		public Builder indexer(String index) {
@@ -115,23 +122,13 @@ public class Name {
 			return this;
 		}
 
-		public Builder terminal() {
-			this.isTerminal = true;
-			return this;
-		}
-
 		public Builder defined() {
 			this.isBuiltIn = false;
 			return this;
 		}
 
-		public Builder skipEvaluation() {
-			this.isSkipEvaluation = true;
-			return this;
-		}
-
 		public Name build() {
-			return new Name(name, function, indexer, isTerminal, isBuiltIn, isSkipEvaluation, description);
+			return new Name(name, tableFunction, terminalFunction, indexer, isBuiltIn, description);
 		}
 		
 		
