@@ -145,7 +145,7 @@ public interface Window<T extends Window<T>> {
 				@Override
 				public double get(int i) {
 					int index = i + offset;
-					return index < 0 ? Double.NaN : d[offset];
+					return index < 0 ? Double.NaN : d[index];
 				}
 
 				@Override
@@ -224,7 +224,7 @@ public interface Window<T extends Window<T>> {
 
 				@Override
 				public double get(int i) {
-					return d[v];
+					return d[v + i];
 				}
 
 				@Override
