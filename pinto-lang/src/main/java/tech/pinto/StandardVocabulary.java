@@ -183,6 +183,7 @@ public class StandardVocabulary extends Vocabulary {
 			getStatisticName("pct_change", () -> Window.PercentChange),
 			getStatisticName("min", () -> new Window.Min()),
 			getStatisticName("max", () -> new Window.Max()),
+			getStatisticName("product", () -> new Window.Product()),
 			
 	/* reporting */
 			nameBuilder("grid", StandardVocabulary::grid)
@@ -683,6 +684,9 @@ public class StandardVocabulary extends Vocabulary {
 			cutoverDates.add(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
 		}
 		OfDoubles[] inputStack = s.toArray(new OfDoubles[] {});
+		if(inputStack.length == 0) {
+			throw new PintoSyntaxException("No columns to join.");
+		}
 		s.clear();
 		Function<LinkedList<LocalDate>, RowsFunctionGeneric<double[]>> joinRowFunction = cd -> {
 			return new RowsFunctionGeneric<double[]>() {

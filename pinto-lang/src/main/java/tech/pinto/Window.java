@@ -362,12 +362,14 @@ public interface Window<T extends Window<T>> {
 		protected double sum = 0;
 		protected double sumOfSquares = 0;
 		protected double count = 0;
+		protected double product = 1;
 
 		protected void accumulate(View v) {
 			if(v.reset()) {
 				sum = 0;
 				sumOfSquares = 0;
 				count = 0;
+				product = 1;
 			} else {
 				Array subtractions = v.subtractions();
 				for(int i = 0; i < subtractions.size(); i++) {
@@ -376,6 +378,7 @@ public interface Window<T extends Window<T>> {
 						count--;
 						sum -= d;
 						sumOfSquares -= d * d;
+						product /= d;
 					}
 				}
 			}
@@ -386,6 +389,7 @@ public interface Window<T extends Window<T>> {
 					count++;
 					sum += d;
 					sumOfSquares += d * d;
+					product *= d;
 				}
 			}
 		}
@@ -397,6 +401,16 @@ public interface Window<T extends Window<T>> {
 		public double update(View v) {
 			accumulate(v);
 			return sum;
+		}
+		
+	}
+
+	public static class Product extends Accumulator {
+
+		@Override
+		public double update(View v) {
+			accumulate(v);
+			return product;
 		}
 		
 	}
@@ -477,7 +491,7 @@ public interface Window<T extends Window<T>> {
 	public static class Max extends RankingStatistic {
 		@Override
 		protected double get() {
-			return t.lastKey();
+			return t.isEmpty() ? Double.NaN : t.lastKey();
 		}
 	}
 
@@ -485,7 +499,7 @@ public interface Window<T extends Window<T>> {
 
 		@Override
 		protected double get() {
-			return t.firstKey();
+			return t.isEmpty() ? Double.NaN : t.firstKey();
 		}
 		
 	}
