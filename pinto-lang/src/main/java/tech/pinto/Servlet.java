@@ -115,14 +115,20 @@ public class Servlet extends HttpServlet {
 			nf.setGroupingUsed(false);
             nf.setMinimumFractionDigits(1);
             nf.setMaximumFractionDigits(8);
-			List<Table> l = pinto.evaluate(request.getParameter("p"));
-			if(l.size() > 0) {
-				if(!l.get(l.size() - 1).getStatus().isPresent()) {
-					response.getOutputStream().print(l.get(l.size()-1).toCsv(nf));
-				} else {
-					response.getOutputStream().print("Output\n" + l.get(l.size()-1).getStatus().orElse("") + "\n");
-				}
+			//List<Table> l = pinto.evaluate(request.getParameter("p"));
+			Table t = pinto.parse(request.getParameter("p"), new Pinto.Expression(false)).get(0).evaluate(pinto);
+			if(!t.getStatus().isPresent()) {
+				response.getOutputStream().print(t.toCsv(nf));
+			} else {
+				response.getOutputStream().print("Output\n" + t.getStatus().orElse("") + "\n");
 			}
+//			if(l.size() > 0) {
+//				if(!l.get(l.size() - 1).getStatus().isPresent()) {
+//					response.getOutputStream().print(l.get(l.size()-1).toCsv(nf));
+//				} else {
+//					response.getOutputStream().print("Output\n" + l.get(l.size()-1).getStatus().orElse("") + "\n");
+//				}
+//			}
 		} catch (Exception e) {
 			logError(e, request);
 			response.getOutputStream().print("Error\n" + e.getMessage() + "\n");

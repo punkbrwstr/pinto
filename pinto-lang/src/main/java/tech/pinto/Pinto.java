@@ -29,26 +29,29 @@ public class Pinto {
 	@Inject	
 	MarketData marketdata;
 	private Expression activeExpression = new Expression(false);
+	private final Object activeExpressionLock = new Object();
 
 	@Inject
 	public Pinto() {
 	}
 	
 	public List<Table> evaluate(String toEvaluate) {
-		try {
-			List<Expression> expressions =  parse(toEvaluate, activeExpression);
-			Expression next = expressions.size() > 0 
-					&& !expressions.get(expressions.size()-1).hasTerminal() ?
-							expressions.remove(expressions.size()-1) : new Expression(false);
-			List<Table> tables =  new ArrayList<>();
-			for(int i = 0; i < expressions.size(); i++) {
-				tables.add(expressions.get(i).evaluate(this));
+		synchronized(activeExpressionLock) {
+			try {
+				List<Expression> expressions =  parse(toEvaluate, activeExpression);
+				Expression next = expressions.size() > 0 
+						&& !expressions.get(expressions.size()-1).hasTerminal() ?
+								expressions.remove(expressions.size()-1) : new Expression(false);
+				List<Table> tables =  new ArrayList<>();
+				for(int i = 0; i < expressions.size(); i++) {
+					tables.add(expressions.get(i).evaluate(this));
+				}
+				activeExpression = next;
+				return tables;
+			} catch(RuntimeException t) {
+				activeExpression = new Expression(false);
+				throw t;
 			}
-			activeExpression = next;
-			return tables;
-		} catch(RuntimeException t) {
-			activeExpression = new Expression(false);
-			throw t;
 		}
 	}
 
