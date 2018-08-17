@@ -5,15 +5,12 @@ import static tech.pinto.Name.terminalNameBuilder;
 import static tech.pinto.Column.*;
 
 import java.awt.Desktop;
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.URI;
@@ -53,11 +50,11 @@ import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
+import tech.pinto.tools.Chart;
 
 public class StandardVocabulary extends Vocabulary {
     
     protected final List<Name.Builder> names;
-	private static Optional<MessageFormat> chartHTML = Optional.empty();
 	
 	public StandardVocabulary() {
 		names = new ArrayList<>(Arrays.asList(
@@ -192,8 +189,8 @@ public class StandardVocabulary extends Vocabulary {
 			nameBuilder("table", StandardVocabulary::table)
 				.indexer("[periodicity=B, date=-20 offset today,format=\"decimal\",row_header=\"date\",col_headers=\"true\",:]")
 				.description("Creates a const string column with code for a table defined by input columns and with header HTML."),
-			nameBuilder("chart", StandardVocabulary::chart)
-				.indexer("[title=\"\",options=\"\",periodicity=B, date=-20 offset today,:]")
+			nameBuilder("chart", StandardVocabulary::chartSVG)
+				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,periodicity=B, date=-20 offset today,:]")
 				.description("Creates a const string column with code for an HTML chart."),
 			nameBuilder("rt", StandardVocabulary::rt)
 				.indexer("[functions=\" BA-DEC offset expanding pct_change {YTD} today today eval\",format=\"percent\",digits=2,:]")
@@ -808,34 +805,19 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 
-	private static void chart(Pinto pinto, LinkedList<Column<?>> s) {
-		String title = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
-		String options = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
+	private static void chartSVG(Pinto pinto, LinkedList<Column<?>> stack) {
+		String title = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		String dateFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
 		Pinto.Expression e = new Pinto.Expression(false);
-		final LinkedList<Column<?>> s3 = new LinkedList<>();
-		s3.addAll(s);
-		s.clear();
-		e.addFunction(Pinto.toTableConsumer((p, s2) -> s2.addAll(s3)));
-		String id = "~chart-" + getId();
-		e.setNameLiteral(id);
-		pinto.getNamespace().define(pinto, e);
-		String url = "http://127.0.0.1:" + pinto.getPort() + "/pinto/csv?p=" + id + "%20eval";
-		if (!chartHTML.isPresent()) {
-			try {
-				chartHTML = Optional.of(new MessageFormat(readInputStreamIntoString(
-						(StandardVocabulary.class.getClassLoader().getResourceAsStream("report_chart.html")))));
-			} catch (IOException ioe) {
-				throw new PintoSyntaxException("Unable to open chart html template", ioe);
-			}
-		}
-		NumberFormat nf = NumberFormat.getInstance();
-		nf.setGroupingUsed(false);
-		nf.setMinimumFractionDigits(2);
-		nf.setMaximumFractionDigits(6);
-		String html = chartHTML.get()
-				.format(new Object[] { getId(), url, "", title, options }, new StringBuffer(), null).toString();
-		s.add(new OfConstantStrings(html, "HTML"));
-
+		final LinkedList<Column<?>> s3 = new LinkedList<>(stack);
+		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
+		e.setTerminal(StandardVocabulary::eval);
+		stack.clear();
+		stack.add(new OfConstantStrings(Chart.lineChart(e.evaluate(pinto),"chart-" + getId(),
+							title, dateFormat, numberFormat, width, height), "HTML"));
 	}
 
 	private static void grid(Pinto pinto, LinkedList<Column<?>> s) {
@@ -1054,17 +1036,6 @@ public class StandardVocabulary extends Vocabulary {
 			id = UUID.randomUUID().toString().replaceAll("\\d", "").replaceAll("-", "");
 		} while (id.length() < 8);
 		return id.substring(0, 8);
-	}
-
-	private static String readInputStreamIntoString(InputStream inputStream) throws IOException {
-		BufferedInputStream bis = new BufferedInputStream(inputStream);
-		ByteArrayOutputStream buf = new ByteArrayOutputStream();
-		int result = bis.read();
-		while (result != -1) {
-			buf.write((byte) result);
-			result = bis.read();
-		}
-		return buf.toString("UTF-8");
 	}
 
 	@Override

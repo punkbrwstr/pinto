@@ -125,6 +125,8 @@
     </plugins>
   </build>
   <dependencies>
+
+	
   	<dependency>
 	<groupId>org.eclipse.jetty</groupId>
 	<artifactId>jetty-server</artifactId>
@@ -140,11 +142,11 @@
 	<artifactId>jetty-webapp</artifactId>
 	<version>9.3.0.M2</version>
 </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>23.5-jre</version>
-    </dependency>
+<dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>26.0-jre</version>
+</dependency>
     <dependency>
       <groupId>jline</groupId>
       <artifactId>jline</artifactId>
@@ -186,5 +188,26 @@
             <artifactId>logback-classic</artifactId>
             <version>1.1.2</version>
         </dependency>
+        
+        <!-- https://mvnrepository.com/artifact/org.jfree/jfreechart -->
+<dependency>
+    <groupId>org.jfree</groupId>
+    <artifactId>jfreechart</artifactId>
+    <version>1.5.0</version>
+</dependency>
+        <!-- https://mvnrepository.com/artifact/org.jfree/jfreesvg -->
+<dependency>
+    <groupId>org.jfree</groupId>
+    <artifactId>jfreesvg</artifactId>
+    <version>3.3</version>
+</dependency>
+        <!-- https://mvnrepository.com/artifact/org.jfree/jcommon -->
+<dependency>
+    <groupId>org.jfree</groupId>
+    <artifactId>jcommon</artifactId>
+    <version>1.0.24</version>
+</dependency>
+        
+
   </dependencies>
 </project>

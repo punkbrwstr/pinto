@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +32,7 @@ public class Servlet extends HttpServlet {
 
 	private final Gson gson;
 	private final Supplier<Pinto> pintoSupplier;
-	Optional<String> reportTop = Optional.empty();
-	Optional<String> reportBottom = Optional.empty();
+	Optional<MessageFormat> reportTemplate = Optional.empty();
 
 	public Servlet(Supplier<Pinto> pintoSupplier) {
 		GsonBuilder b = new GsonBuilder();
@@ -49,18 +49,18 @@ public class Servlet extends HttpServlet {
 			if(!request.getParameterMap().containsKey("p")) {
 				throw new Exception("Empty request.");
 			}
-			if(!reportTop.isPresent()) {
-				reportTop = Optional.of(readInputStreamIntoString((getClass().getClassLoader().getResourceAsStream("report_top.html"))));
-				reportBottom = Optional.of(readInputStreamIntoString((getClass().getClassLoader().getResourceAsStream("report_bottom.html"))));
+			if(!reportTemplate.isPresent()) {
+				reportTemplate = Optional.of(new MessageFormat(readInputStreamIntoString(
+						(getClass().getClassLoader().getResourceAsStream("report_template.html")))));
 			}
-			os.print(reportTop.get());
 			Table t = new Table();
 			pinto.getNamespace().getName("~report-" + request.getParameter("p"))
 					.getTableFunction().accept(pinto, t);
+			StringBuilder sb = new StringBuilder();
 			for(Column<?> c : t.flatten()) {
-				os.print(((Column.OfConstantStrings) c).getValue());
+				sb.append(((Column.OfConstantStrings) c).getValue());
 			}
-			os.print(reportBottom.get());
+			os.print(reportTemplate.get().format(new Object[] {sb.toString()}, new StringBuffer(),null).toString());
 		} catch (Exception e) {
 			logError(e, request);
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
