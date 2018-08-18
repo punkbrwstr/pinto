@@ -44,7 +44,7 @@ public class Chart {
 			String numberFormat, int width, int height ) {
 
 		JFreeChart chart = ChartFactory.createTimeSeriesChart(
-				title.equals("") ? null : title, // title
+				title.equals("") ? null : "           " + title, // title
 				null, // x-axis label
 				null, // y-axis label
 				new TableDataSet(table), // data
@@ -53,10 +53,8 @@ public class Chart {
 				false // generate URLs?
 		);
 		if(!title.equals("")) {
-			chart.getTitle().setFont(new Font("SansSerif", Font.BOLD, 10));
+			chart.getTitle().setFont(new Font("SansSerif", Font.BOLD, 12));
 			chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
-			chart.getTitle().setPosition(RectangleEdge.TOP);
-			chart.getTitle().setPadding(50, 50, 0, 0);
 		}
 		chart.setBackgroundPaint(new Color(216,221,225));
 		XYPlot plot = (XYPlot) chart.getPlot();

@@ -339,7 +339,7 @@ public class StandardVocabulary extends Vocabulary {
 					inputs -> inputs[0].getTrace() + " " + name, f.apply(a), c));
 		};
 		return nameBuilder(name, function.apply(s))
-				.description("Aggregates row values in window by " + name + ".");
+				.description("Calculates " + name + " for each view of window column inputs.");
 	}
 	
 
