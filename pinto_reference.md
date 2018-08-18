@@ -3,12 +3,12 @@
 ## Types
 Pinto is a dynamically typed language.  Columns have a consistent type over any time range.  All column types also have a string header.
 
-- *doubles*: Floating point number values
-- *double arrays*: One-dimensional arrays of floating point number values
-- *constant doubles*: Constant floating point number values
-- *constant strings*: Constant string values
-- *constant dates*: Constant date values
-- *constant periodicities*: Constant periodicity values 
+- *double*: Floating point number values
+- *window*: Views of multiple double values (e.g. rolling historical window of values)
+- *constant double*: Constant floating point number values
+- *constant string*: Constant string values
+- *constant date*: Constant date values
+- *constant periodicity*: Constant periodicity values 
 
 ## Literals
 Literals are values in a Pinto expression that are recognized based on their formatting and become columns on their own.
@@ -96,7 +96,7 @@ Function definitions have four parts as in the following example:
 Example | Part | Description
 :--- | :--- | :---
 `:my_function` | *name literal*|  This will be the name for the new function.
-`[:2]` | *default indexer* | Optional indexer (default: `[:]`) that will determine which columns on the stack will passed to the function.  Any header-based indices that cannot be found in on the stack and do not have defaults will cause an error.
+`[:2]` | *default indexer* | Optional indexer (default: `[]`) that will determine which columns on the stack will passed to the function.  Any header-based indices that cannot be found in on the stack and do not have defaults will cause an error.
 `1 +` | *function body* | This expression will be evaluated when the user-defined function is called.
 `def` | *terminal* | The terminal function `def` finishes a function definition.
 
@@ -144,6 +144,7 @@ Function name | Default indexer |Description
 :---:|:---|:---
 clear|[:]|Clears indexed columns from stack.
 copy|[c=2,:]|Copies indexed columns *n* times.
+index|[c]|Indexes by constant double ordinals in c (start inclusive, end exclusive).  Assumes 0 for start if c is one constant.
 only|[:]|Clears stack except for indexed columns.
 rev|[:]|Reverses order of columns in stack.
 roll|[c=1,:]|Permutes columns in stack *n* times.
@@ -155,6 +156,7 @@ These commands add columns to the stack.
 
 Function name | Default indexer|Description
 :---:|:---|:---
+mkt|[tickers,fields]|Adds columns for market data specified by *tickers* and *fields*.
 moon|[]|Creates a double column with values corresponding the phase of the moon.
 pi|[]|Creates a constant double column with the value pi.
 range|[c=1 4]|Creates double columns corresponding to integers between first (inclusive) and second (exclusive) columns in *c*, defaulting to 1 and 4.
@@ -164,8 +166,8 @@ read_csv|[source,includes_header="true"]|Reads CSV formatted table from file or 
 
 Function name | Default indexer |Description
 :---:|:---|:---
-fill|[periodicity=BQ-DEC,lookback="true",:]|Fills missing values with last good value, looking back one period of *periodicity* if *lookback* is true.
-join|[dates,:]|Joins columns over time, switching between columns on dates in *dates* columns.
+fill|[periodicity=BQ-DEC,lookback="true",default=NaN,:]|Fills missing values with last good value, looking back one period of *periodicity* if *lookback* is true, defaulting to *default* if no prior value exists.
+join|[date,:]|Joins columns over time, switching between columns on dates in *date* columns.
 resample|[periodicity=BM,:]|Sets prior columns to periodicity *periodicity*, carrying values forward if evaluation periodicity is more frequent.
 
 ### Date functions
@@ -179,7 +181,9 @@ offset|[date=today,periodicity=B,c=-1]|Returns date that is *c* number of period
 
 Function name | Default indexer |Description
 :---:|:---|:---
+hcopy|[:]|Copies headers to a comma-delimited constant string column.
 hformat|[format,:]|Formats headers, setting new value to *format* and substituting and occurences of "{}" with previous header value.
+hpaste|[string,repeat="true",:]|Sets headers of other input columns to the values in comma-delimited constant string column.
 
 
 ### Binary double operators
@@ -232,37 +236,33 @@ toDegrees|[:]|Unary double operator to convert to degrees.
 toRadians|[:]|Unary double operator to convert to radians.
 ulp|[:]|Unary double operator for ulp.
 
-### Double array creation functions
+### Window creation functions
 Function name | Default indexer |Description
 :---:|:---|:---
-cross|[:]|Creates a double array column with each row containing values of input columns.
-expanding|[start="range",periodicity="range",initial_zero="false",:]|Creates double array columns for each input column with rows containing values from an expanding window of past data with periodicity *periodicity* that starts on date *start*.  Defaults to the start and periodicity of the evaluated range. 
-rolling|[c=2,periodicity="range",:]|Creates double array columns for each input column with rows containing values from rolling window of past data where the window is *size* periods of periodicity *periodicity*.
+cross|[:]|Creates a cross sectional window from input columns.
+expanding|[date="range",:]|Creates creates an expanding window starting on *start* or the start of the evaluated range.
+rev_expanding|[:]|Creates a reverse-expanding window containing values from the current period to the end of the range.
+rolling|[c=2,:]|Creates a rolling window of size *c* for each input.
 
-### Double array aggregators (double array to double functions)
+### Window statistics (Aggregation of each window view to a double value)
 Function name | Default indexer |Description
 :---:|:---|:---
-average|[:]|Aggregates row values in double array columns to a double value by average.
-change|[:]|Aggregates row values in double array columns to a double value by change.
-changelog|[:]|Aggregates row values in double array columns to a double value by change of logs.
-changepct|[:]|Aggregates row values in double array columns to a double value by change in percent.
-first|[:]|Aggregates row values in double array columns to a double value by first value.
-geomean|[:]|Aggregates row values in double array columns to a double value by geometric mean.
-last|[:]|Aggregates row values in double array columns to a double value by last value.
-max|[:]|Aggregates row values in double array columns to a double value by max.
-min|[:]|Aggregates row values in double array columns to a double value by min.
-stdev|[:]|Aggregates row values in double array columns to a double value by standard deviation.
-stdevp|[:]|Aggregates row values in double array columns to a double value by population standard deviation.
-sum|[:]|Aggregates row values in double array columns to a double value by sum.
-var|[:]|Aggregates row values in double array columns to a double value by variance.
-varp|[:]|Aggregates row values in double array columns to a double value by population variance.
-zscore|[:]|Aggregates row values in double array columns to a double value by zscore.
-zscorep|[:]|Aggregates row values in double array columns to a double value by zscorep.
+change|[:]|Change from first to last for each view of window column inputs.
+first|[:]|First value for each view of window column inputs.
+last|[:]|Last value for each view of window column inputs.
+max|[:]|Calculates max for each view of window column inputs.
+mean|[:]|Calculates mean for each view of window column inputs.
+min|[:]|Calculates min for each view of window column inputs.
+pct_change|[:]|Calculates pct_change for each view of window column inputs.
+product|[:]|Calculates product for each view of window column inputs.
+std|[:]|Calculates standard deviation for each view of window column inputs.
+sum|[:]|Calculates sum for each view of window column inputs.
+zscore|[:]|Calculates zscore for each view of window column inputs.
 
 ### Visualization functions
 Function name | Default indexer |Description
 :---:|:---|:---
-chart|[start="today",end="today",periodicity="B",title="none",:]|Creates a const string column with code for an HTML chart.
+chart|[title="",date_format="",number_format="#,##0.00",width=750,height=350,periodicity=B, date=-20 offset today,:]|Creates a const string column with code for an HTML chart.
 grid|[columns=3,HTML]|Creates a grid layout in a report with all input columns labelled HTML as cells in the grid.
 report|[title="Pinto report",HTML]|Creates a new HTML report containing all *HTML* columns
 rt|[functions=" BA-DEC offset expanding pct_change {YTD} today today eval",format="percent",digits=2,:]|Creates a const string column containing an HTML ranking table, applying each *function* to input columns and putting the ranked results in a table column.
