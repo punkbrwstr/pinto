@@ -39,8 +39,7 @@ public interface Window<T extends Window<T>> {
 			double[] d = new double[w.viewCount()];
 			for(int i = 0; i < d.length; i++) {
 				View v = w.getView(i);
-				double value = update(v);
-				d[i] = v.returnNa() ? Double.NaN : value;
+				d[i] = v.returnNa() ? Double.NaN : update(v);
 			}
 			return d;
 		}
@@ -144,8 +143,7 @@ public interface Window<T extends Window<T>> {
 
 				@Override
 				public double get(int i) {
-					int index = i + offset;
-					return index < 0 ? Double.NaN : d[index];
+					return d[i];
 				}
 
 				@Override
@@ -162,7 +160,7 @@ public interface Window<T extends Window<T>> {
 
 				@Override
 				public int size() {
-					return v + 1;
+					return Math.max(0, v + 1 + offset);
 				}
 
 				@Override
@@ -447,7 +445,9 @@ public interface Window<T extends Window<T>> {
 	}
 	
 	public static Statistic Change = v -> v.get(v.size()-1) - v.get(0);
-	public static Statistic PercentChange = v -> v.get(v.size()-1) / v.get(0) - 1;
+	public static Statistic PercentChange = v -> {
+		return v.get(v.size()-1) / v.get(0) - 1;
+	};
 	public static Statistic First = v -> v.get(0);
 	public static Statistic Last = v -> v.get(v.size()-1);
 	

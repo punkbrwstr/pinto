@@ -26,14 +26,11 @@ public class Cache {
 	
 	private static final HashMap<String, RangeMap<Long, CachedSeriesList>> rowCache = new HashMap<>();
 	private static final HashMap<String, LinkedList<Column<?>>> columns = new HashMap<>();
-	private static final HashMap<String, LinkedList<Column<?>>> uncachedColumns = new HashMap<>();
-	private static final HashMap<String, TableFunction> nullaryFunctions = new HashMap<>();
 	private static final HashMap<String, Integer> columnCounts = new HashMap<>();
 	private static final HashMap<String, Function<PeriodicRange<?>,double[][]>> rowFunctions = new HashMap<>();
 
 	public static void clearCache(String key) {
 		columns.remove(key);
-		uncachedColumns.remove(key);
 		columnCounts.remove(key);
 		rowFunctions.remove(key);
 		for(String per: Periodicities.allCodes()) {
@@ -42,46 +39,40 @@ public class Cache {
 	}
 	
 	public static StackFunction cacheNullaryFunction(String key, TableFunction uncached) {
-		nullaryFunctions.put(key, uncached);
 		return (p,s) -> {
-			s.addAll(0, getCachedColumns(p, key));
+			s.addAll(0, getCachedColumns(p, key, uncached));
 		};
 	}
-	
-	private static void loadCachedColumns(Pinto pinto, String key) {
-		Table t = new Table();
-		nullaryFunctions.get(key).accept(pinto, t);
-		LinkedList<Column<?>> cols = t.flatten();
-		columnCounts.put(key, cols.size());
-		boolean rowCacheable = true;
-		for(int i = 0; i < cols.size(); i++) {
-			if(!(cols.get(i) instanceof Column.OfDoubles)) {
-				rowCacheable = false;
-			}
-		}
-		if(rowCacheable) {
-			LinkedList<Column<?>> cached = new LinkedList<>();
-			for(int i = 0; i < cols.size(); i++) {
-				cached.add(getCachedColumn(key,i, cols.get(i).getHeader(), cols.get(i).getTrace()));
-			}
-			columns.put(key, cached);
-			uncachedColumns.put(key, cols);
-			rowFunctions.put(key, getRowFunctionForColumns(key));
-		} else {
-			columns.put(key, cols);
-		}
-	}
-	
-	public static LinkedList<Column<?>> getCachedColumns(Pinto pinto, String key) {
+
+	private static LinkedList<Column<?>> getCachedColumns(Pinto pinto, String key, TableFunction tableFunction) {
 		if(!columns.containsKey(key)) {
-			loadCachedColumns(pinto, key);
+			Table t = new Table();
+			tableFunction.accept(pinto, t);
+			LinkedList<Column<?>> cols = t.flatten();
+			columnCounts.put(key, cols.size());
+			boolean rowCacheable = true;
+			for(int i = 0; i < cols.size(); i++) {
+				if(!(cols.get(i) instanceof Column.OfDoubles)) {
+					rowCacheable = false;
+				}
+			}
+			if(rowCacheable) {
+				LinkedList<Column<?>> cached = new LinkedList<>();
+				for(int i = 0; i < cols.size(); i++) {
+					cached.add(createRowCachedColumn(key,i, cols.get(i).getHeader(), cols.get(i).getTrace()));
+				}
+				columns.put(key, cached);
+				rowFunctions.put(key, getRowFunctionForColumns(cols));
+			} else {
+				columns.put(key, cols);
+			}
 		}
 		LinkedList<Column<?>> cols = new LinkedList<>(columns.get(key));
 		cols.replaceAll(c -> c.clone());
 		return cols;
 	}
 
-	private static Column.OfDoubles getCachedColumn(String key, int col, String header, String trace) {
+	private static Column.OfDoubles createRowCachedColumn(String key, int col, String header, String trace) {
 		return new Column.OfDoubles(i -> header, i -> trace,
 				(range, inputs) -> {
 					try {
@@ -93,9 +84,8 @@ public class Cache {
 		);
 	}
 	
-	private static Function<PeriodicRange<?>,double[][]> getRowFunctionForColumns(String key) {
+	private static Function<PeriodicRange<?>,double[][]> getRowFunctionForColumns(LinkedList<Column<?>> l) {
 		return range -> {
-			LinkedList<Column<?>> l = uncachedColumns.get(key);
 			double[][] newData = new double[l.size()][];
 			for(int i = 0; i < newData.length; i++) {
 				newData[i] = Column.castColumn(l.get(i),Column.OfDoubles.class).rows(range); 

@@ -520,7 +520,7 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void today(Pinto p, LinkedList<Column<?>> s) {
-		s.addFirst(new OfConstantDates(LocalDate.now()));
+		s.addFirst(new OfConstantDates(() -> LocalDate.now()));
 	}
 
 	private static void offset(Pinto pinto, LinkedList<Column<?>> s) {
@@ -816,134 +816,142 @@ public class StandardVocabulary extends Vocabulary {
 		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
-		stack.add(new OfConstantStrings(Chart.lineChart(e.evaluate(pinto),"chart-" + getId(),
+		stack.add(new OfConstantStrings(() -> Chart.lineChart(e.evaluate(pinto),"chart-" + getId(),
 							title, dateFormat, numberFormat, width, height), "HTML"));
 	}
 
-	private static void grid(Pinto pinto, LinkedList<Column<?>> s) {
-		int columns = Double.valueOf(castColumn(s.removeFirst(), OfConstantDoubles.class).getValue()).intValue();
-		StringBuilder sb = new StringBuilder();
-		sb.append("\n<table class=\"pintoGrid\">\n\t<tbody>\n");
-		for (int i = 0; i < s.size();) {
-			if (i % columns == 0) {
-				sb.append("\t\t<tr>\n");
+	private static void grid(Pinto pinto, LinkedList<Column<?>> stack) {
+		int columns = Double.valueOf(castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue()).intValue();
+		LinkedList<Column<?>> s = new LinkedList<>(stack);
+		stack.clear();
+		stack.add(new OfConstantStrings(() -> {
+			StringBuilder sb = new StringBuilder();
+			sb.append("\n<table class=\"pintoGrid\">\n\t<tbody>\n");
+			for (int i = 0; i < s.size();) {
+				if (i % columns == 0) {
+					sb.append("\t\t<tr>\n");
+				}
+				sb.append("\t\t\t<td>").append(castColumn(s.get(s.size() - i++ - 1), OfConstantStrings.class).getValue())
+						.append("</td>\n");
+				if (i % columns == 0 || i == s.size()) {
+					sb.append("\t\t</tr>\n");
+				}
 			}
-			sb.append("\t\t\t<td>").append(castColumn(s.get(s.size() - i++ - 1), OfConstantStrings.class).getValue())
-					.append("</td>\n");
-			if (i % columns == 0 || i == s.size()) {
-				sb.append("\t\t</tr>\n");
-			}
-		}
-		sb.append("\t</tbody>\n</table>\n");
-		s.clear();
-		s.add(new OfConstantStrings(sb.toString(), "HTML"));
+			sb.append("\t</tbody>\n</table>\n");
+			return sb.toString();
+		}, "HTML") );
 	}
 
-	private static void table(Pinto pinto, LinkedList<Column<?>> s) {
-		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
+	private static void table(Pinto pinto, LinkedList<Column<?>> stack) {
+		Periodicity<?> periodicity = castColumn(stack.removeFirst(), OfConstantPeriodicities.class).getValue();
 		LinkedList<LocalDate> d = new LinkedList<>();
-		while ((!s.isEmpty()) && d.size() < 2 && s.peekFirst().getHeader().equals("date")) {
-			d.add(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
+		while ((!stack.isEmpty()) && d.size() < 2 && stack.peekFirst().getHeader().equals("date")) {
+			d.add(castColumn(stack.removeFirst(), OfConstantDates.class).getValue());
 		}
 		PeriodicRange<?> range = periodicity.range(d.removeLast(), d.isEmpty() ? LocalDate.now() : d.peek());
-		NumberFormat nf = castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
+		NumberFormat nf = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
 				? NumberFormat.getPercentInstance()
 				: NumberFormat.getNumberInstance();
 		nf.setMinimumFractionDigits(2);
 		nf.setMaximumFractionDigits(4);
 		nf.setGroupingUsed(false);
-		String rowHeader = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
-		boolean colHeaders = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
-		Table t = new Table();
-		t.insertAtTop(s);
-		t.evaluate(range);
-		String[] lines = t.toCsv(nf).split("\n");
-		if (!rowHeader.equals("date")) {
-			for (int i = 0; i < lines.length; i++) {
-				String[] cols = lines[i].split(",");
-				cols[0] = i == 0 ? "" : rowHeader;
-				lines[i] = Arrays.stream(cols).collect(Collectors.joining(","));
+		String rowHeader = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		boolean colHeaders = Boolean.parseBoolean(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		LinkedList<Column<?>> s = new LinkedList<>(stack);
+		stack.clear();
+		stack.add(new OfConstantStrings(() -> {
+			Table t = new Table();
+			t.insertAtTop(s);
+			t.evaluate(range);
+			String[] lines = t.toCsv(nf).split("\n");
+			if (!rowHeader.equals("date")) {
+				for (int i = 0; i < lines.length; i++) {
+					String[] cols = lines[i].split(",");
+					cols[0] = i == 0 ? "" : rowHeader;
+					lines[i] = Arrays.stream(cols).collect(Collectors.joining(","));
+				}
 			}
-		}
-		if (!colHeaders) {
-			lines[0] = lines[0].replaceAll("[^,]", "&nbsp;");
-		}
-		s.clear();
-		StringBuilder sb = new StringBuilder();
-		sb.append("<table class=\"pintoTable\">\n<thead>\n");
-		Arrays.stream(lines[0].split(","))
-				.forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
-		sb.append("</thead>\n<tbody>\n");
-		Arrays.stream(lines).skip(1).map(l -> l.split(",")).forEach(l -> {
-			sb.append("<tr>\n");
-			Arrays.stream(l).forEach(c -> sb.append("<td>").append(c).append("</td>"));
-			sb.append("</tr>\n");
-		});
-		sb.append("</tbody></table>\n");
-		s.add(new OfConstantStrings(sb.toString(), "HTML"));
+			if (!colHeaders) {
+				lines[0] = lines[0].replaceAll("[^,]", "&nbsp;");
+			}
+			StringBuilder sb = new StringBuilder();
+			sb.append("<table class=\"pintoTable\">\n<thead>\n");
+			Arrays.stream(lines[0].split(","))
+					.forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
+			sb.append("</thead>\n<tbody>\n");
+			Arrays.stream(lines).skip(1).map(l -> l.split(",")).forEach(l -> {
+				sb.append("<tr>\n");
+				Arrays.stream(l).forEach(c -> sb.append("<td>").append(c).append("</td>"));
+				sb.append("</tr>\n");
+			});
+			sb.append("</tbody></table>\n");
+			return sb.toString();
+		}, "HTML"));
 	}
 
-	private static void rt(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void rt(Pinto pinto, LinkedList<Column<?>> stack) {
 		LinkedList<String> functions = new LinkedList<>();
-		while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("functions")) {
-			functions.addFirst(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
+		while ((!stack.isEmpty()) && stack.peekFirst().getHeader().equals("functions")) {
+			functions.addFirst(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
 		}
-		NumberFormat nf = castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
+		NumberFormat nf = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
 				? NumberFormat.getPercentInstance()
 				: NumberFormat.getNumberInstance();
-		int digits = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		int digits = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
 		nf.setMaximumFractionDigits(digits);
 		int columns = functions.size();
-		int rows = s.size();
-		String[] labels = new String[rows];
-		String[] headers = new String[columns];
-		String[][] cells = new String[rows][columns];
-		for (int i = 0; i < columns; i++) {
-			double[][] values = new double[s.size()][2];
-			for (int j = 0; j < s.size(); j++) {
-				Pinto.Expression expression = new Pinto.Expression(false);
-				final int J = j;
-				expression.addFunction(Pinto.toTableConsumer((p, stack) -> {
-					stack.add(s.get(J).clone());
-				}));
-				pinto.parse(functions.get(i), expression);
-				Table t = expression.evaluate(pinto);
-				double[][] d = t.toColumnMajorArray();
-				values[j][0] = d[0][d[0].length - 1];
-				values[j][1] = (int) j;
-				if (j == 0) {
-					headers[i] = t.getHeaders(false, false).get(0);
+		int rows = stack.size();
+		final LinkedList<Column<?>> s = new LinkedList<>(stack);
+		stack.clear();
+		stack.add(new OfConstantStrings(() -> {
+			String[] labels = new String[rows];
+			String[] headers = new String[columns];
+			String[][] cells = new String[rows][columns];
+			for (int i = 0; i < columns; i++) {
+				double[][] values = new double[s.size()][2];
+				for (int j = 0; j < s.size(); j++) {
+					Pinto.Expression expression = new Pinto.Expression(false);
+					final int J = j;
+					expression.addFunction(Pinto.toTableConsumer((p, s2) -> {
+						s2.add(s.get(J).clone());
+					}));
+					pinto.parse(functions.get(i), expression);
+					Table t = expression.evaluate(pinto);
+					double[][] d = t.toColumnMajorArray();
+					values[j][0] = d[0][d[0].length - 1];
+					values[j][1] = (int) j;
+					if (j == 0) {
+						headers[i] = t.getHeaders(false, false).get(0);
+					}
+					if (i == 0) {
+						labels[j] = s.get(j).getHeader();
+					}
 				}
-				if (i == 0) {
-					labels[j] = s.get(j).getHeader();
-				}
-			}
 
-			Arrays.sort(values, (c1, c2) -> c1[0] == c2[0] ? 0 : c1[0] < c2[0] ? 1 : -1);
-			for (int j = 0; j < values.length; j++) {
-				StringBuilder sb = new StringBuilder();
-				sb.append("\t<td id=\"rankingColor").append((int) values[j][1]).append("\" class=\"rankingTableCell\">")
+				Arrays.sort(values, (c1, c2) -> c1[0] == c2[0] ? 0 : c1[0] < c2[0] ? 1 : -1);
+				for (int j = 0; j < values.length; j++) {
+					StringBuilder sb = new StringBuilder();
+					sb.append("\t<td id=\"rankingColor").append((int) values[j][1]).append("\" class=\"rankingTableCell\">")
 						.append(labels[(int) values[j][1]]).append(": ").append(nf.format(values[j][0]))
 						.append("</td>\n");
-				cells[j][i] = sb.toString();
+					cells[j][i] = sb.toString();
+				}
 			}
-		}
-		StringBuilder sb = new StringBuilder();
-		sb.append("<table class=\"rankingTable\">\n<thead>\n");
-		Arrays.stream(headers)
+			StringBuilder sb = new StringBuilder();
+			sb.append("<table class=\"rankingTable\">\n<thead>\n");
+			Arrays.stream(headers)
 				.forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
-		sb.append("</thead>\n<tbody>\n");
-		for (int i = 0; i < cells.length; i++) {
-			sb.append("<tr>\n");
-			for (int j = 0; j < columns; j++) {
-				sb.append(cells[i][j]);
+			sb.append("</thead>\n<tbody>\n");
+			for (int i = 0; i < cells.length; i++) {
+				sb.append("<tr>\n");
+				for (int j = 0; j < columns; j++) {
+					sb.append(cells[i][j]);
+				}
+				sb.append("</tr>\n");
 			}
-			sb.append("</tr>\n");
-		}
-		sb.append("</tbody></table>\n");
-		s.clear();
-		s.add(new OfConstantStrings(sb.toString(), "HTML"));
-
+			sb.append("</tbody></table>\n");
+			return sb.toString();
+		}, "HTML") );
 	}
 
 	private static Function<Periodicity<?>, StackFunction> periodicityConstantFunction = per -> (p, s) -> s

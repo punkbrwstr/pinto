@@ -5,6 +5,7 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
@@ -208,9 +209,9 @@ public abstract class Column<T> implements Cloneable {
 
 	public static class ObjectConstantColumn<C> extends Column<C[]> implements ConstantColumn<C> {
 
-		private final C c;
+		private final Supplier<C> c;
 
-		public ObjectConstantColumn(C c, String header, Class<C> clazz, Class<C[]> arrayClazz) {
+		public ObjectConstantColumn(Supplier<C> c, String header, Class<C> clazz, Class<C[]> arrayClazz) {
 			super(i -> header, i -> header, (range, columns) -> {
 					C[] array =  arrayClazz.cast(Array.newInstance(clazz, (int) range.size()));
 					Arrays.fill(array, c);
@@ -220,7 +221,7 @@ public abstract class Column<T> implements Cloneable {
 		}
 
 		public C getValue() {
-			return c;
+			return c.get();
 		}
 
 		@Override
@@ -236,10 +237,14 @@ public abstract class Column<T> implements Cloneable {
 	public static class OfConstantStrings extends ObjectConstantColumn<String> {
 		
 		public OfConstantStrings(String value) {
-			this(value,"string");
+			this(() -> value,"string");
 		}
 
 		public OfConstantStrings(String value, String header) {
+			this(() -> value, header);
+		}
+
+		public OfConstantStrings(Supplier<String> value, String header) {
 			super(value, header, String.class, String[].class);
 		}
 
@@ -248,6 +253,10 @@ public abstract class Column<T> implements Cloneable {
 	public static class OfConstantDates extends ObjectConstantColumn<LocalDate> {
 
 		public OfConstantDates(LocalDate value) {
+			super(() -> value,"date", LocalDate.class, LocalDate[].class);
+		}
+
+		public OfConstantDates(Supplier<LocalDate> value) {
 			super(value,"date", LocalDate.class, LocalDate[].class);
 		}
 
@@ -257,7 +266,7 @@ public abstract class Column<T> implements Cloneable {
 	public static class OfConstantPeriodicities extends ObjectConstantColumn<Periodicity> {
 		
 		public OfConstantPeriodicities(Periodicity value) {
-			super(value, "periodicity", Periodicity.class, Periodicity[].class);
+			super(() -> value, "periodicity", Periodicity.class, Periodicity[].class);
 		}
 
 	}
