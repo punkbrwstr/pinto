@@ -214,7 +214,7 @@ public abstract class Column<T> implements Cloneable {
 		public ObjectConstantColumn(Supplier<C> c, String header, Class<C> clazz, Class<C[]> arrayClazz) {
 			super(i -> header, i -> header, (range, columns) -> {
 					C[] array =  arrayClazz.cast(Array.newInstance(clazz, (int) range.size()));
-					Arrays.fill(array, c);
+					Arrays.fill(array, c.get());
 					return array;
 				});
 			this.c = c;

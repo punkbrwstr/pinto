@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
@@ -44,6 +43,7 @@ import tech.pinto.Column.RowsFunction;
 import tech.pinto.Column.RowsFunctionGeneric;
 import tech.pinto.Pinto.Expression;
 import tech.pinto.Pinto.StackFunction;
+import tech.pinto.Window.EWMA;
 import tech.pinto.Window.Expanding;
 import tech.pinto.Window.Rolling;
 import tech.pinto.time.Period;
@@ -51,6 +51,7 @@ import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 import tech.pinto.tools.Chart;
+import tech.pinto.tools.ID;
 
 public class StandardVocabulary extends Vocabulary {
     
@@ -181,6 +182,9 @@ public class StandardVocabulary extends Vocabulary {
 			getStatisticName("min", () -> new Window.Min()),
 			getStatisticName("max", () -> new Window.Max()),
 			getStatisticName("product", () -> new Window.Product()),
+			nameBuilder("ewma", StandardVocabulary::ewma)
+				.description("Exponentially weighted moving average calculated using *alpha* or defaulting to 2 / (N + 1)")
+				.indexer("[alpha=\"none\",:]"),
 			
 	/* reporting */
 			nameBuilder("grid", StandardVocabulary::grid)
@@ -341,6 +345,16 @@ public class StandardVocabulary extends Vocabulary {
 		return nameBuilder(name, function.apply(s))
 				.description("Calculates " + name + " for each view of window column inputs.");
 	}
+
+	private static void ewma(Pinto pinto, LinkedList<Column<?>> stack) {
+		Column<?> alphaCol = stack.removeFirst();
+		Optional<Double> alpha = alphaCol instanceof OfConstantDoubles ? 
+				Optional.of(castColumn(alphaCol, OfConstantDoubles.class).getValue()) : Optional.empty();
+		stack.replaceAll(c -> new OfDoubles(inputs -> inputs[0].getHeader(),
+			inputs -> inputs[0].getTrace() + " ewma", (range, inputs) -> {
+				return new EWMA(alpha).apply(castColumn(inputs[0],OfWindow.class).rows(range));
+			}, c));
+	}
 	
 
 	private static final Table def(Pinto pinto, Expression expression) {
@@ -458,7 +472,7 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static Table report(Pinto pinto, Expression e) {
-		String id = getId();
+		String id = ID.getId();
 		e.setNameLiteral("~report-" + id);
 		pinto.getNamespace().define(pinto, e);
 		try {
@@ -816,7 +830,7 @@ public class StandardVocabulary extends Vocabulary {
 		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
-		stack.add(new OfConstantStrings(() -> Chart.lineChart(e.evaluate(pinto),"chart-" + getId(),
+		stack.add(new OfConstantStrings(() -> Chart.lineChart(e.evaluate(pinto),"chart-" + ID.getId(),
 							title, dateFormat, numberFormat, width, height), "HTML"));
 	}
 
@@ -1038,13 +1052,6 @@ public class StandardVocabulary extends Vocabulary {
 		return nameBuilder(name, function.apply(duo)).description("Unary operator " + name + ".");
 	}
 
-	private static String getId() {
-		String id = null;
-		do {
-			id = UUID.randomUUID().toString().replaceAll("\\d", "").replaceAll("-", "");
-		} while (id.length() < 8);
-		return id.substring(0, 8);
-	}
 
 	@Override
 	protected List<Name> getNames() {

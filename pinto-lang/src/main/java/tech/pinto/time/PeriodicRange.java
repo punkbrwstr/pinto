@@ -9,11 +9,14 @@ import java.util.Objects;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 
+import tech.pinto.tools.ID;
+
 public final class PeriodicRange<P extends Period<P>> {
 	
 	private final Periodicity<P> periodicity;
 	private final P startInclusive;
 	private final P endInclusive;
+	private final String id = ID.getId();
 
 	PeriodicRange(Periodicity<P> periodcity, P startInclusive, P endInclusive) {
 		if(endInclusive.isBefore(startInclusive)) {
@@ -22,6 +25,10 @@ public final class PeriodicRange<P extends Period<P>> {
 		this.periodicity = periodcity;
 		this.startInclusive = startInclusive;
 		this.endInclusive = endInclusive;
+	}
+	
+	public String getId() {
+		return id;
 	}
 	
 	public List<P> values() {

@@ -1,5 +1,6 @@
 package tech.pinto;
 
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
@@ -39,7 +40,10 @@ public interface Window<T extends Window<T>> {
 			double[] d = new double[w.viewCount()];
 			for(int i = 0; i < d.length; i++) {
 				View v = w.getView(i);
-				d[i] = v.returnNa() ? Double.NaN : update(v);
+				d[i] = update(v);
+				if(v.returnNa()) {
+					d[i] = Double.NaN;
+				}
 			}
 			return d;
 		}
@@ -450,6 +454,42 @@ public interface Window<T extends Window<T>> {
 	};
 	public static Statistic First = v -> v.get(0);
 	public static Statistic Last = v -> v.get(v.size()-1);
+	
+	public static class EWMA implements Statistic {
+		
+		double alpha = Double.NaN, value = Double.NaN;
+		
+		public EWMA(Optional<Double> alpha) {
+			if(alpha.isPresent()) {
+				this.alpha = alpha.get();
+			}
+		}
+
+		@Override
+		public double update(View v) {
+			Array additions = v.additions();
+			if(alpha != alpha) {
+				alpha = 2 / (v.additions().size() + 1d);
+			}
+			for(int i = 0; i < additions.size(); i++) {
+				double d = additions.get(i);
+				if(d == d) {
+					if(value != value) {
+						value = d;
+					} else {
+						value = d * alpha + value * (1-alpha);
+					}
+				} else {
+					if(i == additions.size()-1) {
+						return Double.NaN;
+					}
+				}
+
+			}
+			return value;
+		}
+		
+	}
 	
 	public static abstract class RankingStatistic implements Statistic {
 		
