@@ -78,6 +78,12 @@ public class StandardVocabulary extends Vocabulary {
 			terminalNameBuilder("report", StandardVocabulary::report)
 				.indexer("[HTML]")
 				.description("Creates an HTML report from any columns labelled HTML."),
+			terminalNameBuilder("to_file", StandardVocabulary::to_file)
+				.indexer("[string, HTML]")
+				.description("Creates an HTML report from any columns labelled HTML."),
+			nameBuilder("chart", StandardVocabulary::chartSVG)
+				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,periodicity=B, date=-20 offset today,:]")
+				.description("Creates a const string column with code for an HTML chart."),
 
 
 	/* stack manipulation */
@@ -194,6 +200,9 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[periodicity=B, date=-20 offset today,format=\"decimal\",row_header=\"date\",col_headers=\"true\",:]")
 				.description("Creates a const string column with code for a table defined by input columns and with header HTML."),
 			nameBuilder("chart", StandardVocabulary::chartSVG)
+				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,periodicity=B, date=-20 offset today,:]")
+				.description("Creates a const string column with code for an HTML chart."),
+			nameBuilder("bar", StandardVocabulary::barChartSVG)
 				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,periodicity=B, date=-20 offset today,:]")
 				.description("Creates a const string column with code for an HTML chart."),
 			nameBuilder("rt", StandardVocabulary::rt)
@@ -450,6 +459,21 @@ public class StandardVocabulary extends Vocabulary {
 			}
 		}
 		return new Table("Successfully executed");
+	}
+
+	private static Table to_file(Pinto pinto, Expression e) {
+		Table t = new Table();
+		e.accept(pinto, t);
+		LinkedList<Column<?>> s = t.flatten();
+		String filename = castColumn(s.removeFirst(),OfConstantStrings.class).getValue();
+		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)))) {
+			while(!s.isEmpty()) {
+				out.print(castColumn(s.removeFirst(),OfConstantStrings.class).getValue());
+			}
+		} catch (IOException err) {
+			throw new IllegalArgumentException("Unable to open file \"" + filename + "\" for export");
+		}
+		return new Table("Successfully exported " + filename);
 	}
 
 	private static Table to_csv(Pinto pinto, Expression e) {
@@ -831,6 +855,21 @@ public class StandardVocabulary extends Vocabulary {
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
 		stack.add(new OfConstantStrings(() -> Chart.lineChart(e.evaluate(pinto),"chart-" + ID.getId(),
+							title, dateFormat, numberFormat, width, height), "HTML"));
+	}
+
+	private static void barChartSVG(Pinto pinto, LinkedList<Column<?>> stack) {
+		String title = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		String dateFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		Pinto.Expression e = new Pinto.Expression(false);
+		final LinkedList<Column<?>> s3 = new LinkedList<>(stack);
+		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
+		e.setTerminal(StandardVocabulary::eval);
+		stack.clear();
+		stack.add(new OfConstantStrings(() -> Chart.barChart(e.evaluate(pinto),"chart-" + ID.getId(),
 							title, dateFormat, numberFormat, width, height), "HTML"));
 	}
 
