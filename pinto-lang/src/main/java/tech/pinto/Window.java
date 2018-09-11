@@ -365,6 +365,11 @@ public interface Window<T extends Window<T>> {
 		protected double sumOfSquares = 0;
 		protected double count = 0;
 		protected double product = 1;
+		protected boolean clearOnNan = false;
+		
+		private Accumulator(boolean clearOnNan) {
+			this.clearOnNan = clearOnNan;
+		}
 
 		protected void accumulate(View v) {
 			if(v.reset()) {
@@ -392,12 +397,21 @@ public interface Window<T extends Window<T>> {
 					sum += d;
 					sumOfSquares += d * d;
 					product *= d;
+				} else if(clearOnNan) {
+					sum = 0;
+					sumOfSquares = 0;
+					count = 0;
+					product = 1;
 				}
 			}
 		}
 	}
 	
 	public static class Sum extends Accumulator {
+		
+		public Sum(boolean clearOnNan) {
+			super(clearOnNan);
+		}
 
 		@Override
 		public double update(View v) {
@@ -409,6 +423,10 @@ public interface Window<T extends Window<T>> {
 
 	public static class Product extends Accumulator {
 
+		public Product(boolean clearOnNan) {
+			super(clearOnNan);
+		}
+
 		@Override
 		public double update(View v) {
 			accumulate(v);
@@ -418,6 +436,10 @@ public interface Window<T extends Window<T>> {
 	}
 
 	public static class Mean extends Accumulator {
+
+		public Mean(boolean clearOnNan) {
+			super(clearOnNan);
+		}
 
 		@Override
 		public double update(View v) {
@@ -429,6 +451,10 @@ public interface Window<T extends Window<T>> {
 
 	public static class StandardDeviation extends Accumulator {
 
+		public StandardDeviation(boolean clearOnNan) {
+			super(clearOnNan);
+		}
+
 		@Override
 		public double update(View v) {
 			accumulate(v);
@@ -438,6 +464,10 @@ public interface Window<T extends Window<T>> {
 	}
 
 	public static class ZScore extends Accumulator {
+
+		public ZScore(boolean clearOnNan) {
+			super(clearOnNan);
+		}
 
 		@Override
 		public double update(View v) {
@@ -495,6 +525,12 @@ public interface Window<T extends Window<T>> {
 		
 		protected TreeMap<Double,Integer> t = new TreeMap<>();
 		
+		protected boolean clearOnNan;
+		
+		protected RankingStatistic(boolean clearOnNan) {
+			this.clearOnNan = clearOnNan;
+		}
+		
 		protected abstract double get();
 
 		@Override
@@ -512,6 +548,8 @@ public interface Window<T extends Window<T>> {
 						} else {
 							t.put(d, --count);
 						}
+					} else if(clearOnNan) {
+						t.clear();
 					}
 				}
 			}
@@ -529,6 +567,11 @@ public interface Window<T extends Window<T>> {
 	}
 	
 	public static class Max extends RankingStatistic {
+		
+		public Max(boolean clearOnNan) {
+			super(clearOnNan);
+		}
+
 		@Override
 		protected double get() {
 			return t.isEmpty() ? Double.NaN : t.lastKey();
@@ -536,6 +579,10 @@ public interface Window<T extends Window<T>> {
 	}
 
 	public static class Min extends RankingStatistic {
+
+		public Min(boolean clearOnNan) {
+			super(clearOnNan);
+		}
 
 		@Override
 		protected double get() {

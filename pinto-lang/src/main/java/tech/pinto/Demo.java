@@ -1,11 +1,14 @@
 package tech.pinto;
 
+import tech.pinto.Name;
+
 import java.io.File;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -101,11 +104,21 @@ public class Demo {
 	public static class DemoVocabulary extends StandardVocabulary {
 		
 		public DemoVocabulary() {
-			names.remove("import");
-			names.remove("read_csv");
-			names.remove("to_csv");
+			names.add(Name.nameBuilder("import", Demo::dummy).description("Not available in demo mode."));
+			names.add(Name.nameBuilder("read_csv", Demo::dummy).description("Not available in demo mode."));
+			names.add(Name.nameBuilder("to_csv", Demo::dummy).description("Not available in demo mode."));
+			names.add(Name.nameBuilder("to_file", Demo::dummy).description("Not available in demo mode."));
+			names.add(Name.nameBuilder("chart", Demo::dummy).description("Not available in demo mode."));
+			names.add(Name.nameBuilder("report", Demo::dummy).description("Not available in demo mode."));
+			names.add(Name.nameBuilder("bar", Demo::dummy).description("Not available in demo mode."));
+			names.add(Name.nameBuilder("rt", Demo::dummy).description("Not available in demo mode."));
+			names.add(Name.nameBuilder("grid", Demo::dummy).description("Not available in demo mode."));
 		}
 		
+	}
+	
+	private static void dummy(Pinto pinto, LinkedList<Column<?>> s) {
+		throw new UnsupportedOperationException("Not available in demo mode.");
 	}
 	
 	@Module

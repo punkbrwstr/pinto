@@ -4,6 +4,7 @@ import static tech.pinto.Name.nameBuilder;
 import static tech.pinto.Name.terminalNameBuilder;
 import static tech.pinto.Column.*;
 
+import java.awt.Color;
 import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -177,17 +178,17 @@ public class StandardVocabulary extends Vocabulary {
 					.indexer("[date=\"range\",:]"),
 			nameBuilder("rev_expanding", StandardVocabulary::rev_expanding_window)
 					.description("Creates a reverse-expanding window containing values from the current period to the end of the range."),
-			getStatisticName("sum", () -> new Window.Sum()),
-			getStatisticName("mean", () -> new Window.Mean()),
-			getStatisticName("zscore", () -> new Window.ZScore()),
-			getStatisticName("std", () -> new Window.StandardDeviation()),
-			getStatisticName("first", () -> Window.First),
-			getStatisticName("last", () -> Window.Last),
-			getStatisticName("change", () -> Window.Change),
-			getStatisticName("pct_change", () -> Window.PercentChange),
-			getStatisticName("min", () -> new Window.Min()),
-			getStatisticName("max", () -> new Window.Max()),
-			getStatisticName("product", () -> new Window.Product()),
+			getStatisticName("sum", b -> new Window.Sum(b)),
+			getStatisticName("mean", b -> new Window.Mean(b)),
+			getStatisticName("zscore", b -> new Window.ZScore(b)),
+			getStatisticName("std", b -> new Window.StandardDeviation(b)),
+			getStatisticName("first", b-> Window.First),
+			getStatisticName("last", b -> Window.Last),
+			getStatisticName("change", b -> Window.Change),
+			getStatisticName("pct_change", b -> Window.PercentChange),
+			getStatisticName("min", b -> new Window.Min(b)),
+			getStatisticName("max", b -> new Window.Max(b)),
+			getStatisticName("product", b -> new Window.Product(b)),
 			nameBuilder("ewma", StandardVocabulary::ewma)
 				.description("Exponentially weighted moving average calculated using *alpha* or defaulting to 2 / (N + 1)")
 				.indexer("[alpha=\"none\",:]"),
@@ -200,14 +201,18 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[periodicity=B, date=-20 offset today,format=\"decimal\",row_header=\"date\",col_headers=\"true\",:]")
 				.description("Creates a const string column with code for a table defined by input columns and with header HTML."),
 			nameBuilder("chart", StandardVocabulary::chartSVG)
-				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,periodicity=B, date=-20 offset today,:]")
+				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,color=default_palette,periodicity=B,date=-20 offset today,:]")
 				.description("Creates a const string column with code for an HTML chart."),
 			nameBuilder("bar", StandardVocabulary::barChartSVG)
-				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,periodicity=B, date=-20 offset today,:]")
+				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,color=default_palette,periodicity=B, date=-20 offset today,:]")
 				.description("Creates a const string column with code for an HTML chart."),
 			nameBuilder("rt", StandardVocabulary::rt)
 				.indexer("[functions=\" BA-DEC offset expanding pct_change {YTD} today today eval\",format=\"percent\",digits=2,:]")
-				.description("Creates a const string column with code for an HTML ranking table, applying each *function* to input columns and ranking the results.")
+				.description("Creates a const string column with code for an HTML ranking table, applying each *function* to input columns and ranking the results."),
+			nameBuilder("default_palette", StandardVocabulary::palette)
+				.description("Creates const string columns with hex codes for default colors for charts."),
+			nameBuilder("blue_palette", StandardVocabulary::bluePalette)
+				.description("Creates const string columns with hex codes for blue colors for charts.")
 		));
 
 		for(Entry<String, Supplier<Periodicity<?>>> e : Periodicities.map.entrySet()) {
@@ -343,16 +348,16 @@ public class StandardVocabulary extends Vocabulary {
 			}};
 	}
 
-	private static Name.Builder getStatisticName(String name, Supplier<Window.Statistic> s) {
-		Function<Supplier<Window.Statistic>, RowsFunction<double[]>> f = a -> (range, inputs) -> {
-			return a.get().apply(castColumn(inputs[0], OfWindow.class).rows(range));
+	private static Name.Builder getStatisticName(String name, Function<Boolean,Window.Statistic> s) {
+		Function<Boolean, RowsFunction<double[]>> f = b -> (range, inputs) -> {
+			return s.apply(b).apply(castColumn(inputs[0], OfWindow.class).rows(range));
 		};
-		Function<Supplier<Window.Statistic>, StackFunction> function = a -> (p, stack) -> {
+		return nameBuilder(name, (Pinto pinto, LinkedList<Column<?>> stack) ->  {
+			boolean clearOnNan = Boolean.parseBoolean(castColumn(stack.removeFirst(),OfConstantStrings.class).getValue());
 			stack.replaceAll(c -> new OfDoubles(inputs -> inputs[0].getHeader(),
-					inputs -> inputs[0].getTrace() + " " + name, f.apply(a), c));
-		};
-		return nameBuilder(name, function.apply(s))
-				.description("Calculates " + name + " for each view of window column inputs.");
+					inputs -> inputs[0].getTrace() + " " + name, f.apply(clearOnNan), c));
+		}).description("Calculates " + name + " for each view of window column inputs.")
+				.indexer("[clear_on_nan=\"false\",:]");
 	}
 
 	private static void ewma(Pinto pinto, LinkedList<Column<?>> stack) {
@@ -843,19 +848,69 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 
+	private static void palette(Pinto pinto, LinkedList<Column<?>> stack) {
+		stack.addLast(new OfConstantStrings("#92d050","color"));
+		stack.addLast(new OfConstantStrings("#c5be97","color"));
+		stack.addLast(new OfConstantStrings("#8db4e3","color"));
+		stack.addLast(new OfConstantStrings("#ffff99","color"));
+		stack.addLast(new OfConstantStrings("#fddf70","color"));
+		stack.addLast(new OfConstantStrings("#ff7c80","color"));
+		stack.addLast(new OfConstantStrings("#f09ebf","color"));
+		stack.addLast(new OfConstantStrings("#efff59","color"));
+		stack.addLast(new OfConstantStrings("#43d2ff","color"));
+		stack.addLast(new OfConstantStrings("#888888","color"));
+		stack.addLast(new OfConstantStrings("#00b050","color"));
+		stack.addLast(new OfConstantStrings("#846802","color"));
+		stack.addLast(new OfConstantStrings("#0070c0","color"));
+		stack.addLast(new OfConstantStrings("#ffff00","color"));
+		stack.addLast(new OfConstantStrings("#fbc913","color"));
+		stack.addLast(new OfConstantStrings("#ea5816","color"));
+		stack.addLast(new OfConstantStrings("#d42069","color"));
+		stack.addLast(new OfConstantStrings("#9fb000","color"));
+		stack.addLast(new OfConstantStrings("#007194","color"));
+		stack.addLast(new OfConstantStrings("#7f7f7f","color"));
+		stack.addLast(new OfConstantStrings("#ccffcc","color"));
+		stack.addLast(new OfConstantStrings("#ccffff","color"));
+		stack.addLast(new OfConstantStrings("#ffffcc","color"));
+		stack.addLast(new OfConstantStrings("#ffcccc","color"));
+	}
+	
+	private static void bluePalette(Pinto pinto, LinkedList<Column<?>> stack) {
+		stack.addLast(new OfConstantStrings("#12426d","color"));
+		stack.addLast(new OfConstantStrings("#2383db","color"));
+		stack.addLast(new OfConstantStrings("#85baeb","color"));
+		stack.addLast(new OfConstantStrings("#c3ddf5","color"));
+		stack.addLast(new OfConstantStrings("#aadaac","color"));
+		stack.addLast(new OfConstantStrings("#489452","color"));
+		stack.addLast(new OfConstantStrings("#306236","color"));
+		stack.addLast(new OfConstantStrings("#04400b","color"));
+		stack.addLast(new OfConstantStrings("#282828","color"));
+		stack.addLast(new OfConstantStrings("#515151","color"));
+		stack.addLast(new OfConstantStrings("#808080","color"));
+		stack.addLast(new OfConstantStrings("#cdcdcd","color"));
+		stack.addLast(new OfConstantStrings("#adb0d6","color"));
+		stack.addLast(new OfConstantStrings("#767cbb","color"));
+		stack.addLast(new OfConstantStrings("#5556aa","color"));
+		stack.addLast(new OfConstantStrings("#3b3c8d","color"));
+	}
+	
 	private static void chartSVG(Pinto pinto, LinkedList<Column<?>> stack) {
 		String title = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		String dateFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
 		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		List<Color> colors = new ArrayList<>();
+		while(stack.peekFirst().getHeader().equals("color")) {
+			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
+		}
 		Pinto.Expression e = new Pinto.Expression(false);
 		final LinkedList<Column<?>> s3 = new LinkedList<>(stack);
 		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
 		stack.add(new OfConstantStrings(() -> Chart.lineChart(e.evaluate(pinto),"chart-" + ID.getId(),
-							title, dateFormat, numberFormat, width, height), "HTML"));
+							title, dateFormat, numberFormat, width, height, colors), "HTML"));
 	}
 
 	private static void barChartSVG(Pinto pinto, LinkedList<Column<?>> stack) {
@@ -864,13 +919,17 @@ public class StandardVocabulary extends Vocabulary {
 		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
 		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		List<Color> colors = new ArrayList<>();
+		while(stack.peekFirst().getHeader().equals("color")) {
+			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
+		}
 		Pinto.Expression e = new Pinto.Expression(false);
 		final LinkedList<Column<?>> s3 = new LinkedList<>(stack);
 		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
 		stack.add(new OfConstantStrings(() -> Chart.barChart(e.evaluate(pinto),"chart-" + ID.getId(),
-							title, dateFormat, numberFormat, width, height), "HTML"));
+							title, dateFormat, numberFormat, width, height, colors), "HTML"));
 	}
 
 	private static void grid(Pinto pinto, LinkedList<Column<?>> stack) {

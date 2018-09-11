@@ -14,107 +14,94 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.labels.ItemLabelAnchor;
+import org.jfree.chart.labels.ItemLabelPosition;
+import org.jfree.chart.labels.StandardXYItemLabelGenerator;
+import org.jfree.chart.labels.XYItemLabelGenerator;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.category.BarRenderer;
-import org.jfree.chart.renderer.category.StandardBarPainter;
 import org.jfree.chart.renderer.xy.StandardXYBarPainter;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.ui.HorizontalAlignment;
 import org.jfree.chart.ui.RectangleInsets;
+import org.jfree.chart.ui.TextAnchor;
+import org.jfree.chart.ui.VerticalAlignment;
 import org.jfree.data.DomainOrder;
 import org.jfree.data.general.DatasetChangeListener;
 import org.jfree.data.general.DatasetGroup;
 import org.jfree.data.xy.IntervalXYDataset;
-import org.jfree.data.xy.XYBarDataset;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.graphics2d.svg.FontMapper;
 import org.jfree.graphics2d.svg.SVGGraphics2D;
 
 import tech.pinto.Table;
-import tech.pinto.time.Period;
 
 public class Chart {
 	
-//	private static final Color[] SERIES_COLORS = new Color[] {
-//			new Color(251, 201, 19),
-//			new Color(214, 236, 0),
-//			new Color(118, 124, 187),
-//			new Color(183, 239, 204),
-//			new Color(241, 144, 101),
-//			new Color(205, 205, 207),
-//			new Color(81, 81, 81),
-//			new Color(222, 190, 160) };
-
-	private static final Color[] SERIES_COLORS = new Color[] {
-			new Color(18, 66, 109),
-			new Color(35, 131, 219),
-			new Color(133, 186, 235),
-			new Color(195, 221, 245),
-			new Color(170, 218, 172),
-			new Color(72, 148, 82),
-			new Color(48, 98, 54),
-			new Color(4, 64, 11),
-			new Color(40, 40, 40),
-			new Color(81, 81, 81),
-			new Color(128, 128, 128),
-			new Color(205, 205, 205),
-			new Color(173, 176, 214),
-			new Color(118, 124, 187),
-			new Color(85, 86, 170),
-			new Color(59, 60, 141)
-	};
-
 	public static String lineChart(Table table, String id, String title, String dateFormat,
-			String numberFormat, int width, int height ) {
-
+			String numberFormat, int width, int height, List<Color> colors) {
+		TableDataSet data = new TableDataSet(table);
 		JFreeChart chart = ChartFactory.createTimeSeriesChart(
 				title.equals("") ? null : "           " + title, // title
 				null, // x-axis label
 				null, // y-axis label
-				new TableDataSet(table), // data
+				data, // data
 				true,
 				true, // generate tooltips?
 				false // generate URLs?
 		);
 		if(!title.equals("")) {
-			chart.getTitle().setFont(new Font("SansSerif", Font.BOLD, 12));
+			chart.getTitle().setFont(new Font("SansSerif", Font.ITALIC + Font.BOLD, 14));
+			chart.getTitle().setVerticalAlignment(VerticalAlignment.BOTTOM);
 			chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
+			chart.getTitle().setPaint(new Color(216-50, 221-50, 225-50));
+			chart.getTitle().setMargin(0, 65, 0, 0);
 		}
-		//chart.setBackgroundPaint(new Color(216,221,225));
+
+
 		XYPlot plot = (XYPlot) chart.getPlot();
-		//plot.setBackgroundPaint(new Color(174, 180, 187));
-		//plot.setDomainGridlinePaint(Color.white);
-		//plot.setRangeGridlinePaint(Color.white);
 		plot.setBackgroundPaint(Color.white);
+		plot.setBackgroundPaint(Color.decode("#D0ECEC"));
 		plot.setDomainGridlinePaint(new Color(216, 221, 225));
 		plot.setRangeGridlinePaint(new Color(216, 221, 225));
+		plot.setDomainGridlinePaint(new Color(216-25, 221-25, 225-25));
+		plot.setRangeGridlinePaint(new Color(216-25, 221-25, 225-25));
 		plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
 		plot.setDomainCrosshairVisible(true);
 		plot.setRangeCrosshairVisible(true);
 		
-		
-		//chart.getLegend().setBackgroundPaint(new Color(216, 221, 225));
-		//chart.getLegend().setBorder(new BlockBorder(new Color(174, 180, 187)));
+		plot.getDomainAxis().setUpperMargin(plot.getDomainAxis().getUpperMargin() + 0.20);
 
-		XYItemRenderer r = plot.getRenderer();
-		for (int i = 0; i < table.getColumnCount() && i < SERIES_COLORS.length; i++)
-			r.setSeriesPaint(i, SERIES_COLORS[i]);
-		if (r instanceof XYLineAndShapeRenderer) {
-			XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) r;
-			renderer.setDefaultStroke(new BasicStroke(3));
-			//renderer.setDefaultShapesVisible(true);
-			//renderer.setDefaultShapesFilled(true);
+		XYLineAndShapeRenderer r = (XYLineAndShapeRenderer) plot.getRenderer();
+		for (int i = 0; i < table.getColumnCount() && i < colors.size(); i++) {
+			r.setSeriesPaint(i, colors.get(i));
+			r.setSeriesItemLabelPaint(i, colors.get(i));
+			r.setSeriesStroke(i, new BasicStroke(2.f));
 		}
+		DecimalFormat format = new DecimalFormat(numberFormat);
 		NumberAxis na = (NumberAxis) plot.getRangeAxis();
-		na.setNumberFormatOverride(new DecimalFormat(numberFormat));
-		//plot.setRangeAxis(0,na);
-	
+		na.setNumberFormatOverride(format);
 
 		DateAxis axis = (DateAxis) plot.getDomainAxis();
 		axis.setDateFormatOverride(new SimpleDateFormat(dateFormat.equals("") ? "yyyy-MM-dd" : dateFormat));
+
+        XYItemLabelGenerator generator = new StandardXYItemLabelGenerator() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public String generateLabel(XYDataset dataset, int series, int item) {
+				return item != dataset.getItemCount(0) - 1 ? "" : data.headers.get(dataset.getSeriesCount() - series - 1) +
+						" " + format.format(dataset.getYValue(series, item));
+			}
+        	
+        };
+        r.setDefaultItemLabelGenerator(generator);
+        r.setDefaultItemLabelsVisible(true);
+        r.setDefaultNegativeItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.CENTER_LEFT));
+        r.setDefaultPositiveItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.CENTER_LEFT));
+        r.setDefaultItemLabelFont(new Font("SansSerif", Font.PLAIN, 11));
 
         SVGGraphics2D g2 = new SVGGraphics2D(width, height);
         g2.setFontMapper(new FontMapper() {
@@ -130,7 +117,7 @@ public class Chart {
 	}
 
 	public static String barChart(Table table, String id, String title, String dateFormat,
-			String numberFormat, int width, int height ) {
+			String numberFormat, int width, int height, List<Color> colors) {
 
 		JFreeChart chart = ChartFactory.createXYBarChart(
 				title.equals("") ? null : "           " + title, // title
@@ -138,7 +125,6 @@ public class Chart {
 				true,
 				null, // y-axis label
 				new TableDataSet(table), // data
-//				new XYBarDataset(new TableDataSet(table), 900000000), // data
 				PlotOrientation.VERTICAL,
 				true,
 				true, // generate tooltips?
@@ -165,8 +151,8 @@ public class Chart {
 		//chart.getLegend().setBorder(new BlockBorder(new Color(174, 180, 187)));
 
 		XYItemRenderer r = plot.getRenderer();
-		for (int i = 0; i < table.getColumnCount() && i < SERIES_COLORS.length; i++)
-			r.setSeriesPaint(i, SERIES_COLORS[i]);
+		for (int i = 0; i < table.getColumnCount() && i < colors.size(); i++)
+			r.setSeriesPaint(i, colors.get(i));
 		((XYBarRenderer) r).setBarPainter(new StandardXYBarPainter());
 		((XYBarRenderer) r).setMargin(0.05);
 		NumberAxis na = (NumberAxis) plot.getRangeAxis();
@@ -218,7 +204,7 @@ public class Chart {
 
 		@Override
 		public double getYValue(int arg0, int arg1) {
-			return columns[arg0][arg1];
+			return columns[columns.length - arg0 - 1][arg1];
 		}
 
 		@Override
@@ -233,12 +219,12 @@ public class Chart {
 
 		@Override
 		public Comparable<String> getSeriesKey(int arg0) {
-			return headers.get(arg0);
+			return headers.get(columns.length - arg0 - 1);
 		}
 
 		@Override
 		public int indexOf(@SuppressWarnings("rawtypes") Comparable arg0) {
-			return headers.indexOf(arg0);
+			return columns.length - headers.indexOf(arg0) - 1;
 		}
 
 		@Override
