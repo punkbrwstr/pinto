@@ -14,19 +14,31 @@
         </header>
         <div id="pintoBody">
         	<h3>What is Pinto?</h3>
-		<p>Pinto is a domain-specific programming language for working with time series data. Pinto expressions produce one thing: tables of data with rows that correspond to periodic points in time.  Each table column contains a consistent type of data, but the values could be constant or time-varying.  Columns also have a text header for identifying metadata.  Pinto expressions can be evaluated to produce values for any periodicity over any range of time.  As a <a href="https://en.wikipedia.org/wiki/Concatenative_programming_language" rel="nofollow">concatenative</a> language that uses <a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation" rel="nofollow">postfix</a> notation, Pinto expressions are comprised of a sequence of functions that operate on the the same table in left-to-right order.  The table is set up as a <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)" rel="nofollow">stack</a>, with new columns added to the right and functions operating on the rightmost column first.  Pinto indexing expressions allow convenient filtering of the table--passing only selected columns to the next function by referencing a column's header value or position in the table.</p>
+		<p>Pinto is a domain-specific language for working with time series.
+		All Pinto programes are expressions that produce one thing: tables of data where each column is a time series and the rows correspond to periodic points in time.
+		Expressions are not tied to specific dates but can be evaluated to produce a table with rows for any range of time.
+		As a <a href="https://en.wikipedia.org/wiki/Concatenative_programming_language" rel="nofollow">concatenative</a> language that
+		uses <a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation" rel="nofollow">postfix</a> notation,
+		Pinto expressions are comprised of a sequence of functions that operate on the same table in the order they are written.
+		The table is set up as a <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)" rel="nofollow">stack</a>, 
+		with new columns added to the right and functions operating on the rightmost column first.
+		By using an indexer, the columns that are passed to a function can be filtered header value or position in the table.</p>
 		<p>For language details please see the <a href="https://github.com/punkbrwstr/pinto/blob/master/pinto_reference.md">Pinto Language Reference</a> and for examples take a look at our <a href="https://github.com/punkbrwstr/pinto/wiki">wiki</a>.</p>
 		<h3>Key features</h3>
 		<ul>
-			<li>Expressive: Concise code using recognizable symbols and efficient postfix notation</li>
+			<li>Expressive: The cleanliness of concatenative code with flexible indexing to tame the stack</li>
 			<li>Batteries included: Integrated Bloomberg or IEX data, charting, rich library of statistical functions</li>
 			<li>Efficient: Lazy evaluation, range-based caching for <a href="https://en.wikipedia.org/wiki/Arity" rel="nofollow">nullary</a> functions</li>
 			<li>Extensible: User-defined functions behave just like primitives</li>
 			<li>Interoperable: Accessible through an http interface (works great with Python or SAS)</li>
 		</ul>
 		<h3>Why Pinto?</h3>
-		<p>Pinto was designed to prepare financial market data for use in models or visualizations.  A Pinto one-liner can perform data transformations that would require many lines of Pandas operations, multiple SAS data steps, or an Excel sheet full of formulas.  With Pinto's side-effect-free functional paradigm, the expression will return the same values every time.  And, Pinto can reevaluate the same expression for a different frequency or an expand the range of dates without changes to the code.</p>
-		<p>Pinto combines the efficiency of an HP-12c calculator, the simplicity of Postscript, the tersity of J, and the familiarity of Python indexing.</p
+		<p>
+		Pinto was designed to prepare financial market data for use in models or visualizations.
+		A Pinto one-liner can perform data transformations that would require many lines of Pandas operations, multiple SAS data steps, or an Excel sheet full of formulas.
+		With Pinto's side-effect-free functional paradigm, the expression will return the same values every time.
+		And, Pinto can reevaluate the same expression for a different frequency or an expand the range of dates without changes to the code.
+		</p>
 	</div>
         <div id="tryPinto">
         	<h3>Try Pinto Live!</h3>
