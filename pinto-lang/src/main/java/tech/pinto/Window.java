@@ -1,9 +1,9 @@
 package tech.pinto;
 
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
+import tech.pinto.tools.AVLTree;
 
 public interface Window<T extends Window<T>> {
 	
@@ -472,8 +472,9 @@ public interface Window<T extends Window<T>> {
 		@Override
 		public double update(View v) {
 			accumulate(v);
-			return (v.get(v.size()-1) - sum / (double) count) /
-					Math.sqrt((sumOfSquares - sum * sum / (double) count) / ((double)count - 1));
+			double denom = Math.sqrt((sumOfSquares - sum * sum / (double) count) / ((double)count - 1));
+			return denom == 0 ? Double.NaN : (v.get(v.size()-1) - sum / (double) count) / denom;
+					
 		}
 		
 	}
@@ -523,7 +524,7 @@ public interface Window<T extends Window<T>> {
 	
 	public static abstract class RankingStatistic implements Statistic {
 		
-		protected TreeMap<Double,Integer> t = new TreeMap<>();
+		protected AVLTree t = new AVLTree();
 		
 		protected boolean clearOnNan;
 		
@@ -542,12 +543,7 @@ public interface Window<T extends Window<T>> {
 				for(int i = 0; i < subtractions.size(); i++) {
 					double d = subtractions.get(i);
 					if(d == d) {
-						int count = t.get(d);
-						if(count == 1) {
-							t.remove(d);
-						} else {
-							t.put(d, --count);
-						}
+						t.delete(d);
 					} else if(clearOnNan) {
 						t.clear();
 					}
@@ -557,8 +553,7 @@ public interface Window<T extends Window<T>> {
 			for(int i = 0; i < additions.size(); i++) {
 				double d = additions.get(i);
 				if(d == d) {
-					int count = t.containsKey(d) ? t.get(d) : -1;
-					t.put(d, ++count);
+					t.insert(d);
 				}
 			}
 			return get();
@@ -574,7 +569,7 @@ public interface Window<T extends Window<T>> {
 
 		@Override
 		protected double get() {
-			return t.isEmpty() ? Double.NaN : t.lastKey();
+			return t.isEmpty() ? Double.NaN : t.getMax();
 		}
 	}
 
@@ -586,9 +581,21 @@ public interface Window<T extends Window<T>> {
 
 		@Override
 		protected double get() {
-			return t.isEmpty() ? Double.NaN : t.firstKey();
+			return t.isEmpty() ? Double.NaN : t.getMin();
 		}
 		
+	}
+
+	public static class Median extends RankingStatistic {
+
+		public Median(boolean clearOnNan) {
+			super(clearOnNan);
+		}
+
+		@Override
+		protected double get() {
+			return t.isEmpty() ? Double.NaN : t.getMedian();
+		}
 	}
 
 	public static class EmptyArray implements Array {

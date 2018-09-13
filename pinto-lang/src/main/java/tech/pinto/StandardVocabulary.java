@@ -188,6 +188,7 @@ public class StandardVocabulary extends Vocabulary {
 			getStatisticName("pct_change", b -> Window.PercentChange),
 			getStatisticName("min", b -> new Window.Min(b)),
 			getStatisticName("max", b -> new Window.Max(b)),
+			getStatisticName("median", b -> new Window.Median(b)),
 			getStatisticName("product", b -> new Window.Product(b)),
 			nameBuilder("ewma", StandardVocabulary::ewma)
 				.description("Exponentially weighted moving average calculated using *alpha* or defaulting to 2 / (N + 1)")

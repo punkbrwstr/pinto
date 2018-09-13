@@ -204,7 +204,8 @@ public class Chart {
 
 		@Override
 		public double getYValue(int arg0, int arg1) {
-			return columns[columns.length - arg0 - 1][arg1];
+			double d = columns[columns.length - arg0 - 1][arg1];
+			return Double.isInfinite(d) ? Double.NaN : d;
 		}
 
 		@Override
