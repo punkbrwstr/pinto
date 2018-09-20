@@ -2,10 +2,272 @@
 <html lang="en">
     <head>
         <title>pinto</title>
-        <link href="https://fonts.googleapis.com/css?family=Geo|Montserrat|Source+Sans+Pro|Inconsolata|Roboto" rel="stylesheet">
-        <link rel="stylesheet" href="/stylesheets/style.css">
-        <script type="text/javascript" src="/javascripts/jquery-2.1.1.min.js"></script>
     	<style>
+/* latin */
+@font-face '{'
+  font-family: ''Geo'';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''Geo''), local(''Geo-Regular''), url(https://fonts.gstatic.com/s/geo/v9/CSRz4zRZluflKHpn.woff2) format(''woff2'');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+'}'
+/* latin-ext */
+@font-face '{'
+  font-family: ''Inconsolata'';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''Inconsolata Regular''), local(''Inconsolata-Regular''), url(https://fonts.gstatic.com/s/inconsolata/v16/QldKNThLqRwH-OJ1UHjlKGlX5qhWxg.woff2) format(''woff2'');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+'}'
+/* latin */
+@font-face '{'
+  font-family: ''Inconsolata'';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''Inconsolata Regular''), local(''Inconsolata-Regular''), url(https://fonts.gstatic.com/s/inconsolata/v16/QldKNThLqRwH-OJ1UHjlKGlZ5qg.woff2) format(''woff2'');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+'}'
+/* latin-ext */
+@font-face '{'
+  font-family: ''Montserrat'';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''Montserrat Regular''), local(''Montserrat-Regular''), url(https://fonts.gstatic.com/s/montserrat/v12/JTUSjIg1_i6t8kCHKm459Wdhyzbi.woff2) format(''woff2'');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+'}'
+/* latin */
+@font-face '{'
+  font-family: ''Montserrat'';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''Montserrat Regular''), local(''Montserrat-Regular''), url(https://fonts.gstatic.com/s/montserrat/v12/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2) format(''woff2'');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+'}'
+/* latin-ext */
+@font-face '{'
+  font-family: ''Roboto'';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''Roboto''), local(''Roboto-Regular''), url(https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7GxKOzY.woff2) format(''woff2'');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+'}'
+/* latin */
+@font-face '{'
+  font-family: ''Roboto'';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''Roboto''), local(''Roboto-Regular''), url(https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4mxK.woff2) format(''woff2'');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+'}'
+/* latin-ext */
+@font-face '{'
+  font-family: ''Source Sans Pro'';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''Source Sans Pro Regular''), local(''SourceSansPro-Regular''), url(https://fonts.gstatic.com/s/sourcesanspro/v11/6xK3dSBYKcSV-LCoeQqfX1RYOo3qNq7lqDY.woff2) format(''woff2'');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+'}'
+/* latin */
+@font-face '{'
+  font-family: ''Source Sans Pro'';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''Source Sans Pro Regular''), local(''SourceSansPro-Regular''), url(https://fonts.gstatic.com/s/sourcesanspro/v11/6xK3dSBYKcSV-LCoeQqfX1RYOo3qOK7l.woff2) format(''woff2'');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+'}'
+
+    	
+body '{'
+  padding: 0;
+  margin: 0;
+  border: 0;
+  position: relative;
+  font-family: ''Roboto'', sans-serif;
+  font-size: 90%;
+'}'
+
+a '{'
+  color: #0d646b;
+'}'
+
+.text '{'
+  font-family: ''Roboto'', sans-serif;
+'}'
+
+p '{'
+    text-indent: 15px;
+	width: 600px;
+    color: #16383a;
+'}'
+
+p.examples '{'
+	font-style: italic;
+'}'
+
+header '{'
+    color: #fff;
+	background: linear-gradient(#e27812,#ffd2b5 );
+    /*position: fixed;*/
+    left: 0;
+    top: 0;
+    width: 100%;
+    z-index: -1;
+'}'
+
+#logo '{'
+	font-family: ''Geo'', sans-serif;
+	margin-bottom: 0; padding-bottom: 0;
+    color: #ffd2b5;
+	text-align: right;
+    font-size: 125%
+'}'
+
+h2#mainTitle '{'
+	font-family: ''Geo'', sans-serif;
+	margin-bottom: 0; padding-bottom: 0;
+    color: #16383a;
+    font-size: 250%
+'}'
+
+/*h3 '{'
+	font-family: ''Geo'', sans-serif;
+	margin-bottom: 0; padding-bottom: 0;
+    color: #16383a;
+    font-size: 150%
+'}'*/
+
+h4#buildNumber '{'
+	margin-top: 0; padding-top: 0;
+	font-size: 50%;
+	font-style: italic;
+    color: #16383a;
+'}'
+
+footer '{'
+  margin-top: 75px;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+'}'
+
+#pintoBody '{'
+	/*margin-top: 100px;*/
+'}'
+
+.pintoCell '{'
+	margin-top: 25px;
+	margin-bottom: 25px;
+'}'
+
+table.pintoDataTable '{'
+    width: 80%;
+    height: 400px;
+    overflow: auto;
+    display: block;
+    border-collapse:collapse;
+    border: 3px solid #433447;
+    font-family: ''Montserrat'', sans-serif;
+    font-size: 65%;
+'}'
+
+table.pintoDataTable thead, table.pintoDataTable tbody '{'
+'}'
+
+table.pintoDataTable thead th '{'
+        background-color: #433447;
+        color: #ffffff;
+        border: 0;
+        border-right: 2px solid #433447;
+'}'
+
+table.pintoDataTable tbody '{'
+    overflow: auto;
+    height: 350px;
+'}'
+
+
+table.pintoDataTable col:first-child '{'border-right: 2px solid #CCC;'}'
+table.pintoDataTable col:nth-child(2n+3) '{'background: #CCC'}'
+  
+table.rankingTable '{'
+    width: 100%;
+    font: 10px Helvetica, Arial, sans-serif;
+    border-collapse: collapse;
+    border-style: none;
+'}'
+
+.rankingTable thead '{'
+    color: #fff;
+    background: #433447;
+    vertical-align: bottom;
+    border-collapse: collapse;
+    border-style: none;
+'}'
+
+.rankingTable tr,td,th '{'
+    border-collapse: collapse;
+    border-style: none;
+    text-align: center;
+'}'
+
+th.rankingTableHeader '{'
+    border-collapse: collapse;
+    border-style: none;
+    text-align: center;
+'}'
+
+td.rankingTableCell '{'
+    border-style: none;
+    border-collapse: collapse;
+    padding: 3px;
+    text-align: center;
+'}'
+
+td#rankingColor20 '{' background: #92d050; '}'
+td#rankingColor19 '{' background: #c5be97; '}'
+td#rankingColor18 '{' background: #8db4e3; '}'
+td#rankingColor17 '{' background: #ffff99; '}'
+td#rankingColor16 '{' background: #fddf70; '}'
+td#rankingColor15 '{' background: #ff7c80; '}'
+td#rankingColor14 '{' background: #f09ebf; '}'
+td#rankingColor13 '{' background: #efff59; '}'
+td#rankingColor12 '{' background: #43d2ff; '}'
+td#rankingColor11 '{' background: #888888; '}'
+td#rankingColor10 '{' background: #00b050; '}'
+td#rankingColor9 '{' background: #846802; '}'
+td#rankingColor8 '{' background: #0070c0; '}'
+td#rankingColor7 '{' background: #ffff00; '}'
+td#rankingColor6 '{' background: #fbc913; '}'
+td#rankingColor5 '{' background: #ea5816; '}'
+td#rankingColor4 '{' background: #d42069; '}'
+td#rankingColor3 '{' background: #9fb000; '}'
+td#rankingColor2 '{' background: #7f7f7f; '}'
+td#rankingColor1 '{' background: #ccffcc; '}'
+td#rankingColor0 '{' background: #ffcccc; '}'
+  
+table.pintoGrid '{'
+    width: 100%;
+    font: 10px Helvetica, Arial, sans-serif;
+    border-collapse: collapse;
+    border-style: none;
+    table-layout: fixed
+'}' 
+
+table.pintoTable '{'
+    width: 100%;
+    font: 10px Helvetica, Arial, sans-serif;
+    border-collapse: collapse;
+    border-style: none;
+    table-layout: fixed
+'}' 
+
+table.pintoTable tr:nth-child(even) '{'
+    background-color: #ffffff;
+'}'
+
+table.pintoTable tr:nth-child(odd) '{'
+    background-color: #dddddd;
+'}'
 
 	  </style>
     </head>

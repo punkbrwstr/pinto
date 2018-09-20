@@ -78,7 +78,7 @@ public class Chart {
 		for (int i = 0; i < table.getColumnCount() && i < colors.size(); i++) {
 			r.setSeriesPaint(i, colors.get(i));
 			r.setSeriesItemLabelPaint(i, colors.get(i));
-			r.setSeriesStroke(i, new BasicStroke(2.f));
+			r.setSeriesStroke(i, new BasicStroke(1.5f));
 		}
 		DecimalFormat format = new DecimalFormat(numberFormat);
 		NumberAxis na = (NumberAxis) plot.getRangeAxis();
