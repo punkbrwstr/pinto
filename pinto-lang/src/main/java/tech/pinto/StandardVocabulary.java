@@ -53,6 +53,7 @@ import tech.pinto.time.Periodicities;
 import tech.pinto.time.Periodicity;
 import tech.pinto.tools.Chart;
 import tech.pinto.tools.ID;
+import tech.pinto.Pinto.Stack;
 
 public class StandardVocabulary extends Vocabulary {
     
@@ -263,6 +264,7 @@ public class StandardVocabulary extends Vocabulary {
     	names.add(getUnaryOperatorName("neg", x -> x * -1.0d));
     	names.add(getUnaryOperatorName("inv", x -> 1.0 / x));
     	names.add(getUnaryOperatorName("zeroToNa", x -> x == 0 ? Double.NaN : x));
+    	names.add(getUnaryOperatorName("naToZero", x -> x != x ? 0 : x));
 		names.add(getUnaryOperatorName("xmPrice", quote -> {
 			double TERM = 10, RATE = 6, price = 0;
 			for (int i = 0; i < TERM * 2; i++) {
@@ -280,7 +282,7 @@ public class StandardVocabulary extends Vocabulary {
 
 	}
 
-	private static void rolling_window(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void rolling_window(Pinto pinto, Stack s) {
 		int size = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
 		s.replaceAll(c -> {
 			return new OfWindow(inputs -> inputs[0].getHeader(),
@@ -298,7 +300,7 @@ public class StandardVocabulary extends Vocabulary {
 			}};
 	}
 
-	private static void cross_window(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void cross_window(Pinto pinto, Stack s) {
 		Column.OfDoubles[] a = s.toArray(new OfDoubles[] {});
 		s.clear();
 		s.add(new OfWindow(inputs -> "cross", inputs -> "cross", StandardVocabulary::crossWindowRowsFunction, a));
@@ -312,7 +314,7 @@ public class StandardVocabulary extends Vocabulary {
 		return new Window.Cross(d);
 	}
 
-	private static void rev_expanding_window(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void rev_expanding_window(Pinto pinto, Stack s) {
 		s.replaceAll(c -> new OfWindow(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " rev_expanding", StandardVocabulary::revExpandingWindowRowsFunction, c));
 	}
 	
@@ -320,7 +322,7 @@ public class StandardVocabulary extends Vocabulary {
 		return new Window.ReverseExpanding(castColumn(columns[0], OfDoubles.class).rows(range));
 	}
 
-	private static void expanding_window(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void expanding_window(Pinto pinto, Stack s) {
 		Optional<LocalDate> start = s.peekFirst() instanceof OfConstantStrings
 				&& castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("range") ? Optional.empty()
 						: Optional.of(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
@@ -353,7 +355,7 @@ public class StandardVocabulary extends Vocabulary {
 		Function<Boolean, RowsFunction<double[]>> f = b -> (range, inputs) -> {
 			return s.apply(b).apply(castColumn(inputs[0], OfWindow.class).rows(range));
 		};
-		return nameBuilder(name, (Pinto pinto, LinkedList<Column<?>> stack) ->  {
+		return nameBuilder(name, (Pinto pinto, Stack stack) ->  {
 			boolean clearOnNan = Boolean.parseBoolean(castColumn(stack.removeFirst(),OfConstantStrings.class).getValue());
 			stack.replaceAll(c -> new OfDoubles(inputs -> inputs[0].getHeader(),
 					inputs -> inputs[0].getTrace() + " " + name, f.apply(clearOnNan), c));
@@ -361,7 +363,7 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[clear_on_nan=\"false\",:]");
 	}
 
-	private static void ewma(Pinto pinto, LinkedList<Column<?>> stack) {
+	private static void ewma(Pinto pinto, Stack stack) {
 		Column<?> alphaCol = stack.removeFirst();
 		Optional<Double> alpha = alphaCol instanceof OfConstantDoubles ? 
 				Optional.of(castColumn(alphaCol, OfConstantDoubles.class).getValue()) : Optional.empty();
@@ -422,7 +424,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static Table eval(Pinto pinto, Expression e) {
 		Table t = new Table();
 		e.accept(pinto, t);
-		LinkedList<Column<?>> s = t.flatten();
+		Stack s = t.flatten();
 		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
 		LinkedList<LocalDate> dates = new LinkedList<>();
 		while ((!s.isEmpty()) && dates.size() < 2 && s.peekFirst().getHeader().equals("date")) {
@@ -435,7 +437,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static Table imp(Pinto pinto, Expression expression) {
 		Table t = new Table();
 		expression.accept(pinto, t);
-		for (LinkedList<Column<?>> s : t.takeTop()) {
+		for (Stack s : t.takeTop()) {
 			while (!s.isEmpty()) {
 				String filename = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 				int lineNumber = 0;
@@ -470,7 +472,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static Table to_file(Pinto pinto, Expression e) {
 		Table t = new Table();
 		e.accept(pinto, t);
-		LinkedList<Column<?>> s = t.flatten();
+		Stack s = t.flatten();
 		String filename = castColumn(s.removeFirst(),OfConstantStrings.class).getValue();
 		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)))) {
 			while(!s.isEmpty()) {
@@ -485,7 +487,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static Table to_csv(Pinto pinto, Expression e) {
 		Table t = new Table();
 		e.accept(pinto, t);
-		LinkedList<Column<?>> s = t.flatten();
+		Stack s = t.flatten();
 		String filename = castColumn(s.removeFirst(),OfConstantStrings.class).getValue();
 		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
 		LinkedList<LocalDate> dates = new LinkedList<>();
@@ -514,45 +516,45 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void only(Pinto pinto, Table t) {
-		List<LinkedList<Column<?>>> indexed = t.takeTop();
+		List<Stack> indexed = t.takeTop();
 		t.clearTop();
 		t.insertAtTop(indexed);
 	}
 
-	private static void clear(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void clear(Pinto pinto, Stack s) {
 		s.clear();
 	}
 
-	private static void rev(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void rev(Pinto pinto, Stack s) {
 		Collections.reverse(s);
 	}
 
-	private static void pull(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void pull(Pinto pinto, Stack s) {
 		;
 	}
 
-	private static void copy(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void copy(Pinto pinto, Stack s) {
 		int times = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
-		LinkedList<Column<?>> temp = new LinkedList<>();
+		Stack temp = new Stack();
 		s.stream().forEach(temp::addFirst);
 		for (int j = 0; j < times - 1; j++) {
 			temp.stream().map(Column::clone).forEach(s::addFirst);
 		}
 	}
 
-	private static void roll(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void roll(Pinto pinto, Stack s) {
 		int times = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
 		for (int j = 0; j < times; j++) {
 			s.addLast(s.removeFirst());
 		}
 	}
 
-	private static void columns(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void columns(Pinto pinto, Stack s) {
 		s.addFirst(new OfConstantDoubles(s.size()));
 	}
 
 	private static void index(Pinto pinto, Table t) {
-		LinkedList<Column<?>> s = t.takeTop().get(0);
+		Stack s = t.takeTop().get(0);
 		List<String> endpoints = new LinkedList<>();
 		while (!s.isEmpty() && endpoints.size() < 2 && s.peekFirst().getHeader().equals("c")) {
 			endpoints
@@ -563,18 +565,18 @@ public class StandardVocabulary extends Vocabulary {
 		new Indexer(pinto, new HashSet<>(),index).accept(pinto, t);
 	}
 
-	private static void today(Pinto p, LinkedList<Column<?>> s) {
+	private static void today(Pinto p, Stack s) {
 		s.addFirst(new OfConstantDates(() -> LocalDate.now()));
 	}
 
-	private static void offset(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void offset(Pinto pinto, Stack s) {
 		LocalDate date = castColumn(s.removeFirst(), OfConstantDates.class).getValue();
 		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
 		int count = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().intValue();
 		s.addFirst(new OfConstantDates(periodicity.offset(count, date)));
 	}
 
-	private static void dayCount(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void dayCount(Pinto pinto, Stack s) {
 		s.addFirst(new OfDoubles(c -> "day_count", StandardVocabulary::dayCountRowFunction));
 	}
 
@@ -588,7 +590,7 @@ public class StandardVocabulary extends Vocabulary {
 		return d;
 	}
 
-	private static void annualizationFactor(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void annualizationFactor(Pinto pinto, Stack s) {
 		Optional<Periodicity<?>> periodicity = s.peekFirst() instanceof Column.OfConstantStrings
 				&& castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("range") ? Optional.empty()
 						: Optional.of(castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue());
@@ -600,17 +602,17 @@ public class StandardVocabulary extends Vocabulary {
 		s.addFirst(new OfDoubles(c -> "annualization_factor", function.apply(periodicity)));
 	}
 	
-	private static void mkt(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void mkt(Pinto pinto, Stack s) {
 		String tickers = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 		String fields = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 		pinto.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(pinto,s);
 	}
 
-	private static void pi(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void pi(Pinto pinto, Stack s) {
 		s.addFirst(new OfConstantDoubles(Math.PI));
 	}
 
-	private static void moon(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void moon(Pinto pinto, Stack s) {
 		s.addFirst(new OfDoubles(i -> "moon", StandardVocabulary::moonRowFunction));
 	}
 
@@ -620,7 +622,7 @@ public class StandardVocabulary extends Vocabulary {
 		}).toArray();
 	}
 
-	private static void range(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void range(Pinto pinto, Stack s) {
 		LinkedList<Integer> endpoints = new LinkedList<Integer>();
 		while (!s.isEmpty() && endpoints.size() < 2 && s.peekFirst().getHeader().equals("c")) {
 			endpoints.addLast((int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue());
@@ -631,7 +633,7 @@ public class StandardVocabulary extends Vocabulary {
 				.forEach(s::addFirst);
 	}
 
-	private static void readCsv(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void readCsv(Pinto pinto, Stack s) {
 		String source = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 		boolean includesHeader = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
 		try {
@@ -678,7 +680,7 @@ public class StandardVocabulary extends Vocabulary {
 		}
 	}
 
-	private static void fill(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void fill(Pinto pinto, Stack s) {
 		Periodicity<?> p = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
 		boolean lb = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
 		double defaultValue = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue();
@@ -719,7 +721,7 @@ public class StandardVocabulary extends Vocabulary {
 		});
 	}
 
-	private static void join(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void join(Pinto pinto, Stack s) {
 		LinkedList<LocalDate> cutoverDates = new LinkedList<>();
 		while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("date")) {
 			cutoverDates.add(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
@@ -736,7 +738,7 @@ public class StandardVocabulary extends Vocabulary {
 						Class<?> clazz) {
 					double[] output = new double[(int) range.size()];
 					int outputIndex = 0;
-					LinkedList<Column<?>> inputs = new LinkedList<>(Arrays.asList(inputArray));
+					Stack inputs = new Stack(Arrays.asList(inputArray));
 					Collections.reverse(inputs);
 					List<P> cutoverPeriods = cd.stream().map(range.periodicity()::from).collect(Collectors.toList());
 					Collections.sort(cutoverPeriods);
@@ -775,7 +777,7 @@ public class StandardVocabulary extends Vocabulary {
 				joinRowFunction.apply(cutoverDates), inputStack));
 	}
 
-	private static void resample(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void resample(Pinto pinto, Stack s) {
 		Periodicity<?> newPeriodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
 		s.replaceAll(c -> {
 			return new OfDoubles(inputs -> inputs[0].getHeader(),
@@ -805,13 +807,13 @@ public class StandardVocabulary extends Vocabulary {
 		};
 	}
 
-	private static void hcopy(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void hcopy(Pinto pinto, Stack s) {
 		List<String> headers = s.stream().map(Column::getHeader).collect(Collectors.toList());
 		Collections.reverse(headers);
 		s.addFirst(new OfConstantStrings(headers.stream().collect(Collectors.joining(","))));
 	}
 
-	private static void hpaste(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void hpaste(Pinto pinto, Stack s) {
 		String[] headers = castColumn(s.removeFirst(), OfConstantStrings.class).getValue().split(",");
 		boolean repeat = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
 		AtomicInteger i = new AtomicInteger(headers.length - 1);
@@ -824,7 +826,7 @@ public class StandardVocabulary extends Vocabulary {
 		});
 	}
 
-	private static void hformat(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void hformat(Pinto pinto, Stack s) {
 		MessageFormat format = new MessageFormat(
 				castColumn(s.removeFirst(), OfConstantStrings.class).getValue().replaceAll("\\{\\}", "\\{0\\}"));
 		s.replaceAll(c -> {
@@ -834,7 +836,7 @@ public class StandardVocabulary extends Vocabulary {
 		});
 	}
 
-	private static void cat(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void cat(Pinto pinto, Stack s) {
 		String sep = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
 		List<String> l = new ArrayList<>();
 		while (!s.isEmpty()) {
@@ -849,7 +851,7 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 
-	private static void palette(Pinto pinto, LinkedList<Column<?>> stack) {
+	private static void palette(Pinto pinto, Stack stack) {
 		stack.addLast(new OfConstantStrings("#92d050","color"));
 		stack.addLast(new OfConstantStrings("#c5be97","color"));
 		stack.addLast(new OfConstantStrings("#8db4e3","color"));
@@ -876,7 +878,7 @@ public class StandardVocabulary extends Vocabulary {
 		stack.addLast(new OfConstantStrings("#ffcccc","color"));
 	}
 	
-	private static void bluePalette(Pinto pinto, LinkedList<Column<?>> stack) {
+	private static void bluePalette(Pinto pinto, Stack stack) {
 		stack.addLast(new OfConstantStrings("#12426d","color"));
 		stack.addLast(new OfConstantStrings("#2383db","color"));
 		stack.addLast(new OfConstantStrings("#85baeb","color"));
@@ -895,7 +897,7 @@ public class StandardVocabulary extends Vocabulary {
 		stack.addLast(new OfConstantStrings("#3b3c8d","color"));
 	}
 	
-	private static void chartSVG(Pinto pinto, LinkedList<Column<?>> stack) {
+	private static void chartSVG(Pinto pinto, Stack stack) {
 		String title = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		String dateFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
@@ -906,7 +908,7 @@ public class StandardVocabulary extends Vocabulary {
 			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
 		}
 		Pinto.Expression e = new Pinto.Expression(false);
-		final LinkedList<Column<?>> s3 = new LinkedList<>(stack);
+		final Stack s3 = new Stack(stack);
 		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
@@ -914,7 +916,7 @@ public class StandardVocabulary extends Vocabulary {
 							title, dateFormat, numberFormat, width, height, colors), "HTML"));
 	}
 
-	private static void barChartSVG(Pinto pinto, LinkedList<Column<?>> stack) {
+	private static void barChartSVG(Pinto pinto, Stack stack) {
 		String title = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		String dateFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
@@ -925,7 +927,7 @@ public class StandardVocabulary extends Vocabulary {
 			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
 		}
 		Pinto.Expression e = new Pinto.Expression(false);
-		final LinkedList<Column<?>> s3 = new LinkedList<>(stack);
+		final Stack s3 = new Stack(stack);
 		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
@@ -933,9 +935,9 @@ public class StandardVocabulary extends Vocabulary {
 							title, dateFormat, numberFormat, width, height, colors), "HTML"));
 	}
 
-	private static void grid(Pinto pinto, LinkedList<Column<?>> stack) {
+	private static void grid(Pinto pinto, Stack stack) {
 		int columns = Double.valueOf(castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue()).intValue();
-		LinkedList<Column<?>> s = new LinkedList<>(stack);
+		Stack s = new Stack(stack);
 		stack.clear();
 		stack.add(new OfConstantStrings(() -> {
 			StringBuilder sb = new StringBuilder();
@@ -955,7 +957,7 @@ public class StandardVocabulary extends Vocabulary {
 		}, "HTML") );
 	}
 
-	private static void table(Pinto pinto, LinkedList<Column<?>> stack) {
+	private static void table(Pinto pinto, Stack stack) {
 		Periodicity<?> periodicity = castColumn(stack.removeFirst(), OfConstantPeriodicities.class).getValue();
 		LinkedList<LocalDate> d = new LinkedList<>();
 		while ((!stack.isEmpty()) && d.size() < 2 && stack.peekFirst().getHeader().equals("date")) {
@@ -970,7 +972,7 @@ public class StandardVocabulary extends Vocabulary {
 		nf.setGroupingUsed(false);
 		String rowHeader = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		boolean colHeaders = Boolean.parseBoolean(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
-		LinkedList<Column<?>> s = new LinkedList<>(stack);
+		Stack s = new Stack(stack);
 		stack.clear();
 		stack.add(new OfConstantStrings(() -> {
 			Table t = new Table();
@@ -1002,7 +1004,7 @@ public class StandardVocabulary extends Vocabulary {
 		}, "HTML"));
 	}
 
-	private static void rt(Pinto pinto, LinkedList<Column<?>> stack) {
+	private static void rt(Pinto pinto, Stack stack) {
 		LinkedList<String> functions = new LinkedList<>();
 		while ((!stack.isEmpty()) && stack.peekFirst().getHeader().equals("functions")) {
 			functions.addFirst(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
@@ -1014,7 +1016,7 @@ public class StandardVocabulary extends Vocabulary {
 		nf.setMaximumFractionDigits(digits);
 		int columns = functions.size();
 		int rows = stack.size();
-		final LinkedList<Column<?>> s = new LinkedList<>(stack);
+		final Stack s = new Stack(stack);
 		stack.clear();
 		stack.add(new OfConstantStrings(() -> {
 			String[] labels = new String[rows];
@@ -1089,7 +1091,7 @@ public class StandardVocabulary extends Vocabulary {
 			if (stack.size() < rightCount + 1) {
 				throw new IllegalArgumentException("Not enough inputs for " + name);
 			}
-			LinkedList<Column<?>> rights = new LinkedList<>(stack.subList(0, rightCount));
+			Stack rights = new Stack(stack.subList(0, rightCount));
 			List<Column<?>> lefts = new ArrayList<>(stack.subList(rightCount, stack.size()));
 			stack.clear();
 			for (int i = 0; i < lefts.size(); i++) {

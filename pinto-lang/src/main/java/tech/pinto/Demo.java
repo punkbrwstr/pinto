@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -28,6 +27,7 @@ import dagger.Module;
 import dagger.Provides;
 import jline.TerminalFactory;
 import tech.pinto.tools.LogAppender;
+import tech.pinto.Pinto.Stack;
 
 public class Demo {
 
@@ -117,7 +117,7 @@ public class Demo {
 		
 	}
 	
-	private static void dummy(Pinto pinto, LinkedList<Column<?>> s) {
+	private static void dummy(Pinto pinto, Stack s) {
 		throw new UnsupportedOperationException("Not available in demo mode.");
 	}
 	

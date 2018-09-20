@@ -3,6 +3,7 @@ package tech.pinto;
 import java.time.LocalDate;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -126,8 +127,8 @@ public class Pinto {
 
 	public static TableFunction toTableConsumer(StackFunction colsFunction) {
 		return (p, t) -> {
-			List<LinkedList<Column<?>>> stacksBefore = t.takeTop();
-			for(LinkedList<Column<?>> s : stacksBefore) {
+			List<Stack> stacksBefore = t.takeTop();
+			for(Stack s : stacksBefore) {
 				colsFunction.accept(p, s);
 			}
 			t.insertAtTop(stacksBefore);
@@ -145,10 +146,10 @@ public class Pinto {
 	public static interface TableFunction extends BiConsumer<Pinto,Table> {}
 
 	@FunctionalInterface
-	public static interface StackFunction extends BiConsumer<Pinto,LinkedList<Column<?>>> {
+	public static interface StackFunction extends BiConsumer<Pinto,Stack> {
 		default TableFunction toTableFunction() {
 			return (p,t) -> {
-				List<LinkedList<Column<?>>> inputs = t.takeTop();
+				List<Stack> inputs = t.takeTop();
 				for(int i = 0; i < inputs.size(); i++) {
 					accept(p, inputs.get(i));
 				}
@@ -156,6 +157,19 @@ public class Pinto {
 			};
 			
 		}
+	}
+	
+	public static class Stack extends LinkedList<Column<?>> {
+		private static final long serialVersionUID = 1L;
+
+		public Stack() {
+			super();
+		}
+
+		public Stack(Collection<? extends Column<?>> c) {
+			super(c);
+		}
+		
 	}
 	
 	public static class Expression implements TableFunction {

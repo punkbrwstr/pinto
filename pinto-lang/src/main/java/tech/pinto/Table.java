@@ -24,13 +24,14 @@ import com.google.common.collect.ImmutableMap;
 import com.jakewharton.fliptables.FlipTable;
 
 import tech.pinto.time.PeriodicRange;
+import tech.pinto.Pinto.Stack;
 
 public class Table {
 
 	private final LinkedList<Level> levels = new LinkedList<>();
 	private Optional<String> status = Optional.empty();
 	private Optional<PeriodicRange<?>> range = Optional.empty();
-	private Optional<LinkedList<Column<?>>> evaluatedStack = Optional.empty();
+	private Optional<Stack> evaluatedStack = Optional.empty();
 
 	public Table() {
 		levels.add(new Level(true));
@@ -41,7 +42,7 @@ public class Table {
 		this.status = Optional.of(status);
 	}
 	
-	public List<LinkedList<Column<?>>> takeTop() {
+	public List<Stack> takeTop() {
 		if(!levels.peekFirst().isFunctionLevel()) {
 			return levels.removeFirst().getStacks();
 		} else {
@@ -49,13 +50,13 @@ public class Table {
 		}
 	}
 	
-	public void insertAtTop(LinkedList<Column<?>> s) {
-		List<LinkedList<Column<?>>> l = new ArrayList<>();
+	public void insertAtTop(Stack s) {
+		List<Stack> l = new ArrayList<>();
 		l.add(s);
 		insertAtTop(l);
 	}
 
-	public void insertAtTop(List<LinkedList<Column<?>>> l) {
+	public void insertAtTop(List<Stack> l) {
 		if(levels.peekFirst().getStacks().size() == 1) {
 			levels.peekFirst().getStacks().get(0).addAll(0, l.stream().flatMap(LinkedList::stream).collect(Collectors.toList()));
 		} else if(l.size() > 1) {
@@ -69,7 +70,7 @@ public class Table {
 		}
 	}
 	
-	public void push(boolean isFunction, List<LinkedList<Column<?>>> l) {
+	public void push(boolean isFunction, List<Stack> l) {
 		levels.addFirst(new Level(isFunction, l));
 	}
 	
@@ -81,12 +82,12 @@ public class Table {
 		boolean foundFunction = false;
 		while(levels.size() > 1 && !foundFunction) {
 			foundFunction = levels.peekFirst().isFunctionLevel();
-			List<LinkedList<Column<?>>> functionReturn = levels.removeFirst().getStacks();
+			List<Stack> functionReturn = levels.removeFirst().getStacks();
 			insertAtTop(functionReturn);
 		}
 	}
 	
-	public LinkedList<Column<?>> flatten() {
+	public Stack flatten() {
 		while(levels.size() > 1) {
 			List<Column<?>> collapsed = levels.removeFirst().getStacks().stream().flatMap(LinkedList::stream).collect(Collectors.toList());
 			levels.peekFirst().getStacks().get(0).addAll(0,collapsed);
@@ -104,7 +105,7 @@ public class Table {
 		return range.orElseThrow(() -> new PintoSyntaxException("Cannot access table range before evaluating."));
 	}
 	
-	public LinkedList<Column<?>> getStack() {
+	public Stack getStack() {
 		return evaluatedStack.orElseThrow(() -> new PintoSyntaxException("Cannot access stack before evaluating."));
 	}
 	
@@ -228,20 +229,20 @@ public class Table {
 	}
 	
 	private static class Level {
-		private final List<LinkedList<Column<?>>> stacks;
+		private final List<Stack> stacks;
 		private final boolean functionLevel;
 		
 		public Level(boolean baseLevel) {
 			this(baseLevel, new ArrayList<>());
-			stacks.add(new LinkedList<>());
+			stacks.add(new Stack());
 		}
 
-		public Level(boolean functionLevel, List<LinkedList<Column<?>>> stacks) {
+		public Level(boolean functionLevel, List<Stack> stacks) {
 			this.functionLevel = functionLevel;
 			this.stacks = stacks;
 		}
 		
-		public List<LinkedList<Column<?>>> getStacks() {
+		public List<Stack> getStacks() {
 			return stacks;
 		}
 		
@@ -249,11 +250,11 @@ public class Table {
 			return functionLevel;
 		}
 		
-		public List<LinkedList<Column<?>>> clearStacks() {
-			ArrayList<LinkedList<Column<?>>> l = new ArrayList<>(stacks);
+		public List<Stack> clearStacks() {
+			ArrayList<Stack> l = new ArrayList<>(stacks);
 			stacks.clear();
 			for(int i = 0; i < l.size(); i++) {
-				stacks.add(new LinkedList<>());
+				stacks.add(new Stack());
 			}
 			return l;
 		}

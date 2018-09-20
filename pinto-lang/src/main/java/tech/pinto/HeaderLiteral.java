@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import tech.pinto.Pinto.StackFunction;
+import tech.pinto.Pinto.Stack;
 
 public class HeaderLiteral implements StackFunction {
 	
@@ -64,8 +65,8 @@ public class HeaderLiteral implements StackFunction {
 	}
 
 	@Override
-	public void accept(Pinto pinto, LinkedList<Column<?>> stack) {
-		LinkedList<Column<?>> newStack = new LinkedList<>();
+	public void accept(Pinto pinto, Stack stack) {
+		Stack newStack = new Stack();
 		for(int i = headers.size() - 1; i >= 0; i--) {
 			if(!headers.get(i).getDefaultColumns().isPresent()) {
 				if(!stack.isEmpty()) {

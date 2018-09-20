@@ -13,6 +13,7 @@ import java.util.stream.IntStream;
 
 import tech.pinto.Pinto.Expression;
 import tech.pinto.Pinto.TableFunction;
+import tech.pinto.Pinto.Stack;
 
 public class Indexer implements Cloneable, TableFunction {
 
@@ -73,11 +74,32 @@ public class Indexer implements Cloneable, TableFunction {
 		this.indexForExpression = true;
 	}
 
-	public void accept(Pinto pinto, Table t) {
-		LinkedList<LinkedList<Column<?>>> unused = new LinkedList<>();
-		LinkedList<LinkedList<Column<?>>> indexed = new LinkedList<>();
+	public void a(Pinto pinto, Table t) {
+		LinkedList<Stack> unused = new LinkedList<>();
+		LinkedList<Stack> indexed = new LinkedList<>();
 
-		for (LinkedList<Column<?>> stack : t.takeTop()) {
+		for (Stack stack : t.takeTop()) {
+			List<StackOperation> ops = new ArrayList<>();
+			indexed.addLast(operate(pinto, stack, ops));
+			Index last = indexes.get(indexes.size() - 1);
+			while (last.isRepeat() && stack.size() > 0) {
+				try {
+					indexed.addLast(operate(pinto, stack, last.index(stack)));
+				} catch (IllegalArgumentException pse) {
+					break;
+				}
+			}
+			unused.add(stack);
+		}
+		t.insertAtTop(unused);
+		t.push(indexForExpression, indexed);
+	}
+
+	public void accept(Pinto pinto, Table t) {
+		LinkedList<Stack> unused = new LinkedList<>();
+		LinkedList<Stack> indexed = new LinkedList<>();
+
+		for (Stack stack : t.takeTop()) {
 			List<StackOperation> ops = new ArrayList<>();
 			indexed.addLast(operate(pinto, stack, ops));
 			Index last = indexes.get(indexes.size() - 1);
@@ -95,7 +117,7 @@ public class Indexer implements Cloneable, TableFunction {
 	}
 
 	@SuppressWarnings("unchecked")
-	private LinkedList<Column<?>> operate(Pinto pinto, LinkedList<Column<?>> stack, List<StackOperation> ops) {
+	private Stack operate(Pinto pinto, Stack stack, List<StackOperation> ops) {
 		for(int i = 0; i < indexes.size(); i++) {
 			ops.addAll(indexes.get(i).index(stack));
 		}
@@ -124,7 +146,7 @@ public class Indexer implements Cloneable, TableFunction {
 		}
 
 		TreeSet<Integer> alreadyUsed = new TreeSet<>();
-		LinkedList<Column<?>> indexed = new LinkedList<>();
+		Stack indexed = new Stack();
 		for (StackOperation o : ops) {
 			if (o.isAlternative()) {
 				Table t = new Table();
@@ -246,7 +268,7 @@ public class Indexer implements Cloneable, TableFunction {
 
 		}
 
-		public List<StackOperation> index(LinkedList<Column<?>> stack) {
+		public List<StackOperation> index(Stack stack) {
 			List<StackOperation> ops = new ArrayList<>();
 			if (sliceStart.isPresent()) {
 				if(stack.isEmpty()) {
@@ -289,9 +311,9 @@ public class Indexer implements Cloneable, TableFunction {
 					test = s -> s.equals(query);
 				}
 				boolean found = false;
-				for (int n = 0; n < stack.size(); n++) {
+				for (int n = 0; n < stack.size() && !(repeat && found); n++) {
 					if (test.test(stack.get(n).getHeader())) {
-						ops.add(new StackOperation(n, isCopy(), true));
+						ops.add(new StackOperation(n, copy, true));
 						found = true;
 					}
 				}

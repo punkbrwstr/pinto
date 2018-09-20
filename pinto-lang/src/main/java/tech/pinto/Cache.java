@@ -3,7 +3,6 @@ package tech.pinto;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -15,6 +14,7 @@ import com.google.common.collect.TreeRangeMap;
 
 import tech.pinto.Pinto.StackFunction;
 import tech.pinto.Pinto.TableFunction;
+import tech.pinto.Pinto.Stack;
 import tech.pinto.time.Period;
 import tech.pinto.time.PeriodicRange;
 import tech.pinto.time.Periodicities;
@@ -25,7 +25,7 @@ public class Cache {
 	private static final long CURRENT_DATA_TIMEOUT = 60 * 1000l;
 	
 	private static final HashMap<String, RangeMap<Long, CachedSeriesList>> rowCache = new HashMap<>();
-	private static final HashMap<String, LinkedList<Column<?>>> columns = new HashMap<>();
+	private static final HashMap<String, Stack> columns = new HashMap<>();
 	private static final HashMap<String, Integer> columnCounts = new HashMap<>();
 	private static final HashMap<String, Function<PeriodicRange<?>,double[][]>> rowFunctions = new HashMap<>();
 
@@ -44,11 +44,11 @@ public class Cache {
 		};
 	}
 
-	private static LinkedList<Column<?>> getCachedColumns(Pinto pinto, String key, TableFunction tableFunction) {
+	private static Stack getCachedColumns(Pinto pinto, String key, TableFunction tableFunction) {
 		if(!columns.containsKey(key)) {
 			Table t = new Table();
 			tableFunction.accept(pinto, t);
-			LinkedList<Column<?>> cols = t.flatten();
+			Stack cols = t.flatten();
 			columnCounts.put(key, cols.size());
 			boolean rowCacheable = true;
 			for(int i = 0; i < cols.size(); i++) {
@@ -57,7 +57,7 @@ public class Cache {
 				}
 			}
 			if(rowCacheable) {
-				LinkedList<Column<?>> cached = new LinkedList<>();
+				Stack cached = new Stack();
 				for(int i = 0; i < cols.size(); i++) {
 					cached.add(createRowCachedColumn(key,i, cols.get(i).getHeader(), cols.get(i).getTrace()));
 				}
@@ -67,7 +67,7 @@ public class Cache {
 				columns.put(key, cols);
 			}
 		}
-		LinkedList<Column<?>> cols = new LinkedList<>(columns.get(key));
+		Stack cols = new Stack(columns.get(key));
 		cols.replaceAll(c -> c.clone());
 		return cols;
 	}
@@ -84,7 +84,7 @@ public class Cache {
 		);
 	}
 	
-	private static Function<PeriodicRange<?>,double[][]> getRowFunctionForColumns(LinkedList<Column<?>> l) {
+	private static Function<PeriodicRange<?>,double[][]> getRowFunctionForColumns(Stack l) {
 		return range -> {
 			double[][] newData = new double[l.size()][];
 			for(int i = 0; i < newData.length; i++) {
