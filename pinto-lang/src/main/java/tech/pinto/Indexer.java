@@ -6,7 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -74,110 +73,78 @@ public class Indexer implements Cloneable, TableFunction {
 		this.indexForExpression = true;
 	}
 
-	public void a(Pinto pinto, Table t) {
-		LinkedList<Stack> unused = new LinkedList<>();
-		LinkedList<Stack> indexed = new LinkedList<>();
-
-		for (Stack stack : t.takeTop()) {
-			List<StackOperation> ops = new ArrayList<>();
-			indexed.addLast(operate(pinto, stack, ops));
-			Index last = indexes.get(indexes.size() - 1);
-			while (last.isRepeat() && stack.size() > 0) {
-				try {
-					indexed.addLast(operate(pinto, stack, last.index(stack)));
-				} catch (IllegalArgumentException pse) {
-					break;
-				}
-			}
-			unused.add(stack);
-		}
-		t.insertAtTop(unused);
-		t.push(indexForExpression, indexed);
-	}
-
 	public void accept(Pinto pinto, Table t) {
 		LinkedList<Stack> unused = new LinkedList<>();
-		LinkedList<Stack> indexed = new LinkedList<>();
+		LinkedList<Stack> indexedStacks = new LinkedList<>();
 
 		for (Stack stack : t.takeTop()) {
-			List<StackOperation> ops = new ArrayList<>();
-			indexed.addLast(operate(pinto, stack, ops));
-			Index last = indexes.get(indexes.size() - 1);
-			while (last.isRepeat() && stack.size() > 0) {
-				try {
-					indexed.addLast(operate(pinto, stack, last.index(stack)));
-				} catch (IllegalArgumentException pse) {
-					break;
+			boolean[] keepACopy = new boolean[stack.size()];
+			boolean[] indexed = new boolean[stack.size()];
+			List<int[]> unrepeatedOrdinals = new ArrayList<>();
+			//int repeats = 1;
+			for(int i = 0; i < indexes.size(); i++) {
+				Index index = indexes.get(i);
+				int[] ordinals = index.getOrdinals(stack, indexed);
+				unrepeatedOrdinals.add(ordinals);
+				if(index.isCopy()) {
+					for(int j = 0; j < ordinals.length; j++) {
+						keepACopy[ordinals[j]] = true;
+					}
 				}
 			}
-			unused.add(stack);
+			List<int[][]> stackOrdinals = new ArrayList<>();
+			stackOrdinals.add(new int[indexes.size()][]);
+			for(int i = 0; i < indexes.size(); i++) {
+				int[] ordinals= unrepeatedOrdinals.get(i);
+				int repeat = indexes.get(i).getRepeat();
+				List<int[][]> output = new ArrayList<>();
+				for(int j = 0; j < stackOrdinals.size(); j++) {
+					int[][] permutation = stackOrdinals.get(j);
+					if(repeat == 0) {
+						permutation[i] = ordinals;
+						output.add(permutation);
+					} else {
+						for(int k = 0; k < ordinals.length - repeat + 1; k += repeat) {
+							int[][] newPermutation = permutation.clone();
+							newPermutation[i] = Arrays.copyOfRange(ordinals,k,k + repeat);
+							output.add(newPermutation);
+						}
+					}
+				}
+				stackOrdinals = output;
+			}
+			boolean[] used = new boolean[stack.size()];
+			for(int s = 0; s < stackOrdinals.size(); s++) {
+				Stack thisStack = new Stack();
+				int[][] ordinals = stackOrdinals.get(s);
+				for(int i = 0; i < ordinals.length; i++) {
+					for(int j = 0; j < ordinals[i].length; j++) {
+						int ordinal = ordinals[i][j];
+						if(ordinal == -1) {
+							Table table = new Table();
+							indexes.get(i).orFunction.get().accept(pinto, table);
+							thisStack.addAll(table.flatten());
+						} else {
+							thisStack.addLast(used[ordinal] || keepACopy[ordinal] ? stack.get(ordinal).clone() : stack.get(ordinal));
+							used[ordinal] = true;
+						}
+					}
+				}
+				indexedStacks.addLast(thisStack);
+			}
+			Stack thisUnused = new Stack();
+			for(int i = 0; i < used.length; i++) {
+				if(keepACopy[i] || !used[i]) {
+					thisUnused.addLast(stack.get(i));
+				}
+			}
+			unused.addLast(thisUnused);
 		}
 		t.insertAtTop(unused);
-		t.push(indexForExpression, indexed);
+		t.push(indexForExpression, indexedStacks);
 	}
 
-	@SuppressWarnings("unchecked")
-	private Stack operate(Pinto pinto, Stack stack, List<StackOperation> ops) {
-		for(int i = 0; i < indexes.size(); i++) {
-			ops.addAll(indexes.get(i).index(stack));
-		}
-		List<StackOperation> indexStringOps = ops.stream().filter(StackOperation::isHeader)
-				.collect(Collectors.toList());
-		List<StackOperation> ordinalOps = ops.stream().filter(so -> !so.isHeader()).collect(Collectors.toList());
-		// determine which operations need to be copies
-		LinkedList<StackOperation>[] opsByOrdinal = new LinkedList[stack.size()];
-		for (List<StackOperation> l : Arrays.asList(indexStringOps, ordinalOps)) {
-			for (StackOperation op : l) {
-				if (!op.isAlternative()) {
-					if (opsByOrdinal[op.getOrdinal()] != null) {
-						if (opsByOrdinal[op.getOrdinal()].getLast().isHeader() && !op.isHeader()) {
-							op.setSkip(true); // don't include cols index by indexString in subsequent ordinal indexes
-						} else {
-							opsByOrdinal[op.getOrdinal()].getLast().setNeedsCloning(true);
-						}
-					} else {
-						opsByOrdinal[op.getOrdinal()] = new LinkedList<>();
-					}
-					if (!op.skip()) {
-						opsByOrdinal[op.getOrdinal()].add(op);
-					}
-				}
-			}
-		}
 
-		TreeSet<Integer> alreadyUsed = new TreeSet<>();
-		Stack indexed = new Stack();
-		for (StackOperation o : ops) {
-			if (o.isAlternative()) {
-				Table t = new Table();
-				o.getAlternativeExpression().accept(pinto, t);
-				indexed.addAll(t.flatten());
-				if (o.isCopy()) {
-					t = new Table();
-					o.getAlternativeExpression().accept(pinto, t);
-					stack.addAll(t.flatten());
-				}
-			} else if ((!alreadyUsed.contains(o.getOrdinal())) && !o.skip()) {
-				Column<?> c = stack.get(o.getOrdinal());
-				indexed.add(o.needsCloning() || o.isCopy() ? c.clone() : c);
-				if (!o.isCopy()) {
-					alreadyUsed.add(o.getOrdinal());
-				}
-			}
-		}
-		for (int i = opsByOrdinal.length - 1; i >= 0; i--) {
-			if (opsByOrdinal[i] != null) {
-				opsByOrdinal[i].stream().filter(((Predicate<StackOperation>) StackOperation::isCopy).negate()).findAny()
-						.ifPresent(op -> stack.remove(op.getOrdinal()));
-			}
-		}
-		return indexed;
-	}
-
-	private static boolean isNumeric(String s) {
-		return s.matches("[-+]?\\d*\\.?\\d+");
-	}
-	
 	public String toString() {
 		return "[" + indexString + "]";
 	}
@@ -194,217 +161,134 @@ public class Indexer implements Cloneable, TableFunction {
 	private class Index {
 
 		private final String string;
-		private final boolean copy;
-		private final boolean repeat;
-		private final Optional<String> header;
-		private final Optional<Integer> sliceStart;
-		private final Optional<Integer> sliceEnd;
-		private final Optional<Expression> orFunction;
+		private boolean copy = false;
+		private boolean not = false;
+		private int repeat = 0;
+		private Optional<String> header = Optional.empty();
+		private Optional<Integer> sliceStart = Optional.empty();
+		private Optional<Integer> sliceEnd = Optional.empty();
+		private Optional<Expression> orFunction = Optional.empty();
 
 		public Index(Pinto pinto, Set<String> dependencies, String s) {
 			this.string = s;
-			if (s.contains("&")) {
-				copy = true;
-				s = s.replace("&", "");
-			} else {
-				copy = false;
-			}
-			if (s.contains("=")) {
-				String[] thisOrThat = s.split("=");
-				if (thisOrThat.length < 2) {
-					throw new IllegalArgumentException(
-							"\"=\" should be followed by alternative expression in index:" + s);
+			if(!s.isEmpty()) {
+				int equalsPosition = s.indexOf("=");
+				if (equalsPosition != -1) {
+					if(equalsPosition == s.length()-1) {
+						throw new IllegalArgumentException("\"=\" should be followed by alternative expression in index:" + s);
+					}
+					String header = s.substring(0, equalsPosition);
+					String altExpression = s.substring(equalsPosition+1);
+					Pinto.Expression e = pinto.parseSubExpression(" {" + header + ": " + altExpression + "}");
+					dependencies.addAll(e.getDependencies());
+					orFunction = Optional.of(e);
+					s = header;
+				} 
+				if (s.contains("&")) {
+					copy = true;
+					s = s.replace("&", "");
 				}
-				String alt = Arrays.stream(thisOrThat).skip(1).collect(Collectors.joining("="));
-				Pinto.Expression e = pinto.parseSubExpression(" {" + thisOrThat[0] + ": " + alt + "}");
-				dependencies.addAll(e.getDependencies());
-				orFunction = Optional.of(e);
-				s = thisOrThat[0];
-			} else {
-				orFunction = Optional.empty();
-			}
-			if (s.contains("+")) {
-				if (copy) {
-					throw new PintoSyntaxException(
-							"Cannot copy and repeat an index because it will create an infinite loop.");
+				if (s.contains("!")) {
+					not = true;
+					s = s.replace("!", "");
 				}
-				repeat = true;
-				s = s.replace("+", "");
-			} else {
-				repeat = false;
-			}
-			if (s.equals("")) {
-				sliceStart = Optional.of(0);
-				sliceEnd = Optional.of(0);
-				header = Optional.empty();
-			} else if (s.equals(":")) {
-				sliceStart = Optional.of(0);
-				sliceEnd = Optional.of(Integer.MAX_VALUE);
-				header = Optional.empty();
-			} else if (s.contains(":")) {
-				if (s.indexOf(":") == 0) {
-					sliceStart = Optional.of(0);
-					sliceEnd = Optional.of(Integer.parseInt(s.substring(1)));
-				} else if (s.indexOf(":") == s.length() - 1) {
-					sliceStart = Optional.of(Integer.parseInt(s.substring(0, s.length() - 1)));
-					sliceEnd = Optional.of(Integer.MAX_VALUE);
+				int plusPosition = s.indexOf("+");
+				if (plusPosition != -1) {
+					repeat = plusPosition == s.length()-1 ? 1 : Integer.parseInt(s.substring(plusPosition+1));
+					s = s.substring(0,plusPosition);
+				}
+				int colonPosition = s.indexOf(":");
+				if(colonPosition != -1) {
+					sliceStart = Optional.of(colonPosition == 0 ? 0 : Integer.valueOf(s.substring(0,colonPosition)));
+					sliceEnd = Optional.of(colonPosition == s.length()-1 ? Integer.MAX_VALUE : Integer.valueOf(s.substring(colonPosition+1)));
 				} else {
-					String[] parts = s.split(":");
-					sliceStart = Optional.of(Integer.parseInt(parts[0]));
-					sliceEnd = Optional.of(Integer.parseInt(parts[1]));
-				}
-				header = Optional.empty();
-			} else {
-				if (isNumeric(s)) {
-					sliceStart = Optional.of(Integer.parseInt(s));
-					sliceEnd = Optional.empty();
-					header = Optional.empty();
-				} else {
-					header = Optional.of(s);
-					sliceStart = Optional.empty();
-					sliceEnd = Optional.empty();
+					if (s.matches("[-+]?\\d*\\.?\\d+")) {
+						sliceStart = Optional.of(Integer.parseInt(s));
+					} else {
+						header = Optional.of(s);
+					}
 				}
 			}
 
 		}
 
-		public List<StackOperation> index(Stack stack) {
-			List<StackOperation> ops = new ArrayList<>();
-			if (sliceStart.isPresent()) {
-				if(stack.isEmpty()) {
-					return ops;
-				}
+		public int[] getOrdinals(Stack stack, boolean[] used) {
+			List<Integer> ordinals = new ArrayList<>();
+			// slice based index
+			if(sliceStart.isPresent()) {
 				int end = 0;
 				int start = sliceStart.get();
 				start = start < 0 ? start + stack.size() : start;
 				if(sliceEnd.isPresent()) {
 					end = sliceEnd.get();
 					end = end < 0 ? end + stack.size() : 
-							end == Integer.MAX_VALUE ? stack.size() : end;
+								end == Integer.MAX_VALUE ? stack.size() : end;
 				} else {
 					end = start + 1;
 				} 
 				if (start > end) {
 					throw new IllegalArgumentException("Invalid index. Start is after end.");
 				}
-				if (start < 0 || start >= stack.size()) {
-					throw new IllegalArgumentException(
-								"Index [" + start + ":" + end + "] is outside bounds of stack.");
-				} else {
-					for (int n = start; n < end && n < stack.size(); n++) {
-						ops.add(new StackOperation(n, isCopy(), false));
+				if (start < 0 || end > stack.size()) {
+					throw new IllegalArgumentException("Index [" + start + ":" + end + "] is outside bounds of stack.");
+				} 
+				for (int n = start; n < end; n++) {
+					if(!used[n]) {
+						ordinals.add(n);
+						used[n] = true;
 					}
 				}
-			} else {
+			} else if(header.isPresent()){
 				final String query = header.get();
 				Predicate<String> test;
-				if (query.startsWith("*")) {
-					final String toFind = query.substring(1);
-					test = s -> s.endsWith(toFind);
-				} else if (query.endsWith("*")) {
-					final String toFind = query.substring(0, query.length() - 1);
-					test = s -> s.startsWith(toFind);
-				} else if (query.contains("*")) {
-					final String[] toFind = query.split("\\*");
-					test = s -> s.startsWith(toFind[0]) && s.endsWith(toFind[1]);
+				int starPosition = query.indexOf("*");
+				if(starPosition != -1) {
+					Predicate<String> starts = s -> starPosition == 0 ? true : s.startsWith(query.substring(0,starPosition));
+					Predicate<String> ends = s -> starPosition == query.length()-1 ? true : s.endsWith(query.substring(starPosition+1));
+					test = starts.and(ends); 
 				} else {
 					test = s -> s.equals(query);
 				}
-				boolean found = false;
-				for (int n = 0; n < stack.size() && !(repeat && found); n++) {
+				for (int n = 0; n < stack.size(); n++) {
 					if (test.test(stack.get(n).getHeader())) {
-						ops.add(new StackOperation(n, copy, true));
-						found = true;
+						ordinals.add(n);
+						used[n] = true;
 					}
 				}
-				if (!found) {
-					ops.add(new StackOperation(orFunction.orElseThrow(() -> new IllegalArgumentException("Missing required header \"" + query + "\""))));
+				if(ordinals.isEmpty()) {
+					if(orFunction.isPresent()) {
+						ordinals.add(-1);
+					} else {
+						throw new IllegalArgumentException("Missing header \"" + query + "\".");
+					}
 				}
 			}
-			return ops;
-
+			if(not) {
+				List<Integer> temp = new ArrayList<>(ordinals);
+				ordinals.clear();
+				for (int n = 0; n < stack.size(); n++) {
+					if(!temp.contains(n)) {
+						ordinals.add(n);
+					}
+				}
+			}
+			return ordinals.stream().mapToInt(Integer::intValue).toArray();
 		}
 
 		public boolean isNone() {
-			return (sliceStart.orElse(1) == 0) &&
-					(sliceEnd.orElse(1) == 0) &&
-					!header.isPresent();
+			return !(sliceStart.isPresent() || header.isPresent());
 		}
 
 		public boolean isCopy() {
 			return copy;
 		}
 
-		public boolean isRepeat() {
+		public int getRepeat() {
 			return repeat;
 		}
 
 		public String toString() {
 			return string;
-		}
-
-	}
-
-	private static class StackOperation implements Comparable<StackOperation> {
-		private final int ordinal;
-		private final boolean isHeader;
-		private final boolean copy;
-		private boolean skip = false;
-		private boolean needsCloning = false;
-		private Optional<Pinto.Expression> alternative = Optional.empty();
-
-		public StackOperation(int ordinal, boolean copy, boolean isHeader) {
-			this.ordinal = ordinal;
-			this.copy = copy;
-			this.isHeader = isHeader;
-		}
-
-		public StackOperation(Pinto.Expression alternative) {
-			this.alternative = Optional.of(alternative);
-			ordinal = -1;
-			copy = false;
-			this.isHeader = false;
-		}
-
-		public boolean isAlternative() {
-			return alternative.isPresent();
-		}
-
-		public Pinto.Expression getAlternativeExpression() {
-			return alternative.get();
-		}
-
-		public int getOrdinal() {
-			return ordinal;
-		}
-
-		public boolean isCopy() {
-			return copy;
-		}
-
-		public void setNeedsCloning(boolean needsCloning) {
-			this.needsCloning = needsCloning;
-		}
-
-		public boolean needsCloning() {
-			return needsCloning;
-		}
-
-		public void setSkip(boolean skip) {
-			this.skip = skip;
-		}
-
-		public boolean skip() {
-			return skip;
-		}
-
-		public boolean isHeader() {
-			return isHeader;
-		}
-
-		@Override
-		public int compareTo(StackOperation o) {
-			return Integer.valueOf(ordinal).compareTo(Integer.valueOf(o.getOrdinal()));
 		}
 
 	}

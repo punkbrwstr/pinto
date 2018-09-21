@@ -54,7 +54,7 @@ public class IndexTester {
 	@Test
 	public void testCopyAndRepeat() throws Exception {
 		pinto.evaluate(":function_that_copies [&0] 1 + def");
-		Table t = pinto.evaluate("98 99 [0+] function_that_copies eval").get(0);
+		Table t = pinto.evaluate("98 99 [:+] function_that_copies eval").get(0);
 		assertEquals("Repeat a defined that copies", t.getColumnCount(),4);
 		assertEquals("Repeat a defined that copies", first(1,t),99, 0.1);
 	}
