@@ -184,8 +184,8 @@ public class BloombergMarketData implements MarketData, EventHandler {
 					Element dateValueElement = fieldElement.getValueAsElement(i);
 					LocalDate date = dateValueElement.getElement(0).getValueAsDate().calendar().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 					DayOfWeek dow = date.getDayOfWeek();
-					if (!(range.periodicity().code().equals("B") &&
-							dow.equals(DayOfWeek.SATURDAY) || dow.equals(DayOfWeek.SUNDAY))) {
+//					if (!(range.periodicity().code().equals("B") &&
+//							dow.equals(DayOfWeek.SATURDAY) || dow.equals(DayOfWeek.SUNDAY))) {
 						if (dateValueElement.numElements() != 1) {
 							int col = (int) range.indexOf(date);
 							for (int j = 1; j < dateValueElement.numElements(); j++) {
@@ -193,7 +193,7 @@ public class BloombergMarketData implements MarketData, EventHandler {
 								d[row][col] = dateValueElement.getElement(j).getValueAsFloat64();
 							}
 						}
-					}
+//					}
 				}
 			}
 			jobs.remove(jobNumber);

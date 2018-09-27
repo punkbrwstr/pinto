@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
@@ -191,6 +190,8 @@ public class StandardVocabulary extends Vocabulary {
 			getStatisticName("max", b -> new Window.Max(b)),
 			getStatisticName("median", b -> new Window.Median(b)),
 			getStatisticName("product", b -> new Window.Product(b)),
+			getPairStatisticName("covar", b -> new Window.PairCovariance(b)),
+			getPairStatisticName("correl", b -> new Window.PairCorrelation(b)),
 			nameBuilder("ewma", StandardVocabulary::ewma)
 				.description("Exponentially weighted moving average calculated using *alpha* or defaulting to 2 / (N + 1)")
 				.indexer("[alpha=\"none\",:]"),
@@ -360,6 +361,24 @@ public class StandardVocabulary extends Vocabulary {
 			stack.replaceAll(c -> new OfDoubles(inputs -> inputs[0].getHeader(),
 					inputs -> inputs[0].getTrace() + " " + name, f.apply(clearOnNan), c));
 		}).description("Calculates " + name + " for each view of window column inputs.")
+				.indexer("[clear_on_nan=\"false\",:]");
+	}
+
+	private static Name.Builder getPairStatisticName(String name, Function<Boolean,Window.PairStatistic> s) {
+		Function<Boolean, RowsFunction<double[]>> f = b -> (range, inputs) -> {
+			return s.apply(b).apply(castColumn(inputs[0], OfWindow.class).rows(range),
+					castColumn(inputs[1], OfWindow.class).rows(range));
+		};
+		return nameBuilder(name, (Pinto pinto, Stack stack) ->  {
+			boolean clearOnNan = Boolean.parseBoolean(castColumn(stack.removeFirst(),OfConstantStrings.class).getValue());
+			Stack temp = new Stack(stack);
+			stack.clear();
+			for(int i = 0; i < temp.size() - 1; i += 2) {
+				stack.addLast(new OfDoubles(inputs -> inputs[0].getHeader() + inputs[1].getHeader(),
+					inputs -> "(" + inputs[0].getTrace() + ") (" + inputs[1].getTrace() + ") " + name,
+					f.apply(clearOnNan), temp.get(i), temp.get(i+1)));
+			}
+		}).description("Calculates " + name + " for each view from a pair of window column inputs.")
 				.indexer("[clear_on_nan=\"false\",:]");
 	}
 
@@ -807,23 +826,23 @@ public class StandardVocabulary extends Vocabulary {
 		};
 	}
 
-	private static void hcopy(Pinto pinto, Stack s) {
-		List<String> headers = s.stream().map(Column::getHeader).collect(Collectors.toList());
+	private static void hcopy(Pinto pinto, Stack stack) {
+		List<String> headers = stack.stream().map(Column::getHeader).collect(Collectors.toList());
 		Collections.reverse(headers);
-		s.addFirst(new OfConstantStrings(headers.stream().collect(Collectors.joining(","))));
+		for(int i = 0; i < headers.size(); i++) {
+			stack.addFirst(new OfConstantStrings(headers.get(i)));
+		}
 	}
 
-	private static void hpaste(Pinto pinto, Stack s) {
-		String[] headers = castColumn(s.removeFirst(), OfConstantStrings.class).getValue().split(",");
-		boolean repeat = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
-		AtomicInteger i = new AtomicInteger(headers.length - 1);
-		s.replaceAll(c -> {
-			int index = i.getAndDecrement();
-			if (index >= 0 || repeat) {
-				c.setHeader(headers[index <= 0 ? 0 : index]);
-			}
-			return c;
-		});
+	private static void hpaste(Pinto pinto, Stack stack) {
+		List<String> headers = new ArrayList<>();
+		while(stack.peekFirst() instanceof OfConstantStrings && stack.peekFirst().getHeader().equals("string")) {
+			headers.add(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		}
+		boolean repeat = Boolean.parseBoolean(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		for(int i = 0; i < stack.size() && (i < headers.size() || repeat); i++) {
+			stack.get(i).setHeader(headers.get(i % headers.size()));
+		}
 	}
 
 	private static void hformat(Pinto pinto, Stack s) {
@@ -1103,12 +1122,12 @@ public class StandardVocabulary extends Vocabulary {
 									castColumn(right, OfConstantDoubles.class).getValue())));
 				} else if (right instanceof OfDoubles && lefts.get(i) instanceof OfDoubles) {
 					stack.add(new OfDoubles(inputs -> inputs[1].getHeader(),
-							inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
+							inputs -> "((" + inputs[1].getTrace() + ") (" + inputs[0].getTrace() + ") " + name + ")",
 							doubledouble.apply(dc), right, lefts.get(i)));
 				} else if (right instanceof OfWindow
 						&& lefts.get(i) instanceof OfWindow) {
 					stack.add(new OfWindow(inputs -> inputs[1].getHeader(),
-							inputs -> inputs[1].getTrace() + " " + inputs[0].getTrace() + " " + name,
+							inputs -> "((" + inputs[1].getTrace() + ") (" + inputs[0].getTrace() + ") " + name + ")",
 							arrayarray.apply(dc), right, lefts.get(i)));
 				} else {
 					throw new IllegalArgumentException(

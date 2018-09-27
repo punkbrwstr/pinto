@@ -48,6 +48,24 @@ public interface Window<T extends Window<T>> {
 			return d;
 		}
 	}
+
+	public static interface PairStatistic {
+		
+		public double update(View v1, View v2);
+		
+		default public double[] apply(Window<?> w1, Window<?> w2) {
+			double[] d = new double[w1.viewCount()];
+			for(int i = 0; i < d.length; i++) {
+				View v1 = w1.getView(i);
+				View v2 = w2.getView(i);
+				d[i] = update(v1,v2);
+				if(v1.returnNa() || v2.returnNa()) {
+					d[i] = Double.NaN;
+				}
+			}
+			return d;
+		}
+	}
 	
 	public static class Rolling implements Window<Rolling> {
 		
@@ -406,6 +424,76 @@ public interface Window<T extends Window<T>> {
 			}
 		}
 	}
+
+	public static class PairCorrelation extends PairCovariance {
+		private StandardDeviation sd1, sd2;
+
+		public PairCorrelation(boolean clearOnNan) {
+			super(clearOnNan);
+			sd1 = new StandardDeviation(clearOnNan);
+			sd2 = new StandardDeviation(clearOnNan);
+		}
+
+		@Override
+		public double update(View v1, View v2) {
+			return super.update(v1, v2) / (sd1.update(v1) * sd2.update(v2));
+		}
+	}
+
+	public static class PairCovariance implements PairStatistic {
+		
+		double sumX,sumY,count,c = 0;
+		protected boolean clearOnNan = false;
+		
+		public PairCovariance(boolean clearOnNan) {
+			this.clearOnNan = clearOnNan;
+		}
+
+		@Override
+		public double update(View v1, View v2) {
+			if(v1.reset() || v2.reset()) {
+				sumX = 0;
+				sumY = 0;
+				count = 0;
+				c = 0;
+			} else {
+				Array subtractions1 = v1.subtractions();
+				Array subtractions2 = v2.subtractions();
+				for(int i = 0; i < subtractions1.size(); i++) {
+					double x = subtractions1.get(i);
+					double y = subtractions2.get(i);
+					if(x == x && y == y) {
+						double prevMeanY = sumY / count;
+						count--;
+						sumX -= x;
+						sumY -= y;
+						double meanX = sumX / count;
+						c -=  (x - meanX) * (y - prevMeanY);
+					}
+				}
+			}
+			Array additions1 = v1.additions();
+			Array additions2 = v2.additions();
+			for(int i = 0; i < additions1.size(); i++) {
+				double x = additions1.get(i);
+				double y = additions2.get(i);
+				if(x == x &&  y == y) {
+					double prevMeanX = count > 0 ? sumX / count : 0;
+					count++;
+					sumX += x;
+					sumY += y;
+					double meanY = sumY / count;
+					c +=  (x - prevMeanX) * (y - meanY);
+				} else if(clearOnNan) {
+					sumX = 0;
+					sumY = 0;
+					count = 0;
+					c = 0;
+				}
+			}
+			return c / (count - 1.0d);
+		}
+	}
 	
 	public static class Sum extends Accumulator {
 		
@@ -449,7 +537,7 @@ public interface Window<T extends Window<T>> {
 		
 	}
 
-	public static class StandardDeviation extends Accumulator {
+	public static class StandardDeviation extends Variance {
 
 		public StandardDeviation(boolean clearOnNan) {
 			super(clearOnNan);
@@ -457,8 +545,20 @@ public interface Window<T extends Window<T>> {
 
 		@Override
 		public double update(View v) {
+			return Math.sqrt(super.update(v));
+		}
+	}
+
+	public static class Variance extends Accumulator {
+
+		public Variance(boolean clearOnNan) {
+			super(clearOnNan);
+		}
+
+		@Override
+		public double update(View v) {
 			accumulate(v);
-			return Math.sqrt((sumOfSquares - sum * sum / (double) count) / ((double)count - 1));
+			return (sumOfSquares - sum * sum / (double) count) / ((double)count - 1);
 		}
 		
 	}

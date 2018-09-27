@@ -235,7 +235,7 @@ public class Indexer implements Cloneable, TableFunction {
 				for (int n = start; n < end; n++) {
 					if(!used[n]) {
 						ordinals.add(n);
-						used[n] = true;
+						//used[n] = true;
 					}
 				}
 			} else if(header.isPresent()){
