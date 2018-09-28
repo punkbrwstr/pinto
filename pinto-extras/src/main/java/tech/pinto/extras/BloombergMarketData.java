@@ -1,7 +1,6 @@
 package tech.pinto.extras;
 
 import java.io.IOException;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -183,7 +182,7 @@ public class BloombergMarketData implements MarketData, EventHandler {
 				for (int i = 0; i < fieldElement.numValues(); ++i) {
 					Element dateValueElement = fieldElement.getValueAsElement(i);
 					LocalDate date = dateValueElement.getElement(0).getValueAsDate().calendar().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-					DayOfWeek dow = date.getDayOfWeek();
+					//DayOfWeek dow = date.getDayOfWeek();
 //					if (!(range.periodicity().code().equals("B") &&
 //							dow.equals(DayOfWeek.SATURDAY) || dow.equals(DayOfWeek.SUNDAY))) {
 						if (dateValueElement.numElements() != 1) {

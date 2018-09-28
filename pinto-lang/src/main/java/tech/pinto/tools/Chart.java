@@ -13,6 +13,7 @@ import java.util.List;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.axis.LogAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.labels.ItemLabelAnchor;
 import org.jfree.chart.labels.ItemLabelPosition;
@@ -31,6 +32,8 @@ import org.jfree.chart.ui.VerticalAlignment;
 import org.jfree.data.DomainOrder;
 import org.jfree.data.general.DatasetChangeListener;
 import org.jfree.data.general.DatasetGroup;
+import org.jfree.data.statistics.HistogramDataset;
+import org.jfree.data.statistics.HistogramType;
 import org.jfree.data.xy.IntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.graphics2d.svg.FontMapper;
@@ -41,7 +44,8 @@ import tech.pinto.Table;
 public class Chart {
 	
 	public static String lineChart(Table table, String id, String title, String dateFormat,
-			String numberFormat, int width, int height, List<Color> colors) {
+			String numberFormat, int width, int height, List<Color> colors, Color backgroundColor,
+			boolean dataLabel) {
 		TableDataSet data = new TableDataSet(table);
 		JFreeChart chart = ChartFactory.createTimeSeriesChart(
 				title.equals("") ? null : "           " + title, // title
@@ -49,8 +53,8 @@ public class Chart {
 				null, // y-axis label
 				data, // data
 				true,
-				true, // generate tooltips?
-				false // generate URLs?
+				true, // generate tooltips
+				false // generate URLs
 		);
 		if(!title.equals("")) {
 			chart.getTitle().setFont(new Font("SansSerif", Font.ITALIC + Font.BOLD, 14));
@@ -62,17 +66,16 @@ public class Chart {
 
 
 		XYPlot plot = (XYPlot) chart.getPlot();
-		plot.setBackgroundPaint(Color.white);
-		plot.setBackgroundPaint(Color.decode("#D0ECEC"));
-		plot.setDomainGridlinePaint(new Color(216, 221, 225));
-		plot.setRangeGridlinePaint(new Color(216, 221, 225));
+		plot.setBackgroundPaint(backgroundColor);
 		plot.setDomainGridlinePaint(new Color(216-25, 221-25, 225-25));
 		plot.setRangeGridlinePaint(new Color(216-25, 221-25, 225-25));
 		plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
 		plot.setDomainCrosshairVisible(true);
 		plot.setRangeCrosshairVisible(true);
 		
-		plot.getDomainAxis().setUpperMargin(plot.getDomainAxis().getUpperMargin() + 0.20);
+		if(dataLabel) {
+			plot.getDomainAxis().setUpperMargin(plot.getDomainAxis().getUpperMargin() + 0.20);
+		}
 
 		XYLineAndShapeRenderer r = (XYLineAndShapeRenderer) plot.getRenderer();
 		for (int i = 0; i < table.getColumnCount() && i < colors.size(); i++) {
@@ -97,27 +100,48 @@ public class Chart {
 			}
         	
         };
-        r.setDefaultItemLabelGenerator(generator);
-        r.setDefaultItemLabelsVisible(true);
-        r.setDefaultNegativeItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.CENTER_LEFT));
-        r.setDefaultPositiveItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.CENTER_LEFT));
-        r.setDefaultItemLabelFont(new Font("SansSerif", Font.PLAIN, 11));
+		if(dataLabel) {
+			r.setDefaultItemLabelGenerator(generator);
+			r.setDefaultItemLabelsVisible(true);
+			r.setDefaultNegativeItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.CENTER_LEFT));
+			r.setDefaultPositiveItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.CENTER_LEFT));
+			r.setDefaultItemLabelFont(new Font("SansSerif", Font.PLAIN, 11));
+		}
+        return toSVG(chart,width,height,id);
+	}
 
-        SVGGraphics2D g2 = new SVGGraphics2D(width, height);
-        g2.setFontMapper(new FontMapper() {
-
-			@Override
-			public String mapFont(String family) {
-				return "'Myriad Pro','Roboto', sans-serif";
-			}});
-        g2.setDefsKeyPrefix(id);
-        chart.setElementHinting(true);
-        chart.draw(g2, new Rectangle(width, height));
-        return g2.getSVGElement(chart.getID());
+	public static String histogramChart(Table table, String id, String title, String dateFormat,
+			String numberFormat, int width, int height, List<Color> colors, Color backgroundColor) {
+		var set = new HistogramDataset();
+		set.setType(HistogramType.SCALE_AREA_TO_1);
+		var data = table.toColumnMajorArray();
+		var headers = table.getHeaders(false, false);
+		for(int i = 0; i < table.getColumnCount(); i++) {
+			set.addSeries(headers.get(i), data[i], 25);
+		}
+		JFreeChart chart = ChartFactory.createHistogram(title == "" ? null : title, null, null, set,
+				PlotOrientation.VERTICAL, true, false, false);
+        XYPlot plot = (XYPlot)chart.getPlot();   
+        plot.setForegroundAlpha(0.65F);   
+		plot.setBackgroundPaint(backgroundColor);
+		//var gridlineDarkness = 25;
+		//var gridlineColor = new Color(backgroundColor.getRed(),backgroundColor.getBlue(),backgroundColor.getGreen());
+		plot.setDomainGridlinePaint(backgroundColor.darker());
+		plot.setRangeGridlinePaint(backgroundColor.darker());
+		plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
+		
+        XYBarRenderer xybarrenderer = (XYBarRenderer)plot.getRenderer();   
+        xybarrenderer.setDrawBarOutline(false);  
+		xybarrenderer.setBarPainter(new StandardXYBarPainter());
+		xybarrenderer.setShadowVisible(false);
+		NumberAxis na = (NumberAxis) plot.getDomainAxis();
+		na.setNumberFormatOverride(new DecimalFormat(numberFormat));
+		na.setAxisLineVisible(false);
+        return toSVG(chart,width,height,id);
 	}
 
 	public static String barChart(Table table, String id, String title, String dateFormat,
-			String numberFormat, int width, int height, List<Color> colors) {
+			String numberFormat, int width, int height, List<Color> colors, Color backgroundColor) {
 
 		JFreeChart chart = ChartFactory.createXYBarChart(
 				title.equals("") ? null : "           " + title, // title
@@ -134,12 +158,8 @@ public class Chart {
 			chart.getTitle().setFont(new Font("SansSerif", Font.BOLD, 12));
 			chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
 		}
-		//chart.setBackgroundPaint(new Color(216,221,225));
 		XYPlot plot = (XYPlot) chart.getPlot();
-		//plot.setBackgroundPaint(new Color(174, 180, 187));
-		//plot.setDomainGridlinePaint(Color.white);
-		//plot.setRangeGridlinePaint(Color.white);
-		plot.setBackgroundPaint(Color.white);
+		plot.setBackgroundPaint(backgroundColor);
 		plot.setDomainGridlinePaint(new Color(216, 221, 225));
 		plot.setRangeGridlinePaint(new Color(216, 221, 225));
 		plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
@@ -163,6 +183,10 @@ public class Chart {
 		DateAxis axis = (DateAxis) plot.getDomainAxis();
 		axis.setDateFormatOverride(new SimpleDateFormat(dateFormat.equals("") ? "yyyy-MM-dd" : dateFormat));
 
+        return toSVG(chart,width,height,id);
+	}
+	
+	private static String toSVG(JFreeChart chart, int width, int height, String id) {
         SVGGraphics2D g2 = new SVGGraphics2D(width, height);
         g2.setFontMapper(new FontMapper() {
 
@@ -175,7 +199,6 @@ public class Chart {
         chart.draw(g2, new Rectangle(width, height));
         return g2.getSVGElement(chart.getID());
 	}
-	
 	
 	
 	public static class TableDataSet implements XYDataset, IntervalXYDataset {

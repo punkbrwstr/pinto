@@ -18,6 +18,10 @@ public abstract class Period<T extends Period<T>> implements Comparable<Period<T
 		protected Period(long value) {
 			this.value = value;
 		}
+		
+		public LocalDate startDate() {
+			return previous().endDate().plusDays(1);
+		}
 
 		public long longValue() {
 			return value;

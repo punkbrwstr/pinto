@@ -43,7 +43,6 @@ import tech.pinto.Column.RowsFunction;
 import tech.pinto.Column.RowsFunctionGeneric;
 import tech.pinto.Pinto.Expression;
 import tech.pinto.Pinto.StackFunction;
-import tech.pinto.Window.EWMA;
 import tech.pinto.Window.Expanding;
 import tech.pinto.Window.Rolling;
 import tech.pinto.time.Period;
@@ -82,10 +81,6 @@ public class StandardVocabulary extends Vocabulary {
 			terminalNameBuilder("to_file", StandardVocabulary::to_file)
 				.indexer("[string, HTML]")
 				.description("Creates an HTML report from any columns labelled HTML."),
-			nameBuilder("chart", StandardVocabulary::chartSVG)
-				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,periodicity=B, date=-20 offset today,:]")
-				.description("Creates a const string column with code for an HTML chart."),
-
 
 	/* stack manipulation */
 			nameBuilder("only", StandardVocabulary::only)
@@ -143,9 +138,12 @@ public class StandardVocabulary extends Vocabulary {
 			nameBuilder("join", StandardVocabulary::join)
 				.indexer("[date,:]")
 				.description("Joins columns over time, switching between columns on *dates*.\""),
-			nameBuilder("resample", StandardVocabulary::resample)
+			nameBuilder("upsample", StandardVocabulary::resample)
 				.indexer("[periodicity=BM,:]")
-				.description("Sets frequency of prior columns to periodicity *freq*, carrying values forward if evaluation periodicity is more frequent."),
+				.description("Evaluates prior columns for lower frequency *periodicity*, carrying values forward for higher frequency evaluation periodicity."),
+			nameBuilder("downsample", StandardVocabulary::downsample)
+				.indexer("[periodicity=B,:]")
+				.description("Evaluates prior columns for higher frequency *periodicity*, creating window columns."),
 				
 				
 				
@@ -178,20 +176,20 @@ public class StandardVocabulary extends Vocabulary {
 					.indexer("[date=\"range\",:]"),
 			nameBuilder("rev_expanding", StandardVocabulary::rev_expanding_window)
 					.description("Creates a reverse-expanding window containing values from the current period to the end of the range."),
-			getStatisticName("sum", b -> new Window.Sum(b)),
-			getStatisticName("mean", b -> new Window.Mean(b)),
-			getStatisticName("zscore", b -> new Window.ZScore(b)),
-			getStatisticName("std", b -> new Window.StandardDeviation(b)),
-			getStatisticName("first", b-> Window.First),
-			getStatisticName("last", b -> Window.Last),
-			getStatisticName("change", b -> Window.Change),
-			getStatisticName("pct_change", b -> Window.PercentChange),
-			getStatisticName("min", b -> new Window.Min(b)),
-			getStatisticName("max", b -> new Window.Max(b)),
-			getStatisticName("median", b -> new Window.Median(b)),
-			getStatisticName("product", b -> new Window.Product(b)),
-			getPairStatisticName("covar", b -> new Window.PairCovariance(b)),
-			getPairStatisticName("correl", b -> new Window.PairCorrelation(b)),
+			getStatisticName("sum", b -> new Statistic.Sum(b)),
+			getStatisticName("mean", b -> new Statistic.Mean(b)),
+			getStatisticName("zscore", b -> new Statistic.ZScore(b)),
+			getStatisticName("std", b -> new Statistic.StandardDeviation(b)),
+			getStatisticName("first", b-> Statistic.First),
+			getStatisticName("last", b -> Statistic.Last),
+			getStatisticName("change", b -> Statistic.Change),
+			getStatisticName("pct_change", b -> Statistic.PercentChange),
+			getStatisticName("min", b -> new Statistic.Min(b)),
+			getStatisticName("max", b -> new Statistic.Max(b)),
+			getStatisticName("median", b -> new Statistic.Median(b)),
+			getStatisticName("product", b -> new Statistic.Product(b)),
+			getPairStatisticName("covar", b -> new Statistic.PairCovariance(b)),
+			getPairStatisticName("correl", b -> new Statistic.PairCorrelation(b)),
 			nameBuilder("ewma", StandardVocabulary::ewma)
 				.description("Exponentially weighted moving average calculated using *alpha* or defaulting to 2 / (N + 1)")
 				.indexer("[alpha=\"none\",:]"),
@@ -204,11 +202,14 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[periodicity=B, date=-20 offset today,format=\"decimal\",row_header=\"date\",col_headers=\"true\",:]")
 				.description("Creates a const string column with code for a table defined by input columns and with header HTML."),
 			nameBuilder("chart", StandardVocabulary::chartSVG)
-				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,color=default_palette,periodicity=B,date=-20 offset today,:]")
-				.description("Creates a const string column with code for an HTML chart."),
+				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,background_color=\"#D0ECEC\",color=default_palette,data_labels=\"true\",periodicity=B,date=-20 offset today,:]")
+				.description("Creates a const string column with code for an HTML line chart."),
 			nameBuilder("bar", StandardVocabulary::barChartSVG)
-				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,color=default_palette,periodicity=B, date=-20 offset today,:]")
-				.description("Creates a const string column with code for an HTML chart."),
+				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,background_color=\"#D0ECEC\",color=default_palette,periodicity=B, date=-20 offset today,:]")
+				.description("Creates a const string column with code for an HTML bar chart."),
+			nameBuilder("histogram", StandardVocabulary::histogramChartSVG)
+				.indexer("[title=\"\",date_format=\"\",number_format=\"#,##0.00\",width=750,height=350,background_color=\"#D0ECEC\",color=default_palette,periodicity=B,date=-20 offset today,:]")
+				.description("Creates a const string column with code for an HTML histogram chart."),
 			nameBuilder("rt", StandardVocabulary::rt)
 				.indexer("[functions=\" BA-DEC offset expanding pct_change {YTD} today today eval\",format=\"percent\",digits=2,:]")
 				.description("Creates a const string column with code for an HTML ranking table, applying each *function* to input columns and ranking the results."),
@@ -352,7 +353,7 @@ public class StandardVocabulary extends Vocabulary {
 			}};
 	}
 
-	private static Name.Builder getStatisticName(String name, Function<Boolean,Window.Statistic> s) {
+	private static Name.Builder getStatisticName(String name, Function<Boolean,Statistic> s) {
 		Function<Boolean, RowsFunction<double[]>> f = b -> (range, inputs) -> {
 			return s.apply(b).apply(castColumn(inputs[0], OfWindow.class).rows(range));
 		};
@@ -364,7 +365,7 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[clear_on_nan=\"false\",:]");
 	}
 
-	private static Name.Builder getPairStatisticName(String name, Function<Boolean,Window.PairStatistic> s) {
+	private static Name.Builder getPairStatisticName(String name, Function<Boolean,Statistic.PairStatistic> s) {
 		Function<Boolean, RowsFunction<double[]>> f = b -> (range, inputs) -> {
 			return s.apply(b).apply(castColumn(inputs[0], OfWindow.class).rows(range),
 					castColumn(inputs[1], OfWindow.class).rows(range));
@@ -388,7 +389,7 @@ public class StandardVocabulary extends Vocabulary {
 				Optional.of(castColumn(alphaCol, OfConstantDoubles.class).getValue()) : Optional.empty();
 		stack.replaceAll(c -> new OfDoubles(inputs -> inputs[0].getHeader(),
 			inputs -> inputs[0].getTrace() + " ewma", (range, inputs) -> {
-				return new EWMA(alpha).apply(castColumn(inputs[0],OfWindow.class).rows(range));
+				return new tech.pinto.Statistic.EWMA(alpha).apply(castColumn(inputs[0],OfWindow.class).rows(range));
 			}, c));
 	}
 	
@@ -826,6 +827,28 @@ public class StandardVocabulary extends Vocabulary {
 		};
 	}
 
+	private static void downsample(Pinto pinto, Stack s) {
+		Periodicity<?> newPeriodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
+		s.replaceAll(c -> {
+			return new OfWindow(inputs -> inputs[0].getHeader(),
+					inputs -> inputs[0].getTrace() + newPeriodicity.code() + " resample",
+					getDownsampleFunction(newPeriodicity), c);
+		});
+	}
+
+	private static <N extends Period<N>> RowsFunctionGeneric<Window<?>> getDownsampleFunction(Periodicity<N> p) {
+		return new RowsFunctionGeneric<Window<?>>() {
+			@Override
+			public <P extends Period<P>> Window<?> getRows(PeriodicRange<P> range, Column<?>[] inputs, Class<?> clazz) {
+				N newStart = p.roundUp(range.start().startDate());
+				N newEnd = p.from(range.end().endDate());
+				PeriodicRange<N> newDr = p.range(newStart, newEnd);
+				double[] d = (double[]) inputs[0].rows(newDr);
+				return new Window.Downsample(d, range.dates(), newDr);
+			}
+		};
+	}
+
 	private static void hcopy(Pinto pinto, Stack stack) {
 		List<String> headers = stack.stream().map(Column::getHeader).collect(Collectors.toList());
 		Collections.reverse(headers);
@@ -922,17 +945,19 @@ public class StandardVocabulary extends Vocabulary {
 		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
 		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		Color background = Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
 		List<Color> colors = new ArrayList<>();
 		while(stack.peekFirst().getHeader().equals("color")) {
 			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
 		}
+		boolean dataLabels = Boolean.parseBoolean(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
 		Pinto.Expression e = new Pinto.Expression(false);
 		final Stack s3 = new Stack(stack);
 		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
 		stack.add(new OfConstantStrings(() -> Chart.lineChart(e.evaluate(pinto),"chart-" + ID.getId(),
-							title, dateFormat, numberFormat, width, height, colors), "HTML"));
+							title, dateFormat, numberFormat, width, height, colors, background, dataLabels), "HTML"));
 	}
 
 	private static void barChartSVG(Pinto pinto, Stack stack) {
@@ -941,6 +966,7 @@ public class StandardVocabulary extends Vocabulary {
 		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
 		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
 		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		Color background = Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
 		List<Color> colors = new ArrayList<>();
 		while(stack.peekFirst().getHeader().equals("color")) {
 			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
@@ -951,7 +977,27 @@ public class StandardVocabulary extends Vocabulary {
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
 		stack.add(new OfConstantStrings(() -> Chart.barChart(e.evaluate(pinto),"chart-" + ID.getId(),
-							title, dateFormat, numberFormat, width, height, colors), "HTML"));
+							title, dateFormat, numberFormat, width, height, colors, background), "HTML"));
+	}
+
+	private static void histogramChartSVG(Pinto pinto, Stack stack) {
+		String title = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		String dateFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
+		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		Color background = Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		List<Color> colors = new ArrayList<>();
+		while(stack.peekFirst().getHeader().equals("color")) {
+			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
+		}
+		Pinto.Expression e = new Pinto.Expression(false);
+		final Stack s3 = new Stack(stack);
+		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
+		e.setTerminal(StandardVocabulary::eval);
+		stack.clear();
+		stack.add(new OfConstantStrings(() -> Chart.histogramChart(e.evaluate(pinto),"chart-" + ID.getId(),
+							title, dateFormat, numberFormat, width, height, colors, background), "HTML"));
 	}
 
 	private static void grid(Pinto pinto, Stack stack) {
@@ -1049,9 +1095,15 @@ public class StandardVocabulary extends Vocabulary {
 					expression.addFunction(Pinto.toTableConsumer((p, s2) -> {
 						s2.add(s.get(J).clone());
 					}));
-					pinto.parse(functions.get(i), expression);
-					Table t = expression.evaluate(pinto);
-					double[][] d = t.toColumnMajorArray();
+					double[][] d;
+					Table t;
+					try {
+						pinto.parse(functions.get(i), expression);
+						t = expression.evaluate(pinto);
+						d = t.toColumnMajorArray();
+					} catch(RuntimeException e) {
+						throw new RuntimeException("Error in rt function \"" + expression.getText() + "\".", e);
+					}
 					values[j][0] = d[0][d[0].length - 1];
 					values[j][1] = (int) j;
 					if (j == 0) {
