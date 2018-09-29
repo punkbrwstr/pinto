@@ -19,7 +19,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.7.0</version>
+        <version>3.8.0</version>
                         				<dependencies>
   <dependency>
     <groupId>com.google.dagger</groupId>
@@ -28,8 +28,7 @@
   </dependency>
 				</dependencies>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <release>10</release>
         </configuration>
       </plugin>
         <plugin>

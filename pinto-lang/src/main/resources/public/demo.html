@@ -15,14 +15,15 @@
         <div id="pintoBody">
         	<h3>What is Pinto?</h3>
 		<p>Pinto is a domain-specific language for working with time series.
-		All Pinto programes are expressions that produce one thing: tables of data where each column is a time series and the rows correspond to periodic points in time.
-		Expressions are not tied to specific dates but can be evaluated to produce a table with rows for any range of time.
+		Programs in Pinto are written as expressions that produce tables of data. Each column in the table is a time series and the rows correspond to periodic points in time.
+		Expressions are not tied to specific dates--they can be evaluated to produce a table with rows for any range of time.
 		As a <a href="https://en.wikipedia.org/wiki/Concatenative_programming_language" rel="nofollow">concatenative</a> language that
 		uses <a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation" rel="nofollow">postfix</a> notation,
-		Pinto expressions are comprised of a sequence of functions that operate on the same table in the order they are written.
+		Pinto expressions are comprised of a sequence of functions that operate in the order they are written.  The expression is the mathematical composition of these functions.
+		There are no variables in Pinto.  All data is held as columns in the table.    
 		The table is set up as a <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)" rel="nofollow">stack</a>, 
-		with new columns added to the right and functions operating on the rightmost column first.
-		By using an indexer, the columns that are passed to a function can be filtered header value or position in the table.</p>
+		with new columns added to the right and functions operating on the rightmost column first. 
+		By using an indexer, the columns that are passed to a function can be filtered by header value or position in the table.</p>
 		<p>For language details please see the <a href="https://github.com/punkbrwstr/pinto/blob/master/pinto_reference.md">Pinto Language Reference</a> and for examples take a look at our <a href="https://github.com/punkbrwstr/pinto/wiki">wiki</a>.</p>
 		<h3>Key features</h3>
 		<ul>
@@ -35,7 +36,7 @@
 		<h3>Why Pinto?</h3>
 		<p>
 		Pinto was designed to prepare financial market data for use in models or visualizations.
-		A Pinto one-liner can perform data transformations that would require many lines of Pandas operations, multiple SAS data steps, or an Excel sheet full of formulas.
+		A Pinto expression can perform data transformations that would require many lines of Pandas operations, multiple SAS data steps, or an Excel sheet full of formulas.
 		With Pinto's side-effect-free functional paradigm, the expression will return the same values every time.
 		And, Pinto can reevaluate the same expression for a different frequency or an expand the range of dates without changes to the code.
 		</p>
