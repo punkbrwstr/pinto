@@ -24,7 +24,11 @@ Type | Format example
 
 
 ## Headers
-Pinto will automatically assign a string header to every column according to the functions that are composed together to define the column.  Column headers can also by set manually by using header literals.  Header literals are surrounded by curly braces.  Literals for multiple headers are separated by commas.  There are two formats:
+Each column has a text header to identify or describe it.  Pinto will automatically assign a string header when new columns are created.  Tables can have multiple columns with the same header text.
+
+
+### Header literals
+Header literals manually set column headers.  They are surrounded by curly braces, and with the braces multiple headers are separated by commas.  There are two formats:
 
 #### Map-style header literals
 Map-style header literals define the column and set the header value at the same time.  The header and column-defining Pinto expression are separated by a `:` with the header coming first `{ header : pinto expression }`.  If the expression defines more than one column all columns will have the header value.
@@ -65,7 +69,7 @@ When no indexer is specified, the entire stack is passed to the following functi
 An indexer to pass an empty stack looks like ```[]```.
 
 #### Indexing by number
-The indexer can take numerical indicies or ranges of numerical indicies (ala python indexing/slicing).  Index numbering starts with ```0```, which represents the top or rightmost column of the stack.  Ranges may specify an inclusive starting index, an exclusive ending index or both.  ```[0:3]```  represents the first through third columns in the stack.  ```[1:]``` represents all stack columns after the first.  Negative indicies are converted to the stack size minus that number.  ```[-2:]```  represents the last two columns in the stack.
+The indexer can take numerical indicies or ranges of numerical indicies (à la Python indexing).  Index numbering starts with ```0```, which represents the top or rightmost column of the stack.  Ranges may specify an inclusive starting index, an exclusive ending index or both.  ```[0:3]```  represents the first through third columns in the stack.  ```[1:]``` represents all stack columns after the first.  Negative indicies are converted to the stack size minus that number.  ```[-2:]```  represents the last two columns in the stack.
 
 #### Indexing by header
 The indexer can also take string arguments to select stack columns by their header like ```[my_label2]```. Header indicies support ```*``` as a wildcard for matching zero or more characters (potentially returning multiple columns for one argument).
@@ -80,7 +84,7 @@ The Default modifier (```"="```) tells the indexer to use the following Pinto ex
 The Copy modifier (```"&"```) forces the indexer make a copy of the column for the subsequent function, leaving the original column on the stack.  For example, ```[:&]``` will make a copy of all columns in the stack for the following function and maintain the originals in the stack.
 
 #### Index modifiers: Repeat
-The repeat modifier (```"+"```) causes the indexer to make multiple calls to the following function until the stack no longer contains enough columns for the indexer.  The index ```[:2+]``` will make repeated calls to the following function, each time supplying the top two columns on the stack as the function inputs.  It will stop when there are fewer than two columns left on the stack. 
+The repeat modifier (```"+"```) causes the indexer to make multiple calls to the next function, iterating through the columns specified by this index and calling the function each time.  The ```+``` can optionally be followed by a number that specifies how many columns from the index are passed in each function call.  Columns from other indicies are copied and passed to the function each iteration.  ```[dates,*price+]``` will call the next function for every column with a header matching ```*price```, with a copy of the ```dates``` column(s) passed in the 0th position each time.  If other indicies also have the Repeat modifier, the next function will be called for every permutation of the repeated indicies.
 
 ## Comments
 Comments start with a `#` character and continue to the end of the line.  Comments cannot be within an expression--they must start after a terminal function (or at the beginning of a program).
@@ -168,7 +172,8 @@ Function name | Default indexer |Description
 :---:|:---|:---
 fill|[periodicity=BQ-DEC,lookback="true",default=NaN,:]|Fills missing values with last good value, looking back one period of *periodicity* if *lookback* is true, defaulting to *default* if no prior value exists.
 join|[date,:]|Joins columns over time, switching between columns on dates in *date* columns.
-resample|[periodicity=BM,:]|Sets prior columns to periodicity *periodicity*, carrying values forward if evaluation periodicity is more frequent.
+naToZero|[:]|Unary operator naToZero.
+upsample|[periodicity=BM,:]|Evaluates prior columns for lower frequency *periodicity*, carrying values forward for periods of higher frequency evaluation periodicity.
 
 ### Date functions
 
@@ -240,6 +245,7 @@ ulp|[:]|Unary double operator for ulp.
 Function name | Default indexer |Description
 :---:|:---|:---
 cross|[:]|Creates a cross sectional window from input columns.
+downsample|[periodicity=B,:]|Evaluates prior columns for higher frequency *periodicity*, creating window columns.
 expanding|[date="range",:]|Creates creates an expanding window starting on *start* or the start of the evaluated range.
 rev_expanding|[:]|Creates a reverse-expanding window containing values from the current period to the end of the range.
 rolling|[c=2,:]|Creates a rolling window of size *c* for each input.
@@ -248,23 +254,35 @@ rolling|[c=2,:]|Creates a rolling window of size *c* for each input.
 Function name | Default indexer |Description
 :---:|:---|:---
 change|[:]|Change from first to last for each view of window column inputs.
+ewma|[alpha="none",:]|Exponentially weighted moving average calculated using *alpha* or defaulting to 2 / (N + 1)
 first|[:]|First value for each view of window column inputs.
 last|[:]|Last value for each view of window column inputs.
-max|[:]|Calculates max for each view of window column inputs.
-mean|[:]|Calculates mean for each view of window column inputs.
-min|[:]|Calculates min for each view of window column inputs.
+max|[clear_on_nan="false":]|Calculates max for each view of window column inputs.
+median|[clear_on_nan="false",:]|Calculates median for each view of window column inputs.
+mean|[clear_on_nan="false":]|Calculates mean for each view of window column inputs.
+min|[clear_on_nan="false":]|Calculates min for each view of window column inputs.
 pct_change|[:]|Calculates pct_change for each view of window column inputs.
 product|[:]|Calculates product for each view of window column inputs.
-std|[:]|Calculates standard deviation for each view of window column inputs.
-sum|[:]|Calculates sum for each view of window column inputs.
-zscore|[:]|Calculates zscore for each view of window column inputs.
+std|[clear_on_nan="false":]|Calculates standard deviation for each view of window column inputs.
+sum|[clear_on_nan="false":]|Calculates sum for each view of window column inputs.
+zscore|[clear_on_nan="false":]|Calculates zscore for each view of window column inputs.
+
+### Window pair statistics (Aggregation of two window views to a double value)
+Function name | Default indexer |Description
+:---:|:---|:---
+correl|[clear_on_nan="false",:]|Calculates correl for each view from a pair of window column inputs.
+covar|[clear_on_nan="false",:]|Calculates covar for each view from a pair of window column inputs.
 
 ### Visualization functions
 Function name | Default indexer |Description
 :---:|:---|:---
-chart|[title="",date_format="",number_format="#,##0.00",width=750,height=350,periodicity=B, date=-20 offset today,:]|Creates a const string column with code for an HTML chart.
+bar|[title="",date_format="",number_format="#,##0.00",width=750,height=350,background_color="#D0ECEC",color=default_palette,periodicity=B,date=-20 offset today,:]|Creates a const string column with code for an HTML bar chart.
+blue_palette|[]|Creates const string columns with hex codes for blue colors for charts.
+chart[title="",date_format="",number_format="#,##0.00",width=750,height=350,background_color="#D0ECEC",color=default_palette,data_labels="true",periodicity=B,date=-20 offset today,:]|Creates a const string column with code for an HTML line chart.
+default_palette|[:]|Creates const string columns with hex codes for default colors for charts.
 grid|[columns=3,HTML]|Creates a grid layout in a report with all input columns labelled HTML as cells in the grid.
 report|[title="Pinto report",HTML]|Creates a new HTML report containing all *HTML* columns
+histogram|[title="",date_format="",number_format="#,##0.00",width=750,height=350,background_color="#D0ECEC",color=default_palette,periodicity=B,date=-20 offset today,:]|Creates a const string column with code for an HTML histogram chart.
 rt|[functions=" BA-DEC offset expanding pct_change {YTD} today today eval",format="percent",digits=2,:]|Creates a const string column containing an HTML ranking table, applying each *function* to input columns and putting the ranked results in a table column.
 table|[periodicity=B, date=-20 offset today,format="decimal",:]|Creates a const string column with code for an HTML ranking table.
 
