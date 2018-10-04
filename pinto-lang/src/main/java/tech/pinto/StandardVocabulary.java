@@ -2,7 +2,7 @@ package tech.pinto;
 
 import static tech.pinto.Name.nameBuilder;
 import static tech.pinto.Name.terminalNameBuilder;
-import static tech.pinto.Column.*;
+import static tech.pinto.Window.*;
 
 import java.awt.Color;
 import java.awt.Desktop;
@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
-import tech.pinto.Column.ConstantColumn;
 import tech.pinto.Column.RowsFunction;
 import tech.pinto.Column.RowsFunctionGeneric;
 import tech.pinto.Pinto.Expression;
@@ -285,59 +284,59 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void rolling_window(Pinto pinto, Stack s) {
-		int size = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
+		int size = (int) s.removeFirst().cast(Double.class).rows(null).doubleValue();
 		s.replaceAll(c -> {
-			return new OfWindow(inputs -> inputs[0].getHeader(),
+			return new Column<Rolling>(Rolling.class, inputs -> inputs[0].getHeader(),
 					inputs -> inputs[0].getTrace() + " rolling", getRollingWindowFunction(size), c);
 		});
 	}
 	
-	private static RowsFunctionGeneric<Window<?>> getRollingWindowFunction(int size) {
-		return new RowsFunctionGeneric<Window<?>>(){
+	private static RowsFunctionGeneric<Rolling> getRollingWindowFunction(int size) {
+		return new RowsFunctionGeneric<Rolling>(){
 			@Override
-			public <P extends Period<P>> Window<Rolling> getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
+			public <P extends Period<P>> Rolling getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
 				P expandedWindowStart = range.periodicity().offset(-1 * (size - 1), range.start());
 				PeriodicRange<P> expandedWindow = range.periodicity().range(expandedWindowStart, range.end());
-				return new Window.Rolling(castColumn(columns[0], OfDoubles.class).rows(expandedWindow), size);
+				return new Window.Rolling(columns[0].cast(double[].class).rows(expandedWindow), size);
 			}};
 	}
 
 	private static void cross_window(Pinto pinto, Stack s) {
-		Column.OfDoubles[] a = s.toArray(new OfDoubles[] {});
+		var a = s.toArray(new Column[s.size()]);
 		s.clear();
-		s.add(new OfWindow(inputs -> "cross", inputs -> "cross", StandardVocabulary::crossWindowRowsFunction, a));
+		s.add(new Column<Cross>(Cross.class,inputs -> "cross", inputs -> "cross", StandardVocabulary::crossWindowRowsFunction, a));
 	}
 	
-	private static Window<?> crossWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
+	private static Cross crossWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
 		double[][] d = new double[columns.length][];
 		for(int i = 0; i < d.length; i++) {
-			d[i] = castColumn(columns[i], OfDoubles.class).rows(range);
+			d[i] = columns[i].cast(double[].class).rows(range);
 		}
-		return new Window.Cross(d);
+		return new Cross(d);
 	}
 
 	private static void rev_expanding_window(Pinto pinto, Stack s) {
-		s.replaceAll(c -> new OfWindow(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " rev_expanding", StandardVocabulary::revExpandingWindowRowsFunction, c));
+		s.replaceAll(c -> new Column<ReverseExpanding>(ReverseExpanding.class, inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " rev_expanding", StandardVocabulary::revExpandingWindowRowsFunction, c));
 	}
 	
-	private static Window<?> revExpandingWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
-		return new Window.ReverseExpanding(castColumn(columns[0], OfDoubles.class).rows(range));
+	private static ReverseExpanding revExpandingWindowRowsFunction(PeriodicRange<?> range, Column<?>[] columns) {
+		return new ReverseExpanding(columns[0].cast(double[].class).rows(range));
 	}
 
 	private static void expanding_window(Pinto pinto, Stack s) {
-		Optional<LocalDate> start = s.peekFirst() instanceof OfConstantStrings
-				&& castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("range") ? Optional.empty()
-						: Optional.of(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
+		Optional<LocalDate> start = s.peekFirst().getType().equals(String.class) 
+				&& s.removeFirst().cast(String.class).rows(null).equals("range") ? Optional.empty()
+						: Optional.of(s.removeFirst().cast(LocalDate.class).rows(null));
 		s.replaceAll(c -> {
-			return new OfWindow(inputs -> inputs[0].getHeader(),
+			return new Column<Expanding>(Expanding.class,inputs -> inputs[0].getHeader(),
 					inputs -> inputs[0].getTrace() + " expanding", getExpandingWindowFunction(start), c);
 		});
 	}
 	
-	private static RowsFunctionGeneric<Window<?>> getExpandingWindowFunction(Optional<LocalDate> start) {
-		return new RowsFunctionGeneric<Window<?>>(){
+	private static RowsFunctionGeneric<Expanding> getExpandingWindowFunction(Optional<LocalDate> start) {
+		return new RowsFunctionGeneric<Expanding>(){
 			@Override
-			public <P extends Period<P>> Window<Expanding> getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
+			public <P extends Period<P>> Expanding getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
 				P expandedStart = start.isPresent() ? range.periodicity().from(start.get()) : range.start();
 				int offset;
 				double d[];
@@ -347,7 +346,7 @@ public class StandardVocabulary extends Vocabulary {
 				} else {
 					PeriodicRange<P> expandedWindow = range.periodicity().range(expandedStart, range.end());
 					offset = (int) range.periodicity().distance(expandedStart, range.start());
-					d = castColumn(columns[0], OfDoubles.class).rows(expandedWindow);
+					d = columns[0].cast(double[].class).rows(expandedWindow);
 				}
 				return new Window.Expanding(d, offset);
 			}};
@@ -355,11 +354,11 @@ public class StandardVocabulary extends Vocabulary {
 
 	private static Name.Builder getStatisticName(String name, Function<Boolean,Statistic> s) {
 		Function<Boolean, RowsFunction<double[]>> f = b -> (range, inputs) -> {
-			return s.apply(b).apply(castColumn(inputs[0], OfWindow.class).rows(range));
+			return s.apply(b).apply(inputs[0].cast(Window.class).rows(range));
 		};
 		return nameBuilder(name, (Pinto pinto, Stack stack) ->  {
-			boolean clearOnNan = Boolean.parseBoolean(castColumn(stack.removeFirst(),OfConstantStrings.class).getValue());
-			stack.replaceAll(c -> new OfDoubles(inputs -> inputs[0].getHeader(),
+			boolean clearOnNan = Boolean.parseBoolean(stack.removeFirst().cast(String.class).rows(null));
+			stack.replaceAll(c -> new Column<double[]>(double[].class, inputs -> inputs[0].getHeader(),
 					inputs -> inputs[0].getTrace() + " " + name, f.apply(clearOnNan), c));
 		}).description("Calculates " + name + " for each view of window column inputs.")
 				.indexer("[clear_on_nan=\"false\",:]");
@@ -367,15 +366,15 @@ public class StandardVocabulary extends Vocabulary {
 
 	private static Name.Builder getPairStatisticName(String name, Function<Boolean,Statistic.PairStatistic> s) {
 		Function<Boolean, RowsFunction<double[]>> f = b -> (range, inputs) -> {
-			return s.apply(b).apply(castColumn(inputs[0], OfWindow.class).rows(range),
-					castColumn(inputs[1], OfWindow.class).rows(range));
+			return s.apply(b).apply(inputs[0].cast(Window.class).rows(range),
+					inputs[1].cast(Window.class).rows(range));
 		};
 		return nameBuilder(name, (Pinto pinto, Stack stack) ->  {
-			boolean clearOnNan = Boolean.parseBoolean(castColumn(stack.removeFirst(),OfConstantStrings.class).getValue());
+			boolean clearOnNan = Boolean.parseBoolean(stack.removeFirst().cast(String.class).rows(null));
 			Stack temp = new Stack(stack);
 			stack.clear();
 			for(int i = 0; i < temp.size() - 1; i += 2) {
-				stack.addLast(new OfDoubles(inputs -> inputs[0].getHeader() + inputs[1].getHeader(),
+				stack.addLast(new Column<double[]>(double[].class,inputs -> inputs[0].getHeader() + inputs[1].getHeader(),
 					inputs -> "(" + inputs[0].getTrace() + ") (" + inputs[1].getTrace() + ") " + name,
 					f.apply(clearOnNan), temp.get(i), temp.get(i+1)));
 			}
@@ -385,11 +384,11 @@ public class StandardVocabulary extends Vocabulary {
 
 	private static void ewma(Pinto pinto, Stack stack) {
 		Column<?> alphaCol = stack.removeFirst();
-		Optional<Double> alpha = alphaCol instanceof OfConstantDoubles ? 
-				Optional.of(castColumn(alphaCol, OfConstantDoubles.class).getValue()) : Optional.empty();
-		stack.replaceAll(c -> new OfDoubles(inputs -> inputs[0].getHeader(),
+		Optional<Double> alpha = alphaCol.getType().equals(Double.class) ? 
+				Optional.of(alphaCol.cast(Double.class).rows(null)) : Optional.empty();
+		stack.replaceAll(c -> new Column<double[]>(double[].class,inputs -> inputs[0].getHeader(),
 			inputs -> inputs[0].getTrace() + " ewma", (range, inputs) -> {
-				return new tech.pinto.Statistic.EWMA(alpha).apply(castColumn(inputs[0],OfWindow.class).rows(range));
+				return new tech.pinto.Statistic.EWMA(alpha).apply(inputs[0].cast(Window.class).rows(range));
 			}, c));
 	}
 	
@@ -445,10 +444,10 @@ public class StandardVocabulary extends Vocabulary {
 		Table t = new Table();
 		e.accept(pinto, t);
 		Stack s = t.flatten();
-		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
+		Periodicity<?> periodicity = s.removeFirst().cast(Periodicity.class).rows(null);
 		LinkedList<LocalDate> dates = new LinkedList<>();
 		while ((!s.isEmpty()) && dates.size() < 2 && s.peekFirst().getHeader().equals("date")) {
-			dates.add(((Column.OfConstantDates) s.removeFirst()).getValue());
+			dates.add(s.removeFirst().cast(LocalDate.class).rows(null));
 		}
 		t.evaluate(periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek()));
 		return t;
@@ -459,7 +458,7 @@ public class StandardVocabulary extends Vocabulary {
 		expression.accept(pinto, t);
 		for (Stack s : t.takeTop()) {
 			while (!s.isEmpty()) {
-				String filename = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
+				String filename = s.removeFirst().cast(String.class).rows(null);
 				int lineNumber = 0;
 				try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
 					String line = null;
@@ -493,10 +492,10 @@ public class StandardVocabulary extends Vocabulary {
 		Table t = new Table();
 		e.accept(pinto, t);
 		Stack s = t.flatten();
-		String filename = castColumn(s.removeFirst(),OfConstantStrings.class).getValue();
+		String filename = s.removeFirst().cast(String.class).rows(null);
 		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)))) {
 			while(!s.isEmpty()) {
-				out.print(castColumn(s.removeFirst(),OfConstantStrings.class).getValue());
+				out.print(s.removeFirst().cast(String.class).rows(null));
 			}
 		} catch (IOException err) {
 			throw new IllegalArgumentException("Unable to open file \"" + filename + "\" for export");
@@ -508,11 +507,11 @@ public class StandardVocabulary extends Vocabulary {
 		Table t = new Table();
 		e.accept(pinto, t);
 		Stack s = t.flatten();
-		String filename = castColumn(s.removeFirst(),OfConstantStrings.class).getValue();
-		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
+		String filename = s.removeFirst().cast(String.class).rows(null);
+		Periodicity<?> periodicity = s.removeFirst().cast(Periodicity.class).rows(null);
 		LinkedList<LocalDate> dates = new LinkedList<>();
 		while ((!s.isEmpty()) && dates.size() < 2 && s.peekFirst().getHeader().equals("date")) {
-			dates.add(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
+			dates.add(s.removeFirst().cast(LocalDate.class).rows(null));
 		}
 		t.evaluate(periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek()));
 		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)))) {
@@ -554,7 +553,7 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void copy(Pinto pinto, Stack s) {
-		int times = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
+		int times = (int) s.removeFirst().cast(Double.class).rows(null).doubleValue();
 		Stack temp = new Stack();
 		s.stream().forEach(temp::addFirst);
 		for (int j = 0; j < times - 1; j++) {
@@ -563,22 +562,21 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void roll(Pinto pinto, Stack s) {
-		int times = (int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
+		int times = (int) s.removeFirst().cast(Double.class).rows(null).doubleValue();
 		for (int j = 0; j < times; j++) {
 			s.addLast(s.removeFirst());
 		}
 	}
 
 	private static void columns(Pinto pinto, Stack s) {
-		s.addFirst(new OfConstantDoubles(s.size()));
+		s.addFirst(new Column<Double>(Double.class, "c", (double) s.size()));
 	}
 
 	private static void index(Pinto pinto, Table t) {
 		Stack s = t.takeTop().get(0);
 		List<String> endpoints = new LinkedList<>();
 		while (!s.isEmpty() && endpoints.size() < 2 && s.peekFirst().getHeader().equals("c")) {
-			endpoints
-					.add(Integer.toString((int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue()));
+			endpoints.add(Integer.toString((int) s.removeFirst().cast(Double.class).rows(null).doubleValue()));
 		}
 		t.insertAtTop(s);
 		String index = endpoints.size() == 1 ? ":" + endpoints.get(0) : endpoints.get(1) + ":" + endpoints.get(0);
@@ -586,18 +584,18 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void today(Pinto p, Stack s) {
-		s.addFirst(new OfConstantDates(() -> LocalDate.now()));
+		s.addFirst(new Column<LocalDate>(LocalDate.class,i -> "date", (r,i) -> LocalDate.now()));
 	}
 
 	private static void offset(Pinto pinto, Stack s) {
-		LocalDate date = castColumn(s.removeFirst(), OfConstantDates.class).getValue();
-		Periodicity<?> periodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
-		int count = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().intValue();
-		s.addFirst(new OfConstantDates(periodicity.offset(count, date)));
+		LocalDate date = s.removeFirst().cast(LocalDate.class).rows(null);
+		Periodicity<?> periodicity = s.removeFirst().cast(Periodicity.class).rows(null);
+		int count = s.removeFirst().cast(Double.class).rows(null).intValue();
+		s.addFirst(new Column<LocalDate>(LocalDate.class, i -> "date", (r,i) -> periodicity.offset(count, date)));
 	}
 
 	private static void dayCount(Pinto pinto, Stack s) {
-		s.addFirst(new OfDoubles(c -> "day_count", StandardVocabulary::dayCountRowFunction));
+		s.addFirst(new Column<double[]>(double[].class,c -> "day_count", (RowsFunctionGeneric<double[]>)StandardVocabulary::dayCountRowFunction));
 	}
 
 	private static <P extends Period<P>> double[] dayCountRowFunction(PeriodicRange<P> range, Column<?>[] inputs,
@@ -611,29 +609,29 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void annualizationFactor(Pinto pinto, Stack s) {
-		Optional<Periodicity<?>> periodicity = s.peekFirst() instanceof Column.OfConstantStrings
-				&& castColumn(s.removeFirst(), OfConstantStrings.class).getValue().equals("range") ? Optional.empty()
-						: Optional.of(castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue());
+		Optional<Periodicity<?>> periodicity = s.peekFirst().getType().equals(String.class)
+				&& s.removeFirst().cast(String.class).rows(null).equals("range") ? Optional.empty()
+						: Optional.of(s.removeFirst().cast(Periodicity.class).rows(null));
 		Function<Optional<Periodicity<?>>, RowsFunction<double[]>> function = p -> (r, c) -> {
 			double[] a = new double[(int) r.size()];
 			Arrays.fill(a, p.orElse(r.periodicity()).annualizationFactor());
 			return a;
 		};
-		s.addFirst(new OfDoubles(c -> "annualization_factor", function.apply(periodicity)));
+		s.addFirst(new Column<double[]>(double[].class,c -> "annualization_factor", function.apply(periodicity)));
 	}
 	
 	private static void mkt(Pinto pinto, Stack s) {
-		String tickers = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
-		String fields = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
+		String tickers = s.removeFirst().cast(String.class).rows(null);
+		String fields = s.removeFirst().cast(String.class).rows(null);
 		pinto.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(pinto,s);
 	}
 
 	private static void pi(Pinto pinto, Stack s) {
-		s.addFirst(new OfConstantDoubles(Math.PI));
+		s.addFirst(new Column<Double>(Double.class, "c", Math.PI));
 	}
 
 	private static void moon(Pinto pinto, Stack s) {
-		s.addFirst(new OfDoubles(i -> "moon", StandardVocabulary::moonRowFunction));
+		s.addFirst(new Column<double[]>(double[].class,i -> "moon", StandardVocabulary::moonRowFunction));
 	}
 
 	private static double[] moonRowFunction(PeriodicRange<?> range, Column<?>[] inputs) {
@@ -645,17 +643,17 @@ public class StandardVocabulary extends Vocabulary {
 	private static void range(Pinto pinto, Stack s) {
 		LinkedList<Integer> endpoints = new LinkedList<Integer>();
 		while (!s.isEmpty() && endpoints.size() < 2 && s.peekFirst().getHeader().equals("c")) {
-			endpoints.addLast((int) castColumn(s.removeFirst(), OfConstantDoubles.class).getValue().doubleValue());
+			endpoints.addLast((int) s.removeFirst().cast(Double.class).rows(null).doubleValue());
 		}
 		int start = endpoints.size() == 2 ? endpoints.removeLast() : 1;
 		int end = endpoints.removeFirst();
-		IntStream.range(start, end).mapToDouble(i -> (double) i).mapToObj(value -> new OfConstantDoubles(value))
+		IntStream.range(start, end).mapToDouble(i -> (double) i).mapToObj(value -> new Column<Double>(Double.class, "c", value))
 				.forEach(s::addFirst);
 	}
 
 	private static void readCsv(Pinto pinto, Stack s) {
-		String source = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
-		boolean includesHeader = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
+		String source = s.removeFirst().cast(String.class).rows(null);
+		boolean includesHeader = Boolean.parseBoolean(s.removeFirst().cast(String.class).rows(null));
 		try {
 			List<String> lines = null;
 			if (!source.contains("http")) {
@@ -677,7 +675,7 @@ public class StandardVocabulary extends Vocabulary {
 						.collect(Collectors.toMap((r) -> LocalDate.parse(r[0]), Function.identity()));
 				for (int i = 0; i < firstRow.length - 1; i++) {
 					final int col = i;
-					s.add(new OfDoubles(inputs -> labels[col] != null ? labels[col] : "", (range, inputs) -> {
+					s.add(new Column<double[]>(double[].class,inputs -> labels[col] != null ? labels[col] : "", (range, inputs) -> {
 						DoubleStream.Builder b = DoubleStream.builder();
 						for (Period<?> per : range.values()) {
 							if (data.containsKey(per.endDate())) {
@@ -701,9 +699,9 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void fill(Pinto pinto, Stack s) {
-		Periodicity<?> p = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
-		boolean lb = Boolean.parseBoolean(castColumn(s.removeFirst(), OfConstantStrings.class).getValue());
-		double defaultValue = castColumn(s.removeFirst(), OfConstantDoubles.class).getValue();
+		Periodicity<?> p = s.removeFirst().cast(Periodicity.class).rows(null);
+		boolean lb = Boolean.parseBoolean(s.removeFirst().cast(String.class).rows(null));
+		double defaultValue = s.removeFirst().cast(Double.class).rows(null);
 		Function<Periodicity<?>, Function<Boolean, RowsFunctionGeneric<double[]>>> fillRowFunction = periodicity -> lookBack -> {
 			return new RowsFunctionGeneric<double[]>() {
 				@Override
@@ -716,7 +714,7 @@ public class StandardVocabulary extends Vocabulary {
 								range.end().endDate());
 						skip = (int) r.indexOf(range.start().endDate());
 					}
-					double[] d = castColumn(inputs[0], OfDoubles.class).rows(r);
+					double[] d = inputs[0].cast(double[].class).rows(r);
 					int i = skip;
 					while (i > 0 && d[i] != d[i]) {
 						i--;
@@ -736,7 +734,7 @@ public class StandardVocabulary extends Vocabulary {
 			};
 		};
 		s.replaceAll(oldColumn -> {
-			return new OfDoubles(inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " fill",
+			return new Column<double[]>(double[].class,inputs -> inputs[0].getHeader(), inputs -> inputs[0].getTrace() + " fill",
 					fillRowFunction.apply(p).apply(lb), oldColumn);
 		});
 	}
@@ -744,9 +742,9 @@ public class StandardVocabulary extends Vocabulary {
 	private static void join(Pinto pinto, Stack s) {
 		LinkedList<LocalDate> cutoverDates = new LinkedList<>();
 		while ((!s.isEmpty()) && s.peekFirst().getHeader().equals("date")) {
-			cutoverDates.add(castColumn(s.removeFirst(), OfConstantDates.class).getValue());
+			cutoverDates.add(s.removeFirst().cast(LocalDate.class).rows(null));
 		}
-		OfDoubles[] inputStack = s.toArray(new OfDoubles[] {});
+		var inputStack = s.toArray(new Column[s.size()]);
 		if(inputStack.length == 0) {
 			throw new PintoSyntaxException("No columns to join.");
 		}
@@ -769,7 +767,7 @@ public class StandardVocabulary extends Vocabulary {
 						if (inputs.isEmpty()) {
 							throw new PintoSyntaxException("Not enough columns to join on " + cd.size() + " dates.");
 						}
-						OfDoubles currentFunction = castColumn(inputs.removeFirst(), OfDoubles.class);
+						Column<double[]> currentFunction = inputs.removeFirst().cast(double[].class);
 						if (current.isBefore(cutoverPeriods.get(i))) {
 							P chunkEnd = range.end().isBefore(cutoverPeriods.get(i)) ? range.end()
 									: freq.previous(cutoverPeriods.get(i));
@@ -783,7 +781,7 @@ public class StandardVocabulary extends Vocabulary {
 					if (inputs.isEmpty()) {
 						throw new IllegalArgumentException("Not enough columns to join on " + cd.size() + " dates.");
 					}
-					OfDoubles currentFunction =  castColumn(inputs.removeFirst(), OfDoubles.class);
+					Column<double[]> currentFunction =  inputs.removeFirst().cast(double[].class);
 					if (!current.isAfter(range.end())) {
 						double[] d = currentFunction.rows(range.periodicity().range(current, range.end()));
 						System.arraycopy(d, 0, output, outputIndex, d.length);
@@ -792,15 +790,15 @@ public class StandardVocabulary extends Vocabulary {
 				}
 			};
 		};
-		s.add(new OfDoubles(i -> i[0].getHeader(),
+		s.add(new Column<double[]>(double[].class,i -> i[0].getHeader(),
 				i -> Arrays.stream(i).map(Column::getTrace).collect(Collectors.joining(" ")) + " join",
 				joinRowFunction.apply(cutoverDates), inputStack));
 	}
 
 	private static void resample(Pinto pinto, Stack s) {
-		Periodicity<?> newPeriodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
+		Periodicity<?> newPeriodicity = s.removeFirst().cast(Periodicity.class).rows(null);
 		s.replaceAll(c -> {
-			return new OfDoubles(inputs -> inputs[0].getHeader(),
+			return new Column<double[]>(double[].class,inputs -> inputs[0].getHeader(),
 					inputs -> inputs[0].getTrace() + newPeriodicity.code() + " resample",
 					getResampleFunction(newPeriodicity), c);
 		});
@@ -828,18 +826,18 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void downsample(Pinto pinto, Stack s) {
-		Periodicity<?> newPeriodicity = castColumn(s.removeFirst(), OfConstantPeriodicities.class).getValue();
+		Periodicity<?> newPeriodicity = s.removeFirst().cast(Periodicity.class).rows(null);
 		s.replaceAll(c -> {
-			return new OfWindow(inputs -> inputs[0].getHeader(),
+			return new Column<Downsample>(Downsample.class,inputs -> inputs[0].getHeader(),
 					inputs -> inputs[0].getTrace() + newPeriodicity.code() + " resample",
 					getDownsampleFunction(newPeriodicity), c);
 		});
 	}
 
-	private static <N extends Period<N>> RowsFunctionGeneric<Window<?>> getDownsampleFunction(Periodicity<N> p) {
-		return new RowsFunctionGeneric<Window<?>>() {
+	private static <N extends Period<N>> RowsFunctionGeneric<Downsample> getDownsampleFunction(Periodicity<N> p) {
+		return new RowsFunctionGeneric<Downsample>() {
 			@Override
-			public <P extends Period<P>> Window<?> getRows(PeriodicRange<P> range, Column<?>[] inputs, Class<?> clazz) {
+			public <P extends Period<P>> Downsample getRows(PeriodicRange<P> range, Column<?>[] inputs, Class<?> clazz) {
 				N newStart = p.roundUp(range.start().startDate());
 				N newEnd = p.from(range.end().endDate());
 				PeriodicRange<N> newDr = p.range(newStart, newEnd);
@@ -853,16 +851,16 @@ public class StandardVocabulary extends Vocabulary {
 		List<String> headers = stack.stream().map(Column::getHeader).collect(Collectors.toList());
 		Collections.reverse(headers);
 		for(int i = 0; i < headers.size(); i++) {
-			stack.addFirst(new OfConstantStrings(headers.get(i)));
+			stack.addFirst(new Column<String>(String.class, "string", headers.get(i)));
 		}
 	}
 
 	private static void hpaste(Pinto pinto, Stack stack) {
 		List<String> headers = new ArrayList<>();
-		while(stack.peekFirst() instanceof OfConstantStrings && stack.peekFirst().getHeader().equals("string")) {
-			headers.add(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		while(stack.peekFirst().getType().equals(String.class) && stack.peekFirst().getHeader().equals("string")) {
+			headers.add(stack.removeFirst().cast(String.class).rows(null));
 		}
-		boolean repeat = Boolean.parseBoolean(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		boolean repeat = Boolean.parseBoolean(stack.removeFirst().cast(String.class).rows(null));
 		for(int i = 0; i < stack.size() && (i < headers.size() || repeat); i++) {
 			stack.get(i).setHeader(headers.get(i % headers.size()));
 		}
@@ -870,7 +868,7 @@ public class StandardVocabulary extends Vocabulary {
 
 	private static void hformat(Pinto pinto, Stack s) {
 		MessageFormat format = new MessageFormat(
-				castColumn(s.removeFirst(), OfConstantStrings.class).getValue().replaceAll("\\{\\}", "\\{0\\}"));
+				s.removeFirst().cast(String.class).rows(null).replaceAll("\\{\\}", "\\{0\\}"));
 		s.replaceAll(c -> {
 			String header = format.format(new Object[] { c.getHeader() });
 			c.setHeader(header);
@@ -879,139 +877,139 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void cat(Pinto pinto, Stack s) {
-		String sep = castColumn(s.removeFirst(), OfConstantStrings.class).getValue();
+		String sep = s.removeFirst().cast(String.class).rows(null);
 		List<String> l = new ArrayList<>();
 		while (!s.isEmpty()) {
 			Column<?> c = s.removeFirst();
-			if (c instanceof ConstantColumn) {
-				l.add(((ConstantColumn<?>) c).getValue().toString());
+			if (!c.getType().equals(double[].class)) {
+				l.add(c.rows(null).toString());
 			} else {
 				throw new IllegalArgumentException("cat can only operate on constant columns.");
 			}
 		}
-		s.addFirst(new OfConstantStrings(l.stream().collect(Collectors.joining(sep))));
+		s.addFirst(new Column<String>(String.class, "string", l.stream().collect(Collectors.joining(sep))));
 	}
 
 
 	private static void palette(Pinto pinto, Stack stack) {
-		stack.addLast(new OfConstantStrings("#92d050","color"));
-		stack.addLast(new OfConstantStrings("#c5be97","color"));
-		stack.addLast(new OfConstantStrings("#8db4e3","color"));
-		stack.addLast(new OfConstantStrings("#ffff99","color"));
-		stack.addLast(new OfConstantStrings("#fddf70","color"));
-		stack.addLast(new OfConstantStrings("#ff7c80","color"));
-		stack.addLast(new OfConstantStrings("#f09ebf","color"));
-		stack.addLast(new OfConstantStrings("#efff59","color"));
-		stack.addLast(new OfConstantStrings("#43d2ff","color"));
-		stack.addLast(new OfConstantStrings("#888888","color"));
-		stack.addLast(new OfConstantStrings("#00b050","color"));
-		stack.addLast(new OfConstantStrings("#846802","color"));
-		stack.addLast(new OfConstantStrings("#0070c0","color"));
-		stack.addLast(new OfConstantStrings("#ffff00","color"));
-		stack.addLast(new OfConstantStrings("#fbc913","color"));
-		stack.addLast(new OfConstantStrings("#ea5816","color"));
-		stack.addLast(new OfConstantStrings("#d42069","color"));
-		stack.addLast(new OfConstantStrings("#9fb000","color"));
-		stack.addLast(new OfConstantStrings("#007194","color"));
-		stack.addLast(new OfConstantStrings("#7f7f7f","color"));
-		stack.addLast(new OfConstantStrings("#ccffcc","color"));
-		stack.addLast(new OfConstantStrings("#ccffff","color"));
-		stack.addLast(new OfConstantStrings("#ffffcc","color"));
-		stack.addLast(new OfConstantStrings("#ffcccc","color"));
+		stack.addLast(new Column<String>(String.class, "color", "#92d050"));
+		stack.addLast(new Column<String>(String.class, "color", "#c5be97"));
+		stack.addLast(new Column<String>(String.class, "color", "#8db4e3"));
+		stack.addLast(new Column<String>(String.class, "color", "#ffff99"));
+		stack.addLast(new Column<String>(String.class, "color", "#fddf70"));
+		stack.addLast(new Column<String>(String.class, "color", "#ff7c80"));
+		stack.addLast(new Column<String>(String.class, "color", "#f09ebf"));
+		stack.addLast(new Column<String>(String.class, "color", "#efff59"));
+		stack.addLast(new Column<String>(String.class, "color", "#43d2ff"));
+		stack.addLast(new Column<String>(String.class, "color", "#888888"));
+		stack.addLast(new Column<String>(String.class, "color", "#00b050"));
+		stack.addLast(new Column<String>(String.class, "color", "#846802"));
+		stack.addLast(new Column<String>(String.class, "color", "#0070c0"));
+		stack.addLast(new Column<String>(String.class, "color", "#ffff00"));
+		stack.addLast(new Column<String>(String.class, "color", "#fbc913"));
+		stack.addLast(new Column<String>(String.class, "color", "#ea5816"));
+		stack.addLast(new Column<String>(String.class, "color", "#d42069"));
+		stack.addLast(new Column<String>(String.class, "color", "#9fb000"));
+		stack.addLast(new Column<String>(String.class, "color", "#007194"));
+		stack.addLast(new Column<String>(String.class, "color", "#7f7f7f"));
+		stack.addLast(new Column<String>(String.class, "color", "#ccffcc"));
+		stack.addLast(new Column<String>(String.class, "color", "#ccffff"));
+		stack.addLast(new Column<String>(String.class, "color", "#ffffcc"));
+		stack.addLast(new Column<String>(String.class, "color", "#ffcccc"));
 	}
 	
 	private static void bluePalette(Pinto pinto, Stack stack) {
-		stack.addLast(new OfConstantStrings("#12426d","color"));
-		stack.addLast(new OfConstantStrings("#2383db","color"));
-		stack.addLast(new OfConstantStrings("#85baeb","color"));
-		stack.addLast(new OfConstantStrings("#c3ddf5","color"));
-		stack.addLast(new OfConstantStrings("#aadaac","color"));
-		stack.addLast(new OfConstantStrings("#489452","color"));
-		stack.addLast(new OfConstantStrings("#306236","color"));
-		stack.addLast(new OfConstantStrings("#04400b","color"));
-		stack.addLast(new OfConstantStrings("#282828","color"));
-		stack.addLast(new OfConstantStrings("#515151","color"));
-		stack.addLast(new OfConstantStrings("#808080","color"));
-		stack.addLast(new OfConstantStrings("#cdcdcd","color"));
-		stack.addLast(new OfConstantStrings("#adb0d6","color"));
-		stack.addLast(new OfConstantStrings("#767cbb","color"));
-		stack.addLast(new OfConstantStrings("#5556aa","color"));
-		stack.addLast(new OfConstantStrings("#3b3c8d","color"));
+		stack.addLast(new Column<String>(String.class, "color", "#12426d"));
+		stack.addLast(new Column<String>(String.class, "color", "#2383db"));
+		stack.addLast(new Column<String>(String.class, "color", "#85baeb"));
+		stack.addLast(new Column<String>(String.class, "color", "#c3ddf5"));
+		stack.addLast(new Column<String>(String.class, "color", "#aadaac"));
+		stack.addLast(new Column<String>(String.class, "color", "#489452"));
+		stack.addLast(new Column<String>(String.class, "color", "#306236"));
+		stack.addLast(new Column<String>(String.class, "color", "#04400b"));
+		stack.addLast(new Column<String>(String.class, "color", "#282828"));
+		stack.addLast(new Column<String>(String.class, "color", "#515151"));
+		stack.addLast(new Column<String>(String.class, "color", "#808080"));
+		stack.addLast(new Column<String>(String.class, "color", "#cdcdcd"));
+		stack.addLast(new Column<String>(String.class, "color", "#adb0d6"));
+		stack.addLast(new Column<String>(String.class, "color", "#767cbb"));
+		stack.addLast(new Column<String>(String.class, "color", "#5556aa"));
+		stack.addLast(new Column<String>(String.class, "color", "#3b3c8d"));
 	}
 	
 	private static void chartSVG(Pinto pinto, Stack stack) {
-		String title = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		String dateFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
-		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
-		Color background = Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		String title = stack.removeFirst().cast(String.class).rows(null);
+		String dateFormat = stack.removeFirst().cast(String.class).rows(null);
+		String numberFormat = stack.removeFirst().cast(String.class).rows(null);
+		int width = stack.removeFirst().cast(Double.class).rows(null).intValue();
+		int height = stack.removeFirst().cast(Double.class).rows(null).intValue();
+		Color background = Color.decode(stack.removeFirst().cast(String.class).rows(null));
 		List<Color> colors = new ArrayList<>();
 		while(stack.peekFirst().getHeader().equals("color")) {
-			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
+			colors.add(Color.decode(stack.removeFirst().cast(String.class).rows(null)));
 		}
-		boolean dataLabels = Boolean.parseBoolean(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		boolean dataLabels = Boolean.parseBoolean(stack.removeFirst().cast(String.class).rows(null));
 		Pinto.Expression e = new Pinto.Expression(false);
 		final Stack s3 = new Stack(stack);
-		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
+		e.addFunction((StackFunction)(p, s) -> s.addAll(s3));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
-		stack.add(new OfConstantStrings(() -> Chart.lineChart(e.evaluate(pinto),"chart-" + ID.getId(),
-							title, dateFormat, numberFormat, width, height, colors, background, dataLabels), "HTML"));
+		stack.add(new Column<String>(String.class, "HTML", Chart.lineChart(e.evaluate(pinto),"chart-" + ID.getId(),
+							title, dateFormat, numberFormat, width, height, colors, background, dataLabels)));
 	}
 
 	private static void barChartSVG(Pinto pinto, Stack stack) {
-		String title = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		String dateFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
-		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
-		Color background = Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		String title = stack.removeFirst().cast(String.class).rows(null);
+		String dateFormat = stack.removeFirst().cast(String.class).rows(null);
+		String numberFormat = stack.removeFirst().cast(String.class).rows(null);
+		int width = stack.removeFirst().cast(Double.class).rows(null).intValue();
+		int height = stack.removeFirst().cast(Double.class).rows(null).intValue();
+		Color background = Color.decode(stack.removeFirst().cast(String.class).rows(null));
 		List<Color> colors = new ArrayList<>();
 		while(stack.peekFirst().getHeader().equals("color")) {
-			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
+			colors.add(Color.decode(stack.removeFirst().cast(String.class).rows(null)));
 		}
 		Pinto.Expression e = new Pinto.Expression(false);
 		final Stack s3 = new Stack(stack);
-		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
+		e.addFunction((StackFunction)(p, s) -> s.addAll(s3));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
-		stack.add(new OfConstantStrings(() -> Chart.barChart(e.evaluate(pinto),"chart-" + ID.getId(),
-							title, dateFormat, numberFormat, width, height, colors, background), "HTML"));
+		stack.add(new Column<String>(String.class,"HTML", Chart.barChart(e.evaluate(pinto),"chart-" + ID.getId(),
+							title, dateFormat, numberFormat, width, height, colors, background)));
 	}
 
 	private static void histogramChartSVG(Pinto pinto, Stack stack) {
-		String title = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		String dateFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		String numberFormat = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		int width = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
-		int height = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
-		Color background = Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		String title = stack.removeFirst().cast(String.class).rows(null);
+		String dateFormat = stack.removeFirst().cast(String.class).rows(null);
+		String numberFormat = stack.removeFirst().cast(String.class).rows(null);
+		int width = stack.removeFirst().cast(Double.class).rows(null).intValue();
+		int height = stack.removeFirst().cast(Double.class).rows(null).intValue();
+		Color background = Color.decode(stack.removeFirst().cast(String.class).rows(null));
 		List<Color> colors = new ArrayList<>();
 		while(stack.peekFirst().getHeader().equals("color")) {
-			colors.add(Color.decode(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue()));
+			colors.add(Color.decode(stack.removeFirst().cast(String.class).rows(null)));
 		}
 		Pinto.Expression e = new Pinto.Expression(false);
 		final Stack s3 = new Stack(stack);
-		e.addFunction(Pinto.toTableConsumer((p, s) -> s.addAll(s3)));
+		e.addFunction((StackFunction)(p, s) -> s.addAll(s3));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
-		stack.add(new OfConstantStrings(() -> Chart.histogramChart(e.evaluate(pinto),"chart-" + ID.getId(),
-							title, dateFormat, numberFormat, width, height, colors, background), "HTML"));
+		stack.add(new Column<String>(String.class,  "HTML",  Chart.histogramChart(e.evaluate(pinto),"chart-" + ID.getId(),
+							title, dateFormat, numberFormat, width, height, colors, background)));
 	}
 
 	private static void grid(Pinto pinto, Stack stack) {
-		int columns = Double.valueOf(castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue()).intValue();
+		int columns = Double.valueOf(stack.removeFirst().cast(Double.class).rows(null)).intValue();
 		Stack s = new Stack(stack);
 		stack.clear();
-		stack.add(new OfConstantStrings(() -> {
+		stack.add(new Column<String>(String.class, inputs -> "HTML", (p,inputs) -> {
 			StringBuilder sb = new StringBuilder();
 			sb.append("\n<table class=\"pintoGrid\">\n\t<tbody>\n");
 			for (int i = 0; i < s.size();) {
 				if (i % columns == 0) {
 					sb.append("\t\t<tr>\n");
 				}
-				sb.append("\t\t\t<td>").append(castColumn(s.get(s.size() - i++ - 1), OfConstantStrings.class).getValue())
+				sb.append("\t\t\t<td>").append(s.get(s.size() - i++ - 1).cast(String.class).rows(null))
 						.append("</td>\n");
 				if (i % columns == 0 || i == s.size()) {
 					sb.append("\t\t</tr>\n");
@@ -1019,27 +1017,27 @@ public class StandardVocabulary extends Vocabulary {
 			}
 			sb.append("\t</tbody>\n</table>\n");
 			return sb.toString();
-		}, "HTML") );
+		}) );
 	}
 
 	private static void table(Pinto pinto, Stack stack) {
-		Periodicity<?> periodicity = castColumn(stack.removeFirst(), OfConstantPeriodicities.class).getValue();
+		Periodicity<?> periodicity = stack.removeFirst().cast(Periodicity.class).rows(null);
 		LinkedList<LocalDate> d = new LinkedList<>();
 		while ((!stack.isEmpty()) && d.size() < 2 && stack.peekFirst().getHeader().equals("date")) {
-			d.add(castColumn(stack.removeFirst(), OfConstantDates.class).getValue());
+			d.add(stack.removeFirst().cast(LocalDate.class).rows(null));
 		}
 		PeriodicRange<?> range = periodicity.range(d.removeLast(), d.isEmpty() ? LocalDate.now() : d.peek());
-		NumberFormat nf = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
+		NumberFormat nf = stack.removeFirst().cast(String.class).rows(null).equals("percent")
 				? NumberFormat.getPercentInstance()
 				: NumberFormat.getNumberInstance();
 		nf.setMinimumFractionDigits(2);
 		nf.setMaximumFractionDigits(4);
 		nf.setGroupingUsed(false);
-		String rowHeader = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue();
-		boolean colHeaders = Boolean.parseBoolean(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+		String rowHeader = stack.removeFirst().cast(String.class).rows(null);
+		boolean colHeaders = Boolean.parseBoolean(stack.removeFirst().cast(String.class).rows(null));
 		Stack s = new Stack(stack);
 		stack.clear();
-		stack.add(new OfConstantStrings(() -> {
+		stack.add(new Column<String>(String.class, input -> "HTML", (r, input) -> {
 			Table t = new Table();
 			t.insertAtTop(s);
 			t.evaluate(range);
@@ -1066,24 +1064,24 @@ public class StandardVocabulary extends Vocabulary {
 			});
 			sb.append("</tbody></table>\n");
 			return sb.toString();
-		}, "HTML"));
+		}));
 	}
 
 	private static void rt(Pinto pinto, Stack stack) {
 		LinkedList<String> functions = new LinkedList<>();
 		while ((!stack.isEmpty()) && stack.peekFirst().getHeader().equals("functions")) {
-			functions.addFirst(castColumn(stack.removeFirst(), OfConstantStrings.class).getValue());
+			functions.addFirst(stack.removeFirst().cast(String.class).rows(null));
 		}
-		NumberFormat nf = castColumn(stack.removeFirst(), OfConstantStrings.class).getValue().equals("percent")
+		NumberFormat nf = stack.removeFirst().cast(String.class).rows(null).equals("percent")
 				? NumberFormat.getPercentInstance()
 				: NumberFormat.getNumberInstance();
-		int digits = castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().intValue();
+		int digits = stack.removeFirst().cast(Double.class).rows(null).intValue();
 		nf.setMaximumFractionDigits(digits);
 		int columns = functions.size();
 		int rows = stack.size();
 		final Stack s = new Stack(stack);
 		stack.clear();
-		stack.add(new OfConstantStrings(() -> {
+		stack.add(new Column<String>(String.class, input -> "HTML", (r, input) -> {
 			String[] labels = new String[rows];
 			String[] headers = new String[columns];
 			String[][] cells = new String[rows][columns];
@@ -1092,9 +1090,9 @@ public class StandardVocabulary extends Vocabulary {
 				for (int j = 0; j < s.size(); j++) {
 					Pinto.Expression expression = new Pinto.Expression(false);
 					final int J = j;
-					expression.addFunction(Pinto.toTableConsumer((p, s2) -> {
+					expression.addFunction((StackFunction)(p, s2) -> {
 						s2.add(s.get(J).clone());
-					}));
+					});
 					double[][] d;
 					Table t;
 					try {
@@ -1137,28 +1135,39 @@ public class StandardVocabulary extends Vocabulary {
 			}
 			sb.append("</tbody></table>\n");
 			return sb.toString();
-		}, "HTML") );
+		}) );
 	}
 
+	@SuppressWarnings("rawtypes")
 	private static Function<Periodicity<?>, StackFunction> periodicityConstantFunction = per -> (p, s) -> s
-			.addFirst(new Column.OfConstantPeriodicities(per));
+			.addFirst(new Column<Periodicity>(Periodicity.class, i -> "periodicity", (r,i) -> per));
 
+	@SuppressWarnings("rawtypes")
 	private static Name.Builder getBinaryOperatorName(String name, DoubleBinaryOperator dbo) {
 		Function<DoubleBinaryOperator, RowsFunction<double[]>> doubledouble = o -> (range, inputs) -> {
-			double[] l = castColumn(inputs[1], Column.OfDoubles.class).rows(range);
-			double[] r = castColumn(inputs[0], Column.OfDoubles.class).rows(range);
-			for (int j = 0; j < l.length; j++) {
-				l[j] = o.applyAsDouble(l[j], r[j]);
+			Optional<Double> lDouble = inputs[1].getType().equals(Double.class) ? 
+					Optional.of(inputs[1].cast(Double.class).rows(null)) : Optional.empty();
+			Optional<Double> rDouble = inputs[0].getType().equals(Double.class) ? 
+					Optional.of(inputs[0].cast(Double.class).rows(null)) : Optional.empty();
+			Optional<double[]> lArray = inputs[1].getType().equals(double[].class) ? 
+					Optional.of(inputs[1].cast(double[].class).rows(range)) : Optional.empty();
+			Optional<double[]> rArray = inputs[0].getType().equals(double[].class) ? 
+					Optional.of(inputs[0].cast(double[].class).rows(range)) : Optional.empty();
+			double[] output = lArray.orElse(new double[(int)range.size()]);
+			for (int j = 0; j < output.length; j++) {
+				output[j] = o.applyAsDouble(lDouble.isPresent() ? lDouble.get() : lArray.get()[j],
+						rDouble.isPresent() ? rDouble.get() : rArray.get()[j]);
+						
 			}
-			return l;
+			return output;
 		};
-		Function<DoubleBinaryOperator, RowsFunction<Window<?>>> arrayarray = o -> (range, inputs) -> {
-			Window<?> l = castColumn(inputs[1], OfWindow.class).rows(range);
-			Window<?> r = castColumn(inputs[0], OfWindow.class).rows(range);
+		Function<DoubleBinaryOperator, RowsFunction<Window>> windowwindow = o -> (range, inputs) -> {
+			Window<?> l = inputs[1].cast(Window.class).rows(range);
+			Window<?> r = inputs[0].cast(Window.class).rows(range);
 			return l.apply(o, r);
 		};
 		Function<DoubleBinaryOperator, StackFunction> function = dc -> (p, stack) -> {
-			int rightCount = (int) castColumn(stack.removeFirst(), OfConstantDoubles.class).getValue().doubleValue();
+			int rightCount = (int) stack.removeFirst().cast(Double.class).rows(null).doubleValue();
 			if (stack.size() < rightCount + 1) {
 				throw new IllegalArgumentException("Not enough inputs for " + name);
 			}
@@ -1168,22 +1177,21 @@ public class StandardVocabulary extends Vocabulary {
 			for (int i = 0; i < lefts.size(); i++) {
 				Column<?> right = i >= rights.size() ? rights.getFirst().clone() : rights.getFirst();
 				rights.addLast(rights.removeFirst());
-				if (right instanceof OfConstantDoubles && lefts.get(i) instanceof OfConstantDoubles) {
-					stack.add(new OfConstantDoubles(
-							dc.applyAsDouble(castColumn(lefts.get(i), OfConstantDoubles.class).getValue(),
-									castColumn(right, OfConstantDoubles.class).getValue())));
-				} else if (right instanceof OfDoubles && lefts.get(i) instanceof OfDoubles) {
-					stack.add(new OfDoubles(inputs -> inputs[1].getHeader(),
+				Column<?> left = lefts.get(i);
+				if (right.getType().equals(Double.class) && left.getType().equals(Double.class)) {
+					stack.add(new Column<Double>(Double.class, input -> "c", (r, input) -> 
+							dc.applyAsDouble(left.cast(Double.class).rows(null), right.cast(Double.class).rows(null))));
+				} else if (right.getType().equals(Window.class) && left.getType().equals(Window.class)) {
+					stack.add(new Column<Window>(Window.class, inputs -> inputs[1].getHeader(),
 							inputs -> "((" + inputs[1].getTrace() + ") (" + inputs[0].getTrace() + ") " + name + ")",
-							doubledouble.apply(dc), right, lefts.get(i)));
-				} else if (right instanceof OfWindow
-						&& lefts.get(i) instanceof OfWindow) {
-					stack.add(new OfWindow(inputs -> inputs[1].getHeader(),
+							windowwindow.apply(dc), right, left));
+				} else if (right.getType().equals(double[].class) || left.getType().equals(double[].class)) {
+					stack.add(new Column<double[]>(double[].class,inputs -> inputs[1].getHeader(),
 							inputs -> "((" + inputs[1].getTrace() + ") (" + inputs[0].getTrace() + ") " + name + ")",
-							arrayarray.apply(dc), right, lefts.get(i)));
+							doubledouble.apply(dc), right, left));
 				} else {
 					throw new IllegalArgumentException(
-							"Operator " + name + " can only operate on columns of doubles or double arrays.");
+							"Operator " + name + " can only operate on columns of doubles or windows.");
 				}
 			}
 
@@ -1194,25 +1202,30 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[width=1,:]");
 	}
 
+	@SuppressWarnings("rawtypes")
 	private static Name.Builder getUnaryOperatorName(String name, DoubleUnaryOperator duo) {
 		Function<DoubleUnaryOperator, RowsFunction<double[]>> doubleFunction = o -> (range, inputs) -> {
-			double d[] = castColumn(inputs[0], OfDoubles.class).rows(range);
+			double d[] = inputs[0].cast(double[].class).rows(range);
 			for (int i = 0; i < d.length; i++) {
 				d[i] = o.applyAsDouble(d[i]);
 			}
 			return d;
 		};
-		Function<DoubleUnaryOperator, RowsFunction<Window<?>>> arrayFunction = o -> (range, inputs) -> {
-			Window<?> w = castColumn(inputs[0], OfWindow.class).rows(range);
+		Function<DoubleUnaryOperator, RowsFunction<Window>> arrayFunction = o -> (range, inputs) -> {
+			Window<?> w = inputs[0].cast(Window.class).rows(range);
 			return w.apply(o);
 		};
 		Function<DoubleUnaryOperator, StackFunction> function = dc -> (p, s) -> {
 			s.replaceAll(c -> {
-				if (c instanceof OfDoubles) {
-					return new OfDoubles(inputs -> inputs[0].getHeader(),
+				if (c.getType().equals(double[].class)) {
+					return new Column<double[]>(double[].class,inputs -> inputs[0].getHeader(),
 							inputs -> inputs[0].getTrace() + " " + name, doubleFunction.apply(duo), c);
-				} else if (c instanceof OfWindow) {
-					return new OfWindow(inputs -> inputs[0].getHeader(),
+				} else if (c.getType().equals(Double.class)) {
+					return new Column<Double>(Double.class,inputs -> c.getHeader(),
+							inputs -> c.getTrace() + " " + name,
+							(range, inputs) -> duo.applyAsDouble(c.cast(Double.class).rows(null)));
+				} else if (c.getType().equals(Window.class)) {
+					return new Column<Window>(Window.class, inputs -> inputs[0].getHeader(),
 							inputs -> inputs[0].getTrace() + " " + name, arrayFunction.apply(duo), c);
 				} else {
 					throw new IllegalArgumentException(

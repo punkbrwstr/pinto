@@ -42,8 +42,8 @@ public interface MarketData {
 		};
 	}
 	
-	default public Column.OfDoubles getColumn(Request request, int col) {
-		return new Column.OfDoubles(i -> request.getSecurityFields().get(col),i -> "$" + request.getSecurityFields().get(col) +"$",
+	default public Column<double[]> getColumn(Request request, int col) {
+		return new Column<double[]>(double[].class,i -> request.getSecurityFields().get(col),i -> "$" + request.getSecurityFields().get(col) +"$",
 			(range, inputs) -> {
 				return Cache.getCachedRows(request.getSecurityFieldsString(), col, range);
 			});

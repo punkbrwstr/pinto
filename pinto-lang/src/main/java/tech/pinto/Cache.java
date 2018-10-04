@@ -52,7 +52,7 @@ public class Cache {
 			columnCounts.put(key, cols.size());
 			boolean rowCacheable = true;
 			for(int i = 0; i < cols.size(); i++) {
-				if(!(cols.get(i) instanceof Column.OfDoubles)) {
+				if(!(cols.get(i).getType().equals(double[].class))) {
 					rowCacheable = false;
 				}
 			}
@@ -72,8 +72,8 @@ public class Cache {
 		return cols;
 	}
 
-	private static Column.OfDoubles createRowCachedColumn(String key, int col, String header, String trace) {
-		return new Column.OfDoubles(i -> header, i -> trace,
+	private static Column<double[]> createRowCachedColumn(String key, int col, String header, String trace) {
+		return new Column<double[]>(double[].class, i -> header, i -> trace,
 				(range, inputs) -> {
 					try {
 						return getCachedRows(key, col, range);
@@ -88,7 +88,7 @@ public class Cache {
 		return range -> {
 			double[][] newData = new double[l.size()][];
 			for(int i = 0; i < newData.length; i++) {
-				newData[i] = Column.castColumn(l.get(i),Column.OfDoubles.class).rows(range); 
+				newData[i] = l.get(i).cast(double[].class).rows(range); 
 			}
 			return newData;
 		};

@@ -81,7 +81,7 @@ public class Name {
     }
 	
 	public static Builder nameBuilder(String name, StackFunction function) {
-		return new Builder(name, function.toTableFunction());
+		return new Builder(name, function);
 	}
 
 	public static Builder nameBuilder(String name, TableFunction function) {

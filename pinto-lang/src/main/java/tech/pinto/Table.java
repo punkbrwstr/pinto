@@ -174,8 +174,18 @@ public class Table {
 
 	public double[][] toColumnMajorArray() {
 		double[][] series = new double[getStack().size()][];
-		for (int i = getStack().size() - 1; i > -1; i--) {
-			series[i] = ((Column.OfDoubles)getStack().get(i)).rows(getRange());
+		var stack = getStack();
+		for (int i = stack.size() - 1; i > -1; i--) {
+			if(stack.get(i).getType().equals(double[].class)) {
+				series[i] = getStack().get(i).cast(double[].class).rows(getRange());
+			} else {
+				series[i] = new double[(int) getRange().size()];
+				if(stack.get(i).getType().equals(Double.class)) {
+					Arrays.fill(series[i], stack.get(i).cast(Double.class).rows(null));
+				} else {
+					Arrays.fill(series[i], Double.NaN);
+				}
+			}
 		}
 		return series;
 	}

@@ -58,7 +58,7 @@ public class Servlet extends HttpServlet {
 					.getTableFunction().accept(pinto, t);
 			StringBuilder sb = new StringBuilder();
 			for(Column<?> c : t.flatten()) {
-				sb.append(((Column.OfConstantStrings) c).getValue());
+				sb.append(c.cast(String.class).rows(null));
 			}
 			os.print(reportTemplate.get().format(new Object[] {sb.toString()}, new StringBuffer(),null).toString());
 		} catch (Exception e) {

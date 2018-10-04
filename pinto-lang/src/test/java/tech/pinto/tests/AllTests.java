@@ -1,5 +1,6 @@
 package tech.pinto.tests;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -72,11 +73,12 @@ public class AllTests {
 		
 		public TestVocabulary() {
 			Cache.putFunction("counter", 1, r -> {
-				Column.OfConstantDoubles col = new Column.OfConstantDoubles(count.getAndIncrement());
-				return new double[][] {col.rows(r)};
+				var d = new double[(int) r.size()];
+				Arrays.fill(d, count.getAndIncrement());
+				return new double[][] {d};
 			});
 			names.add(Name.nameBuilder("counter", (StackFunction) (p,s) -> {
-				s.addFirst(new Column.OfDoubles(inputs -> "", (range, inputs) -> {
+				s.addFirst(new Column<double[]>(double[].class, inputs -> "", (range, inputs) -> {
 					return Cache.getCachedRows("counter", 0, range);
 					
 				}));

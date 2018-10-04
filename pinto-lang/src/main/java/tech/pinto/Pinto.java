@@ -1,5 +1,6 @@
 package tech.pinto;
 
+import java.time.Duration;
 import java.time.LocalDate;
 
 import java.util.ArrayList;
@@ -16,6 +17,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.inject.Inject;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 
 public class Pinto {
 	
@@ -75,15 +80,15 @@ public class Pinto {
 				} else if (sc.hasNext(Pattern.compile("\\[.*?"))) { // indexer
 					e.addIndexer(new Indexer(this, e.getDependencies(), parseBlock(sc, "\\[", "\\]")));
 				} else if (sc.hasNext(Pattern.compile("\\{.*?"))) { // header literal
-					e.addFunction(toTableConsumer(new HeaderLiteral(this, e.getDependencies(), parseBlock(sc, "\\{", "\\}"))));
+					e.addFunction(new HeaderLiteral(this, e.getDependencies(), parseBlock(sc, "\\{", "\\}")));
 				} else if (sc.hasNext(Pattern.compile("\\$.*?"))) { // market literal
-					e.addFunction(toTableConsumer(marketdata.getStackFunction(parseBlock(sc,"\\$","\\$"))));
+					e.addFunction(marketdata.getStackFunction(parseBlock(sc,"\\$","\\$")));
 				} else if (sc.hasNext(Pattern.compile("\".*?"))) { // string literal
-					e.addFunction(toTableConsumer(new tech.pinto.Column.OfConstantStrings(parseBlock(sc,"\"","\""))));
+					e.addFunction(new Column<String>(String.class, "string", parseBlock(sc,"\"","\"")));
 				} else if (sc.hasNextDouble()) { // double literal
-					e.addFunction(toTableConsumer(new tech.pinto.Column.OfConstantDoubles(sc.nextDouble())));
+					e.addFunction(new Column<Double>(Double.class, "c", sc.nextDouble()));
 				} else if (sc.hasNext(DATE_LITERAL)) { // date literal
-					e.addFunction(toTableConsumer(new tech.pinto.Column.OfConstantDates(LocalDate.parse(sc.next(DATE_LITERAL)))));
+					e.addFunction(new Column<LocalDate>(LocalDate.class, "date", LocalDate.parse(sc.next(DATE_LITERAL))));
 				} else { // name
 					String n = sc.next();
 					e.addFunction((p, t) -> {
@@ -121,20 +126,6 @@ public class Pinto {
 		return port;
 	}
 	
-	public static TableFunction toTableConsumer(Column<?> col) {
-		return toTableConsumer((p,s) -> s.addFirst(col));
-	}
-
-	public static TableFunction toTableConsumer(StackFunction colsFunction) {
-		return (p, t) -> {
-			List<Stack> stacksBefore = t.takeTop();
-			for(Stack s : stacksBefore) {
-				colsFunction.accept(p, s);
-			}
-			t.insertAtTop(stacksBefore);
-		};
-	}
-
 	private static String checkName(String name) {
 		if(ILLEGAL_NAME.matcher(name).matches()) {
 			throw new PintoSyntaxException("Illegal character in name literal \"" + name + "\"");
@@ -142,20 +133,22 @@ public class Pinto {
 		return name;
 	}
 	
+	@FunctionalInterface
 	public static interface TerminalFunction extends BiFunction<Pinto,Expression,Table> {}
+
+	@FunctionalInterface
 	public static interface TableFunction extends BiConsumer<Pinto,Table> {}
 
 	@FunctionalInterface
-	public static interface StackFunction extends BiConsumer<Pinto,Stack> {
-		default TableFunction toTableFunction() {
-			return (p,t) -> {
+	public static interface StackFunction extends TableFunction {
+		void accept(Pinto p, Stack s);
+
+		default void accept(Pinto p, Table t) {
 				List<Stack> inputs = t.takeTop();
 				for(int i = 0; i < inputs.size(); i++) {
 					accept(p, inputs.get(i));
 				}
 				t.insertAtTop(inputs);
-			};
-			
 		}
 	}
 	
@@ -215,6 +208,10 @@ public class Pinto {
 			}
 		}
 
+		public void addFunction(Column<?> col) {
+			addFunction((StackFunction) (p, s) -> s.addFirst(col));
+		}
+
 		public void addFunction(TableFunction function) {
 			if(this.indexer == null) {
 				this.indexer = Optional.empty();
@@ -265,6 +262,28 @@ public class Pinto {
 			return terminalFunction.isPresent();
 		}
 
+	}
+	
+	public static abstract class DependentColumnStackFunction<T> implements StackFunction {
+
+		protected final Cache<String, List<T>> cache = CacheBuilder.newBuilder()
+			.expireAfterAccess(Duration.ofSeconds(30))
+			.build(); 
+		protected final List<String> headers = new ArrayList<>();
+		
+		public void accept(Pinto pinto, Stack stack) {
+			for(int i = 0; i < headers.size(); i++) {
+				//stack.addLast(getColumn(i));
+			}
+		}
+		
+//		private Column.OfDoubles getColumn(int col) {
+//			return new Column.OfDoubles(i -> headers.get(col) , (range, i) -> {
+//				try {
+//					return cache.get(range.getId(), run(range))[col];
+//				} catch (ExecutionException e) { throw new RuntimeException(e); }
+//			});
+//		}
 	}
 	
 	
