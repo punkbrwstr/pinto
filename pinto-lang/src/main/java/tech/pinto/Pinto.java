@@ -11,15 +11,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+
+import tech.pinto.time.PeriodicRange;
+import static tech.pinto.tools.StringUtils.*;
 
 
 public class Pinto {
@@ -269,47 +273,29 @@ public class Pinto {
 		protected final Cache<String, List<T>> cache = CacheBuilder.newBuilder()
 			.expireAfterAccess(Duration.ofSeconds(30))
 			.build(); 
+		protected final Class<T> type;
 		protected final List<String> headers = new ArrayList<>();
+		
+		protected DependentColumnStackFunction(Class<T> type) {
+			this.type = type;
+		}
+
+		abstract protected Callable<List<T>> run(PeriodicRange<?> range);
 		
 		public void accept(Pinto pinto, Stack stack) {
 			for(int i = 0; i < headers.size(); i++) {
-				//stack.addLast(getColumn(i));
+				stack.addLast(getColumn(i));
 			}
 		}
 		
-//		private Column.OfDoubles getColumn(int col) {
-//			return new Column.OfDoubles(i -> headers.get(col) , (range, i) -> {
-//				try {
-//					return cache.get(range.getId(), run(range))[col];
-//				} catch (ExecutionException e) { throw new RuntimeException(e); }
-//			});
-//		}
+		private Column<T> getColumn(int col) {
+			return new Column<T>(type, i -> headers.get(col) , (range, i) -> {
+				try {
+					return cache.get(range.getId(), run(range)).get(col);
+				} catch (ExecutionException e) { throw new RuntimeException(e); }
+			});
+		}
 	}
 	
-	
-	public static String parseBlock(Scanner scanner, String opening, String closing) throws PintoSyntaxException {
-		StringBuilder sb = new StringBuilder();
-		String next = null;
-		Pattern openPattern = Pattern.compile(".*?" + opening + ".*?");
-		Pattern closePattern = Pattern.compile(".*?" + closing + ".*?");
-		boolean sameOpenClose = opening.equals(closing);
-		int openCount = sameOpenClose ? 2 : 0;
-		do {
-			if (!scanner.hasNext()) {
-				throw new PintoSyntaxException("Missing " + closing);
-			}
-			next = scanner.next();
-			sb.append(next).append(" ");
-			Matcher openMatcher = openPattern.matcher(next);
-			while(openMatcher.find() && ! sameOpenClose) {
-				openCount++;
-			}
-			Matcher closeMatcher = closePattern.matcher(next);
-			while(closeMatcher.find()) {
-				openCount--;
-			}
-		} while (openCount != 0);
-		return sb.toString().replaceAll("^" + opening + "|" + closing + " $" , "");
-	}
 	
 }

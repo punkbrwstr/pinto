@@ -10,7 +10,7 @@ public interface Statistic {
 	
 	public double update(View v);
 	
-	default public double[] apply(Window<?> w) {
+	default public double[] apply(Window w) {
 		double[] d = new double[w.viewCount()];
 		for(int i = 0; i < d.length; i++) {
 			View v = w.getView(i);
@@ -74,7 +74,7 @@ public interface Statistic {
 		
 		public double update(View v1, View v2);
 		
-		default public double[] apply(Window<?> w1, Window<?> w2) {
+		default public double[] apply(Window w1, Window w2) {
 			double[] d = new double[w1.viewCount()];
 			for(int i = 0; i < d.length; i++) {
 				View v1 = w1.getView(i);

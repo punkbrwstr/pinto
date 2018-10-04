@@ -1142,7 +1142,6 @@ public class StandardVocabulary extends Vocabulary {
 	private static Function<Periodicity<?>, StackFunction> periodicityConstantFunction = per -> (p, s) -> s
 			.addFirst(new Column<Periodicity>(Periodicity.class, i -> "periodicity", (r,i) -> per));
 
-	@SuppressWarnings("rawtypes")
 	private static Name.Builder getBinaryOperatorName(String name, DoubleBinaryOperator dbo) {
 		Function<DoubleBinaryOperator, RowsFunction<double[]>> doubledouble = o -> (range, inputs) -> {
 			Optional<Double> lDouble = inputs[1].getType().equals(Double.class) ? 
@@ -1162,9 +1161,10 @@ public class StandardVocabulary extends Vocabulary {
 			return output;
 		};
 		Function<DoubleBinaryOperator, RowsFunction<Window>> windowwindow = o -> (range, inputs) -> {
-			Window<?> l = inputs[1].cast(Window.class).rows(range);
-			Window<?> r = inputs[0].cast(Window.class).rows(range);
-			return l.apply(o, r);
+			Window l = inputs[1].cast(Window.class).rows(range);
+			Window r = inputs[0].cast(Window.class).rows(range);
+			l.apply(o, r);
+			return l;
 		};
 		Function<DoubleBinaryOperator, StackFunction> function = dc -> (p, stack) -> {
 			int rightCount = (int) stack.removeFirst().cast(Double.class).rows(null).doubleValue();
@@ -1202,7 +1202,6 @@ public class StandardVocabulary extends Vocabulary {
 				.indexer("[width=1,:]");
 	}
 
-	@SuppressWarnings("rawtypes")
 	private static Name.Builder getUnaryOperatorName(String name, DoubleUnaryOperator duo) {
 		Function<DoubleUnaryOperator, RowsFunction<double[]>> doubleFunction = o -> (range, inputs) -> {
 			double d[] = inputs[0].cast(double[].class).rows(range);
@@ -1212,8 +1211,9 @@ public class StandardVocabulary extends Vocabulary {
 			return d;
 		};
 		Function<DoubleUnaryOperator, RowsFunction<Window>> arrayFunction = o -> (range, inputs) -> {
-			Window<?> w = inputs[0].cast(Window.class).rows(range);
-			return w.apply(o);
+			Window w = inputs[0].cast(Window.class).rows(range);
+			w.apply(o);
+			return w;
 		};
 		Function<DoubleUnaryOperator, StackFunction> function = dc -> (p, s) -> {
 			s.replaceAll(c -> {
