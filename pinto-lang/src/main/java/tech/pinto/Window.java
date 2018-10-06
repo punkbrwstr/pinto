@@ -5,6 +5,11 @@ import java.util.List;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 
+import org.ejml.data.DMatrix;
+import org.ejml.data.DMatrixRMaj;
+import org.ejml.data.Matrix;
+import org.ejml.data.MatrixType;
+
 import tech.pinto.time.PeriodicRange;
 
 public interface Window {
@@ -15,7 +20,7 @@ public interface Window {
 	public void apply(DoubleBinaryOperator duo, Window other);
 
 
-	public static interface View {
+	public static interface View extends DMatrix {
 		
 		public double get(int i);
 		public int size();
@@ -23,6 +28,43 @@ public interface Window {
 		public boolean returnNa();
 		public Array additions();
 		public Array subtractions();
+		
+		default public DMatrixRMaj toMatrix() {
+			return new DMatrixRMaj(this);
+		}
+		
+		@Override
+		default int getNumRows() {
+			return size();
+		}
+		@Override
+		default int getNumCols() {
+			return 1;
+		}
+		@Override
+		default MatrixType getType() {
+			return MatrixType.DDRM;
+		}
+		@Override
+		default double get(int row, int col) {
+			return get(row);
+		}
+		@Override
+		default double unsafe_get(int row, int col) {
+			return get(row);
+		}
+		@Override
+		default int getNumElements() {
+			return size();
+		}
+
+		@Override default <T extends Matrix> T copy() { throw new UnsupportedOperationException(); }
+		@Override default <T extends Matrix> T createLike() { throw new UnsupportedOperationException(); }
+		@Override default void set(Matrix original) { throw new UnsupportedOperationException(); }
+		@Override default void print() { throw new UnsupportedOperationException(); }
+		@Override default void print(String format) { throw new UnsupportedOperationException(); }
+		@Override default void set(int row, int col, double val) { throw new UnsupportedOperationException(); }
+		@Override default void unsafe_set(int row, int col, double val) { throw new UnsupportedOperationException(); }
 
 	}
 
@@ -75,7 +117,7 @@ public interface Window {
 
 				@Override
 				public boolean reset() {
-					return false;
+					return v == 0;
 				}
 
 				@Override
@@ -150,7 +192,7 @@ public interface Window {
 
 				@Override
 				public boolean reset() {
-					return false;
+					return v == 0;
 				}
 
 				@Override
@@ -223,7 +265,7 @@ public interface Window {
 
 				@Override
 				public boolean reset() {
-					return false;
+					return v == 0;
 				}
 
 				@Override
@@ -441,31 +483,6 @@ public interface Window {
 		}
 		
 	}
-	
-//	public static class SubArray implements Array {
-//		
-//		final Array a;
-//		final int start;
-//		final int end;
-//		
-//
-//		private SubArray(Array a, int start, int end) {
-//			if(start > end || end > a.size()) {
-//				throw new ArrayIndexOutOfBoundsException();
-//			}
-//			this.a = a;
-//			this.start = start;
-//			this.end = end;
-//		}
-//
-//		public int size() {
-//			return end - start;
-//		}
-//
-//		public double get(int i) {
-//			return a.get(i + start);
-//		}
-//	}
 
 	public static class CrossArray implements Array {
 		

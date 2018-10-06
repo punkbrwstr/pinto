@@ -280,9 +280,11 @@ public class Pinto {
 			this.type = type;
 		}
 
+		abstract protected void setup(Stack stack);
 		abstract protected Callable<List<T>> run(PeriodicRange<?> range);
 		
 		public void accept(Pinto pinto, Stack stack) {
+			setup(stack);
 			for(int i = 0; i < headers.size(); i++) {
 				stack.addLast(getColumn(i));
 			}

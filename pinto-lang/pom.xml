@@ -207,6 +207,10 @@
     <version>1.0.24</version>
 </dependency>
         
-
+  <dependency>
+    <groupId>org.ejml</groupId>
+    <artifactId>ejml-all</artifactId>
+    <version>0.36</version>
+</dependency>
   </dependencies>
 </project>
