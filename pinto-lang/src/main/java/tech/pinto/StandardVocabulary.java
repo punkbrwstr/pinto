@@ -60,6 +60,8 @@ public class StandardVocabulary extends Vocabulary {
 		names = new ArrayList<>(Arrays.asList(
 			terminalNameBuilder("def", StandardVocabulary::def)
 				.description("Defines the expression as the preceding name literal."),
+			terminalNameBuilder("ifndef", StandardVocabulary::ifndef)
+				.description("Defines the expression as the preceding name literal, if the name is not already defined."),
 			terminalNameBuilder("undef", StandardVocabulary::undef)
 				.description("Defines the expression as the preceding name literal."),
 			terminalNameBuilder("help", StandardVocabulary::help)
@@ -394,7 +396,11 @@ public class StandardVocabulary extends Vocabulary {
 	
 
 	private static final Table def(Pinto pinto, Expression expression) {
-		return new Table("Defined " + pinto.getNamespace().define(pinto, expression));
+		return new Table("Defined " + pinto.getNamespace().define(pinto, expression, false));
+	}
+
+	private static final Table ifndef(Pinto pinto, Expression expression) {
+		return new Table("Defined " + pinto.getNamespace().define(pinto, expression, true));
 	}
 
 	private static Table undef(Pinto pinto, Expression e) {
@@ -525,7 +531,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static Table report(Pinto pinto, Expression e) {
 		String id = ID.getId();
 		e.setNameLiteral("~report-" + id);
-		pinto.getNamespace().define(pinto, e);
+		pinto.getNamespace().define(pinto, e, false);
 		try {
 			Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + pinto.getPort() + "/pinto/report?p=" + id));
 		} catch (Exception err) {

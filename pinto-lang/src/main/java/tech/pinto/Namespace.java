@@ -35,10 +35,13 @@ public class Namespace implements Completer {
 		return names.containsKey(name);
 	}
 
-	public synchronized String define(Pinto pinto, Expression expression) {
+	public synchronized String define(Pinto pinto, Expression expression, boolean onlyIfUndefined) {
 		String name = expression.getNameLiteral()
 				.orElseThrow(() -> new PintoSyntaxException("A name literal is required to define a name."));
 		if(names.containsKey(name)) {
+			if(onlyIfUndefined) {
+				return name;
+			}
 			if(names.get(name).isBuiltIn()) {
 				throw new IllegalArgumentException("Cannot redefine built-in name " + name + ".");
 			}
