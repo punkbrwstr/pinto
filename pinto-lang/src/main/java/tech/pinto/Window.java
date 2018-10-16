@@ -94,6 +94,7 @@ public interface Window {
 		@Override
 		public View getView(int v) {
 			return new View() {
+				private static final long serialVersionUID = 1L;
 
 				@Override
 				public double get(int i) {
@@ -167,6 +168,7 @@ public interface Window {
 		@Override
 		public View getView(int v) {
 			return new View() {
+				private static final long serialVersionUID = 1L;
 
 				@Override
 				public double get(int i) {
@@ -242,6 +244,7 @@ public interface Window {
 		@Override
 		public View getView(int v) {
 			return new View() {
+				private static final long serialVersionUID = 1L;
 
 				@Override
 				public double get(int i) {
@@ -311,6 +314,7 @@ public interface Window {
 		@Override
 		public View getView(int v) {
 			return new View() {
+				private static final long serialVersionUID = 1L;
 
 				@Override
 				public double get(int i) {
@@ -388,7 +392,8 @@ public interface Window {
 		@Override
 		public View getView(int v) {
 			return new View() {
-				
+				private static final long serialVersionUID = 1L;
+
 				int start = v == 0 ? 0 : (int) dataRange.indexOf(dates.get(v-1)) + 1; // inclusive
 				int end = (int) dataRange.indexOf(dates.get(v)) + 1; // exclusive
 
@@ -441,6 +446,69 @@ public interface Window {
 				data[i] = dbo.applyAsDouble(data[i], ((Downsample)other).data[i]);
 			}
 		}
+	}
+	
+	public static class ResetOnNa implements Window {
+		
+		private final Window wrapped;
+		
+
+		public ResetOnNa(Window wrapped) {
+			this.wrapped = wrapped;
+		}
+
+		@Override
+		public int viewCount() {
+			return wrapped.viewCount();
+		}
+
+		@Override
+		public View getView(int i) {
+			final var v = wrapped.getView(i);
+			return new View() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public double get(int i) {
+					return v.get(i);
+				}
+
+				@Override
+				public int size() {
+					return v.size();
+				}
+
+				@Override
+				public boolean reset() {
+					return v.reset() || v.returnNa();
+				}
+
+				@Override
+				public boolean returnNa() {
+					return v.returnNa();
+				}
+
+				@Override
+				public Array additions() {
+					return v.additions();
+				}
+
+				@Override
+				public Array subtractions() {
+					return v.subtractions();
+				}};
+		}
+
+		@Override
+		public void apply(DoubleUnaryOperator duo) {
+			wrapped.apply(duo);
+		}
+
+		@Override
+		public void apply(DoubleBinaryOperator duo, Window other) {
+			wrapped.apply(duo,other);
+		}
+		
 	}
 
 	public static class EmptyArray implements Array {

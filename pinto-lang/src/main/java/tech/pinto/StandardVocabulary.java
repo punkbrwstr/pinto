@@ -170,27 +170,31 @@ public class StandardVocabulary extends Vocabulary {
 			nameBuilder("rolling", StandardVocabulary::rolling_window)
 					.description("Creates a rolling window of size *c* for each input.")
 					.indexer("[c=2,:]"),
-			nameBuilder("cross", StandardVocabulary::cross_window)
+			nameBuilder("crossing", StandardVocabulary::cross_window)
 					.description("Creates a cross sectional window from input columns."),
 			nameBuilder("expanding", StandardVocabulary::expanding_window)
 					.description("Creates creates an expanding window starting on *start* or the start of the evaluated range.")
 					.indexer("[date=\"range\",:]"),
 			nameBuilder("rev_expanding", StandardVocabulary::rev_expanding_window)
 					.description("Creates a reverse-expanding window containing values from the current period to the end of the range."),
-			getStatisticName("sum", b -> new Statistic.Sum(b)),
-			getStatisticName("mean", b -> new Statistic.Mean(b)),
-			getStatisticName("zscore", b -> new Statistic.ZScore(b)),
-			getStatisticName("std", b -> new Statistic.StandardDeviation(b)),
-			getStatisticName("first", b-> Statistic.First),
-			getStatisticName("last", b -> Statistic.Last),
-			getStatisticName("change", b -> Statistic.Change),
-			getStatisticName("pct_change", b -> Statistic.PercentChange),
-			getStatisticName("min", b -> new Statistic.Min(b)),
-			getStatisticName("max", b -> new Statistic.Max(b)),
-			getStatisticName("median", b -> new Statistic.Median(b)),
-			getStatisticName("product", b -> new Statistic.Product(b)),
-			getPairStatisticName("covar", b -> new Statistic.PairCovariance(b)),
-			getPairStatisticName("correl", b -> new Statistic.PairCorrelation(b)),
+			nameBuilder("resetting", StandardVocabulary::resetting_window)
+					.description("Creates a window that resets on na values for each window input."),
+					
+	/* stats */			
+			getStatisticName("sum", () -> new Statistic.Sum()),
+			getStatisticName("mean", () -> new Statistic.Mean()),
+			getStatisticName("zscore", () -> new Statistic.ZScore()),
+			getStatisticName("std", () -> new Statistic.StandardDeviation()),
+			getStatisticName("first", () -> Statistic.First),
+			getStatisticName("last", () -> Statistic.Last),
+			getStatisticName("change", () -> Statistic.Change),
+			getStatisticName("pct_change", () -> Statistic.PercentChange),
+			getStatisticName("min", () -> new Statistic.Min()),
+			getStatisticName("max", () -> new Statistic.Max()),
+			getStatisticName("median", () -> new Statistic.Median()),
+			getStatisticName("product", () -> new Statistic.Product()),
+			getPairStatisticName("covar", () -> new Statistic.PairCovariance()),
+			getPairStatisticName("correl", () -> new Statistic.PairCorrelation()),
 			nameBuilder("ewma", StandardVocabulary::ewma)
 				.description("Exponentially weighted moving average calculated using *alpha* or defaulting to 2 / (N + 1)")
 				.indexer("[alpha=\"none\",:]"),
@@ -292,6 +296,14 @@ public class StandardVocabulary extends Vocabulary {
 					inputs -> inputs[0].getTrace() + " rolling", getRollingWindowFunction(size), c);
 		});
 	}
+
+	private static void resetting_window(Pinto pinto, Stack stack) {
+		stack.replaceAll(c -> {
+			return new Column<ResetOnNa>(ResetOnNa.class, inputs -> inputs[0].getHeader(),
+					inputs -> "( " + inputs[0].getTrace() + " resetting)",
+					(range, inputs) -> new ResetOnNa(inputs[0].cast(Window.class).rows(range)), c);
+		});
+	}
 	
 	private static RowsFunctionGeneric<Rolling> getRollingWindowFunction(int size) {
 		return new RowsFunctionGeneric<Rolling>(){
@@ -354,31 +366,23 @@ public class StandardVocabulary extends Vocabulary {
 			}};
 	}
 
-	private static Name.Builder getStatisticName(String name, Function<Boolean,Statistic> s) {
-		Function<Boolean, RowsFunction<double[]>> f = b -> (range, inputs) -> {
-			return s.apply(b).apply(inputs[0].cast(Window.class).rows(range));
-		};
+	private static Name.Builder getStatisticName(String name, Supplier<Statistic> s) {
 		return nameBuilder(name, (Pinto pinto, Stack stack) ->  {
-			boolean clearOnNan = Boolean.parseBoolean(stack.removeFirst().cast(String.class).rows(null));
 			stack.replaceAll(c -> new Column<double[]>(double[].class, inputs -> inputs[0].getHeader(),
-					inputs -> inputs[0].getTrace() + " " + name, f.apply(clearOnNan), c));
+					inputs -> inputs[0].getTrace() + " " + name, (range, inputs) -> s.get().apply(inputs[0].cast(Window.class).rows(range)), c));
 		}).description("Calculates " + name + " for each view of window column inputs.")
-				.indexer("[clear_on_nan=\"false\",:]");
+				.indexer("[:]");
 	}
 
-	private static Name.Builder getPairStatisticName(String name, Function<Boolean,Statistic.PairStatistic> s) {
-		Function<Boolean, RowsFunction<double[]>> f = b -> (range, inputs) -> {
-			return s.apply(b).apply(inputs[0].cast(Window.class).rows(range),
-					inputs[1].cast(Window.class).rows(range));
-		};
+	private static Name.Builder getPairStatisticName(String name, Supplier<Statistic.PairStatistic> s) {
 		return nameBuilder(name, (Pinto pinto, Stack stack) ->  {
-			boolean clearOnNan = Boolean.parseBoolean(stack.removeFirst().cast(String.class).rows(null));
 			Stack temp = new Stack(stack);
 			stack.clear();
 			for(int i = 0; i < temp.size() - 1; i += 2) {
 				stack.addLast(new Column<double[]>(double[].class,inputs -> inputs[0].getHeader() + inputs[1].getHeader(),
 					inputs -> "(" + inputs[0].getTrace() + ") (" + inputs[1].getTrace() + ") " + name,
-					f.apply(clearOnNan), temp.get(i), temp.get(i+1)));
+					(range,inputs) ->
+					s.get().apply(inputs[0].cast(Window.class).rows(range), inputs[1].cast(Window.class).rows(range)), temp.get(i), temp.get(i+1)));
 			}
 		}).description("Calculates " + name + " for each view from a pair of window column inputs.")
 				.indexer("[clear_on_nan=\"false\",:]");
