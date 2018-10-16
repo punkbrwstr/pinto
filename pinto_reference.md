@@ -244,10 +244,11 @@ ulp|[:]|Unary double operator for ulp.
 ### Window creation functions
 Function name | Default indexer |Description
 :---:|:---|:---
-cross|[:]|Creates a cross sectional window from input columns.
+crossing|[:]|Creates a cross sectional window from input columns.
 downsample|[periodicity=B,:]|Evaluates prior columns for higher frequency *periodicity*, creating window columns.
 expanding|[date="range",:]|Creates creates an expanding window starting on *start* or the start of the evaluated range.
 rev_expanding|[:]|Creates a reverse-expanding window containing values from the current period to the end of the range.
+resetting|[:]|Creates a window that resets on na values for each window input.
 rolling|[c=2,:]|Creates a rolling window of size *c* for each input.
 
 ### Window statistics (Aggregation of each window view to a double value)
@@ -257,21 +258,21 @@ change|[:]|Change from first to last for each view of window column inputs.
 ewma|[alpha="none",:]|Exponentially weighted moving average calculated using *alpha* or defaulting to 2 / (N + 1)
 first|[:]|First value for each view of window column inputs.
 last|[:]|Last value for each view of window column inputs.
-max|[clear_on_nan="false":]|Calculates max for each view of window column inputs.
-median|[clear_on_nan="false",:]|Calculates median for each view of window column inputs.
-mean|[clear_on_nan="false":]|Calculates mean for each view of window column inputs.
-min|[clear_on_nan="false":]|Calculates min for each view of window column inputs.
+max|[:]|Calculates max for each view of window column inputs.
+median|[:]|Calculates median for each view of window column inputs.
+mean|[:]|Calculates mean for each view of window column inputs.
+min|[:]|Calculates min for each view of window column inputs.
 pct_change|[:]|Calculates pct_change for each view of window column inputs.
 product|[:]|Calculates product for each view of window column inputs.
-std|[clear_on_nan="false":]|Calculates standard deviation for each view of window column inputs.
-sum|[clear_on_nan="false":]|Calculates sum for each view of window column inputs.
-zscore|[clear_on_nan="false":]|Calculates zscore for each view of window column inputs.
+std|[:]|Calculates standard deviation for each view of window column inputs.
+sum|[:]|Calculates sum for each view of window column inputs.
+zscore|[:]|Calculates zscore for each view of window column inputs.
 
 ### Window pair statistics (Aggregation of two window views to a double value)
 Function name | Default indexer |Description
 :---:|:---|:---
-correl|[clear_on_nan="false",:]|Calculates correl for each view from a pair of window column inputs.
-covar|[clear_on_nan="false",:]|Calculates covar for each view from a pair of window column inputs.
+correl|[:]|Calculates correl for each view from a pair of window column inputs.
+covar|[:]|Calculates covar for each view from a pair of window column inputs.
 
 ### Visualization functions
 Function name | Default indexer |Description
