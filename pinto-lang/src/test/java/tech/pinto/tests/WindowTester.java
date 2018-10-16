@@ -62,11 +62,11 @@ public class WindowTester {
 	@Test
 	public void testCross() throws Exception {
 		assertEquals("Test cross", 6.0,
-				last(0, pinto.evaluate("range cross sum eval")),
+				last(0, pinto.evaluate("range crossing sum eval")),
 				0.001d);
 
 		assertEquals("Test cross with NAs", 12.0,
-				last(0, pinto.evaluate("1 2 3 NaN 1 2 3 cross sum eval")),
+				last(0, pinto.evaluate("1 2 3 NaN 1 2 3 crossing sum eval")),
 				0.001d);
 	}
 
@@ -88,11 +88,11 @@ public class WindowTester {
 	@Test
 	public void testMinMax() throws Exception {
 		assertEquals("Cross max for moon", 99.9588,
-				last(0, pinto.evaluate("moon ([0&] rolling first) ([0&] rolling first) ([0&] rolling first) ([0&] rolling first) ([:] cross max {max}) 2018-07-02 2018-07-02 eval")),
+				last(0, pinto.evaluate("moon ([0&] rolling first) ([0&] rolling first) ([0&] rolling first) ([0&] rolling first) ([:] crossing max {max}) 2018-07-02 2018-07-02 eval")),
 				0.001d);
 
 		assertEquals("Cross min for moon", -99.4319,
-				last(0, pinto.evaluate("moon ([0&] rolling first) ([0&] rolling first) ([0&] rolling first) ([0&] rolling first) ([:] cross min {min}) 2018-07-02 2018-07-02 eval")),
+				last(0, pinto.evaluate("moon ([0&] rolling first) ([0&] rolling first) ([0&] rolling first) ([0&] rolling first) ([:] crossing min {min}) 2018-07-02 2018-07-02 eval")),
 				0.001d);
 
 		assertEquals("Expanding max for moon", 2.065,
