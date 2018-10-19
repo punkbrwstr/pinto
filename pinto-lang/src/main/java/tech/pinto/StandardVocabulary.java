@@ -134,7 +134,10 @@ public class StandardVocabulary extends Vocabulary {
 
 	/* data cleanup */
 			nameBuilder("fill", StandardVocabulary::fill)
-				.indexer("[periodicity=BQ-DEC,lookback=\"true\",default=NaN,:]")
+				.indexer("[c=0,:]")
+				.description("Fills missing values with *c*."),
+			nameBuilder("ffill", StandardVocabulary::ffill)
+				.indexer("[periodicity=BQ-DEC,lookback=\"true\",:]")
 				.description("Fills missing values with last good value, looking back one period of *freq* if *lookback* is true."),
 			nameBuilder("join", StandardVocabulary::join)
 				.indexer("[date,:]")
@@ -242,6 +245,8 @@ public class StandardVocabulary extends Vocabulary {
     	names.add(getBinaryOperatorName(">=", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x >= y ? 1.0 : 0.0));
     	names.add(getBinaryOperatorName("<=", (x,y) -> Double.isNaN(x) || Double.isNaN(y) ? Double.NaN : x <= y ? 1.0 : 0.0));
 
+    	names.add(getUnaryOperatorName("isna", x -> x != x ? 1 : 0));
+    	names.add(getUnaryOperatorName("not", x -> x == 0 ? 1 : 0));
     	names.add(getUnaryOperatorName("abs", (DoubleUnaryOperator) Math::abs));
     	names.add(getUnaryOperatorName("sin", Math::sin));
     	names.add(getUnaryOperatorName("cos", Math::cos));
@@ -708,10 +713,26 @@ public class StandardVocabulary extends Vocabulary {
 		}
 	}
 
-	private static void fill(Pinto pinto, Stack s) {
+	private static void fill(Pinto pinto, Stack stack) {
+		double defaultValue = stack.removeFirst().cast(Double.class).rows(null);
+		stack.replaceAll(c -> {
+			return new Column<double[]>(double[].class, inputs -> c.getHeader(),
+					inputs -> c.getTrace(),
+					(range, inputs) ->  {
+						double[] d = inputs[0].cast(double[].class).rows(range);
+						for(int i = 0; i < range.size(); i++) {
+							if(d[i] != d[i]) {
+								d[i] = defaultValue;
+							}
+						}
+						return d;
+					}, c);
+		});
+	}
+
+	private static void ffill(Pinto pinto, Stack s) {
 		Periodicity<?> p = s.removeFirst().cast(Periodicity.class).rows(null);
 		boolean lb = Boolean.parseBoolean(s.removeFirst().cast(String.class).rows(null));
-		double defaultValue = s.removeFirst().cast(Double.class).rows(null);
 		Function<Periodicity<?>, Function<Boolean, RowsFunctionGeneric<double[]>>> fillRowFunction = periodicity -> lookBack -> {
 			return new RowsFunctionGeneric<double[]>() {
 				@Override
@@ -730,9 +751,6 @@ public class StandardVocabulary extends Vocabulary {
 						i--;
 					}
 					d[skip] = d[i];
-					if(d[skip] != d[skip]) {
-						d[skip] = defaultValue;
-					}
 					for (i = skip + 1; i < d.length; i++) {
 						double inputValue = d[i];
 						if(inputValue != inputValue) {

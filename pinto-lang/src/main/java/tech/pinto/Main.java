@@ -11,8 +11,6 @@ import javax.inject.Singleton;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
-import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -82,10 +80,7 @@ public class Main {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.setResourceBase(getClass().getClassLoader().getResource("public").toExternalForm());
-        HashSessionIdManager idmanager = new HashSessionIdManager();
-        server.setSessionIdManager(idmanager);
-        HashSessionManager manager = new HashSessionManager();
-        SessionHandler sessions = new SessionHandler(manager);
+        SessionHandler sessions = new SessionHandler();
         sessions.setHandler(context);
         context.addServlet(new ServletHolder(new Servlet(this::getPinto)),"/pinto/*");
         ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);

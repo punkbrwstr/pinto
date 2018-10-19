@@ -14,8 +14,6 @@ import java.util.stream.Collectors;
 
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
-import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -65,10 +63,7 @@ public class Demo {
         context.setContextPath("/");
         context.setWelcomeFiles(new String[]{ "demo.html" });
         context.setResourceBase(httpPath);
-        HashSessionIdManager idmanager = new HashSessionIdManager();
-        server.setSessionIdManager(idmanager);
-        HashSessionManager manager = new HashSessionManager();
-        SessionHandler sessions = new SessionHandler(manager);
+        SessionHandler sessions = new SessionHandler();
         sessions.setHandler(context);
         context.addServlet(new ServletHolder(new Servlet(this::getPinto)),"/pinto/*");
         ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
