@@ -25,6 +25,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import tech.pinto.Pinto.Expression;
+
 public class Servlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
@@ -117,10 +119,17 @@ public class Servlet extends HttpServlet {
             nf.setMaximumFractionDigits(8);
 			//List<Table> l = pinto.evaluate(request.getParameter("p"));
 			Table t = null;
-			for(var e : pinto.parse(request.getParameter("p"), new Pinto.Expression(false))) {
-				if(e.hasTerminal()) {
-					t = e.evaluate(pinto);
+			var lines = request.getParameter("p").split("\n");
+			var e = new Pinto.Expression(false);
+			for(var line : lines) {
+				var expressions =  pinto.parse(line, e);
+				var next = expressions.size() > 0 
+						&& !expressions.get(expressions.size()-1).hasTerminal() ?
+								expressions.remove(expressions.size()-1) : new Expression(false);
+				for(int i = 0; i < expressions.size(); i++) {
+					t = expressions.get(i).evaluate(pinto);
 				}
+				e = next;
 			}
 			if(!t.getStatus().isPresent()) {
 				response.getOutputStream().print(t.toCsv(nf));
@@ -136,7 +145,7 @@ public class Servlet extends HttpServlet {
 //			}
 		} catch (Exception e) {
 			logError(e, request);
-			response.getOutputStream().print("Error\n" + e.getMessage() + "\n");
+			response.getOutputStream().print("Error\n" + e.getMessage().replaceAll(",", ";") + "\n");
 		}
 		
 	}

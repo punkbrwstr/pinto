@@ -198,7 +198,7 @@ public class Pinto {
 				}
 				table.collapseFunction();
 			} catch(RuntimeException e) {
-				throw new PintoSyntaxException("Error in expression: \"" + getText().trim() + "\": " + e.getLocalizedMessage(),e);
+				throw new PintoSyntaxException("Error in expression: \"" + getText().trim() + "\": " + e.getLocalizedMessage() + "\n",e);
 			}
 		}
 		
