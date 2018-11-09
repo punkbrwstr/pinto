@@ -116,7 +116,12 @@ public class Servlet extends HttpServlet {
             nf.setMinimumFractionDigits(1);
             nf.setMaximumFractionDigits(8);
 			//List<Table> l = pinto.evaluate(request.getParameter("p"));
-			Table t = pinto.parse(request.getParameter("p"), new Pinto.Expression(false)).get(0).evaluate(pinto);
+			Table t = null;
+			for(var e : pinto.parse(request.getParameter("p"), new Pinto.Expression(false))) {
+				if(e.hasTerminal()) {
+					t = e.evaluate(pinto);
+				}
+			}
 			if(!t.getStatus().isPresent()) {
 				response.getOutputStream().print(t.toCsv(nf));
 			} else {

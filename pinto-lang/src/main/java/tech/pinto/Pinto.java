@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
@@ -294,7 +293,7 @@ public class Pinto {
 			return new Column<T>(type, i -> headers.get(col) , (range, i) -> {
 				try {
 					return cache.get(range.getId(), run(range)).get(col);
-				} catch (ExecutionException e) { throw new RuntimeException(e); }
+				} catch (Throwable e) { throw new RuntimeException(e); }
 			});
 		}
 	}

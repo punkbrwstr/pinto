@@ -80,10 +80,12 @@ public interface Window {
 		
 		private final double[] d;
 		private final int size;
+		private final boolean returnNa;
 		
-		public Rolling(double[] d, int size) {
+		public Rolling(double[] d, int size, boolean returnNa) {
 			this.d = d;
 			this.size = size;
+			this.returnNa = returnNa;
 		}
 
 		@Override
@@ -123,6 +125,9 @@ public interface Window {
 
 				@Override
 				public boolean returnNa() {
+					if(!returnNa) {
+						return false;
+					}
 					double last = d[size + v - 1];
 					return last != last;
 				}};

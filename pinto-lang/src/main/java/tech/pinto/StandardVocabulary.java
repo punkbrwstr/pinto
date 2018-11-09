@@ -172,7 +172,7 @@ public class StandardVocabulary extends Vocabulary {
 	/* windows */
 			nameBuilder("rolling", StandardVocabulary::rolling_window)
 					.description("Creates a rolling window of size *c* for each input.")
-					.indexer("[c=2,:]"),
+					.indexer("[c=2,returnNa=\"true\",:]"),
 			nameBuilder("crossing", StandardVocabulary::cross_window)
 					.description("Creates a cross sectional window from input columns."),
 			nameBuilder("expanding", StandardVocabulary::expanding_window)
@@ -296,9 +296,10 @@ public class StandardVocabulary extends Vocabulary {
 
 	private static void rolling_window(Pinto pinto, Stack s) {
 		int size = (int) s.removeFirst().cast(Double.class).rows(null).doubleValue();
+		boolean returnNa = Boolean.parseBoolean(s.removeFirst().cast(String.class).rows(null));
 		s.replaceAll(c -> {
 			return new Column<Rolling>(Rolling.class, inputs -> inputs[0].getHeader(),
-					inputs -> inputs[0].getTrace() + " rolling", getRollingWindowFunction(size), c);
+					inputs -> inputs[0].getTrace() + " rolling", getRollingWindowFunction(size,returnNa), c);
 		});
 	}
 
@@ -310,13 +311,13 @@ public class StandardVocabulary extends Vocabulary {
 		});
 	}
 	
-	private static RowsFunctionGeneric<Rolling> getRollingWindowFunction(int size) {
+	private static RowsFunctionGeneric<Rolling> getRollingWindowFunction(int size, boolean returnNa) {
 		return new RowsFunctionGeneric<Rolling>(){
 			@Override
 			public <P extends Period<P>> Rolling getRows(PeriodicRange<P> range, Column<?>[] columns, Class<?> clazz) {
 				P expandedWindowStart = range.periodicity().offset(-1 * (size - 1), range.start());
 				PeriodicRange<P> expandedWindow = range.periodicity().range(expandedWindowStart, range.end());
-				return new Window.Rolling(columns[0].cast(double[].class).rows(expandedWindow), size);
+				return new Window.Rolling(columns[0].cast(double[].class).rows(expandedWindow), size, returnNa);
 			}};
 	}
 
