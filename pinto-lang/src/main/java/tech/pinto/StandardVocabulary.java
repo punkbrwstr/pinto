@@ -14,6 +14,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
@@ -542,12 +543,14 @@ public class StandardVocabulary extends Vocabulary {
 		String id = ID.getId();
 		e.setNameLiteral("~report-" + id);
 		pinto.getNamespace().define(pinto, e, false);
+		String url = null;
 		try {
-			Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + pinto.getPort() + "/pinto/report?p=" + id));
+			url = "http://" + InetAddress.getLocalHost().getCanonicalHostName() + ":" + pinto.getPort() + "/pinto/report?p=" + id;
+			// Desktop.getDesktop().browse(new URI("http://127.0.0.1:" + pinto.getPort() + "/pinto/report?p=" + id));
 		} catch (Exception err) {
 			throw new PintoSyntaxException("Unable to open report", err);
 		}
-		return new Table("Report id: " + id);
+		return new Table("Report url: " + url);
 	}
 
 	private static void only(Pinto pinto, Table t) {

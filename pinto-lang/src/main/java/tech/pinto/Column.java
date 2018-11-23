@@ -59,9 +59,9 @@ public class Column<T> implements Cloneable {
 	}
 	
 	public <P extends Period<P>> T rows(PeriodicRange<P> range) {
-		long start = System.nanoTime();
+		//long start = System.nanoTime();
 		 T t = rowsFunction.getRows(range, inputs);
-		 log.info("{},  elapsed: {}ms", getTrace(), (System.nanoTime() - start) / 1000000d);
+		//log.info("{},  elapsed: {}ms", getTrace(), (System.nanoTime() - start) / 1000000d);
 		 return t;
 	}
 
