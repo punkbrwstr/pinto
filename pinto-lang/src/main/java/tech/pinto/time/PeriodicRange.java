@@ -1,6 +1,7 @@
 package tech.pinto.time;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,18 @@ public final class PeriodicRange<P extends Period<P>> {
 			p = p.next();
 		} while(!p.isAfter(end()));
 		return l;
+	}
+
+	public long[] datesInMillis() {
+		var zone = ZoneId.of("GMT");
+		long[] d = new long[(int)size()];
+		int i = 0;
+		P p = start();
+		do {
+			d[i++] = p.endDate().atStartOfDay(zone).toInstant().toEpochMilli();
+			p = p.next();
+		} while(!p.isAfter(end()));
+		return d;
 	}
 	
 	public long size() {
