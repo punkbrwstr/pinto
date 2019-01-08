@@ -5,7 +5,6 @@ import static tech.pinto.Name.terminalNameBuilder;
 import static tech.pinto.Window.*;
 
 import java.awt.Color;
-import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
@@ -15,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetAddress;
-import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -185,20 +183,20 @@ public class StandardVocabulary extends Vocabulary {
 					.description("Creates a window that resets on na values for each window input."),
 					
 	/* stats */			
-			getStatisticName("sum", () -> new Statistic.Sum()),
-			getStatisticName("mean", () -> new Statistic.Mean()),
-			getStatisticName("zscore", () -> new Statistic.ZScore()),
-			getStatisticName("std", () -> new Statistic.StandardDeviation()),
+			getStatisticName("sum", Statistic.Sum::new),
+			getStatisticName("mean", Statistic.Mean::new),
+			getStatisticName("zscore", Statistic.ZScore::new),
+			getStatisticName("std", Statistic.StandardDeviation::new),
 			getStatisticName("first", () -> Statistic.First),
 			getStatisticName("last", () -> Statistic.Last),
 			getStatisticName("change", () -> Statistic.Change),
 			getStatisticName("pct_change", () -> Statistic.PercentChange),
-			getStatisticName("min", () -> new Statistic.Min()),
-			getStatisticName("max", () -> new Statistic.Max()),
-			getStatisticName("median", () -> new Statistic.Median()),
-			getStatisticName("product", () -> new Statistic.Product()),
-			getPairStatisticName("covar", () -> new Statistic.PairCovariance()),
-			getPairStatisticName("correl", () -> new Statistic.PairCorrelation()),
+			getStatisticName("min", Statistic.Min::new),
+			getStatisticName("max", Statistic.Max::new),
+			getStatisticName("median", Statistic.Median::new),
+			getStatisticName("product", Statistic.Product::new),
+			getPairStatisticName("covar", Statistic.PairCovariance::new),
+			getPairStatisticName("correl", Statistic.PairCorrelation::new),
 			nameBuilder("ewma", StandardVocabulary::ewma)
 				.description("Exponentially weighted moving average calculated using *alpha* or defaulting to 2 / (N + 1)")
 				.indexer("[alpha=\"none\",:]"),
@@ -466,7 +464,7 @@ public class StandardVocabulary extends Vocabulary {
 		while ((!s.isEmpty()) && dates.size() < 2 && s.peekFirst().getHeader().equals("date")) {
 			dates.add(s.removeFirst().cast(LocalDate.class).rows(null));
 		}
-		t.evaluate(periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek()));
+		t.setRange(periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek()));
 		return t;
 	}
 
@@ -530,7 +528,7 @@ public class StandardVocabulary extends Vocabulary {
 		while ((!s.isEmpty()) && dates.size() < 2 && s.peekFirst().getHeader().equals("date")) {
 			dates.add(s.removeFirst().cast(LocalDate.class).rows(null));
 		}
-		t.evaluate(periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek()));
+		t.setRange(periodicity.range(dates.removeLast(), dates.isEmpty() ? LocalDate.now() : dates.peek()));
 		try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)))) {
 			out.print(t.toCsv());
 		} catch (IOException err) {
@@ -574,7 +572,7 @@ public class StandardVocabulary extends Vocabulary {
 	private static void copy(Pinto pinto, Stack s) {
 		int times = (int) s.removeFirst().cast(Double.class).rows(null).doubleValue();
 		Stack temp = new Stack();
-		s.stream().forEach(temp::addFirst);
+		s.forEach(temp::addFirst);
 		for (int j = 0; j < times - 1; j++) {
 			temp.stream().map(Column::clone).forEach(s::addFirst);
 		}
@@ -614,7 +612,7 @@ public class StandardVocabulary extends Vocabulary {
 	}
 
 	private static void dayCount(Pinto pinto, Stack s) {
-		s.addFirst(new Column<double[]>(double[].class,c -> "day_count", (RowsFunctionGeneric<double[]>)StandardVocabulary::dayCountRowFunction));
+		s.addFirst(new Column<>(double[].class, c -> "day_count", (RowsFunctionGeneric<double[]>) StandardVocabulary::dayCountRowFunction));
 	}
 
 	private static <P extends Period<P>> double[] dayCountRowFunction(PeriodicRange<P> range, Column<?>[] inputs,
@@ -643,6 +641,10 @@ public class StandardVocabulary extends Vocabulary {
 		String tickers = s.removeFirst().cast(String.class).rows(null);
 		String fields = s.removeFirst().cast(String.class).rows(null);
 		pinto.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(pinto,s);
+	}
+
+	private static void mkt_static(Pinto pinto, Stack s) {
+
 	}
 
 	private static void pi(Pinto pinto, Stack s) {
@@ -924,49 +926,49 @@ public class StandardVocabulary extends Vocabulary {
 
 
 	private static void palette(Pinto pinto, Stack stack) {
-		stack.addLast(new Column<String>(String.class, "color", "#92d050"));
-		stack.addLast(new Column<String>(String.class, "color", "#c5be97"));
-		stack.addLast(new Column<String>(String.class, "color", "#8db4e3"));
-		stack.addLast(new Column<String>(String.class, "color", "#ffff99"));
-		stack.addLast(new Column<String>(String.class, "color", "#fddf70"));
-		stack.addLast(new Column<String>(String.class, "color", "#ff7c80"));
-		stack.addLast(new Column<String>(String.class, "color", "#f09ebf"));
-		stack.addLast(new Column<String>(String.class, "color", "#efff59"));
-		stack.addLast(new Column<String>(String.class, "color", "#43d2ff"));
-		stack.addLast(new Column<String>(String.class, "color", "#888888"));
-		stack.addLast(new Column<String>(String.class, "color", "#00b050"));
-		stack.addLast(new Column<String>(String.class, "color", "#846802"));
-		stack.addLast(new Column<String>(String.class, "color", "#0070c0"));
-		stack.addLast(new Column<String>(String.class, "color", "#ffff00"));
-		stack.addLast(new Column<String>(String.class, "color", "#fbc913"));
-		stack.addLast(new Column<String>(String.class, "color", "#ea5816"));
-		stack.addLast(new Column<String>(String.class, "color", "#d42069"));
-		stack.addLast(new Column<String>(String.class, "color", "#9fb000"));
-		stack.addLast(new Column<String>(String.class, "color", "#007194"));
-		stack.addLast(new Column<String>(String.class, "color", "#7f7f7f"));
-		stack.addLast(new Column<String>(String.class, "color", "#ccffcc"));
-		stack.addLast(new Column<String>(String.class, "color", "#ccffff"));
-		stack.addLast(new Column<String>(String.class, "color", "#ffffcc"));
-		stack.addLast(new Column<String>(String.class, "color", "#ffcccc"));
+		stack.addLast(new Column<>(String.class, "color", "#92d050"));
+		stack.addLast(new Column<>(String.class, "color", "#c5be97"));
+		stack.addLast(new Column<>(String.class, "color", "#8db4e3"));
+		stack.addLast(new Column<>(String.class, "color", "#ffff99"));
+		stack.addLast(new Column<>(String.class, "color", "#fddf70"));
+		stack.addLast(new Column<>(String.class, "color", "#ff7c80"));
+		stack.addLast(new Column<>(String.class, "color", "#f09ebf"));
+		stack.addLast(new Column<>(String.class, "color", "#efff59"));
+		stack.addLast(new Column<>(String.class, "color", "#43d2ff"));
+		stack.addLast(new Column<>(String.class, "color", "#888888"));
+		stack.addLast(new Column<>(String.class, "color", "#00b050"));
+		stack.addLast(new Column<>(String.class, "color", "#846802"));
+		stack.addLast(new Column<>(String.class, "color", "#0070c0"));
+		stack.addLast(new Column<>(String.class, "color", "#ffff00"));
+		stack.addLast(new Column<>(String.class, "color", "#fbc913"));
+		stack.addLast(new Column<>(String.class, "color", "#ea5816"));
+		stack.addLast(new Column<>(String.class, "color", "#d42069"));
+		stack.addLast(new Column<>(String.class, "color", "#9fb000"));
+		stack.addLast(new Column<>(String.class, "color", "#007194"));
+		stack.addLast(new Column<>(String.class, "color", "#7f7f7f"));
+		stack.addLast(new Column<>(String.class, "color", "#ccffcc"));
+		stack.addLast(new Column<>(String.class, "color", "#ccffff"));
+		stack.addLast(new Column<>(String.class, "color", "#ffffcc"));
+		stack.addLast(new Column<>(String.class, "color", "#ffcccc"));
 	}
 	
 	private static void bluePalette(Pinto pinto, Stack stack) {
-		stack.addLast(new Column<String>(String.class, "color", "#12426d"));
-		stack.addLast(new Column<String>(String.class, "color", "#2383db"));
-		stack.addLast(new Column<String>(String.class, "color", "#85baeb"));
-		stack.addLast(new Column<String>(String.class, "color", "#c3ddf5"));
-		stack.addLast(new Column<String>(String.class, "color", "#aadaac"));
-		stack.addLast(new Column<String>(String.class, "color", "#489452"));
-		stack.addLast(new Column<String>(String.class, "color", "#306236"));
-		stack.addLast(new Column<String>(String.class, "color", "#04400b"));
-		stack.addLast(new Column<String>(String.class, "color", "#282828"));
-		stack.addLast(new Column<String>(String.class, "color", "#515151"));
-		stack.addLast(new Column<String>(String.class, "color", "#808080"));
-		stack.addLast(new Column<String>(String.class, "color", "#cdcdcd"));
-		stack.addLast(new Column<String>(String.class, "color", "#adb0d6"));
-		stack.addLast(new Column<String>(String.class, "color", "#767cbb"));
-		stack.addLast(new Column<String>(String.class, "color", "#5556aa"));
-		stack.addLast(new Column<String>(String.class, "color", "#3b3c8d"));
+		stack.addLast(new Column<>(String.class, "color", "#12426d"));
+		stack.addLast(new Column<>(String.class, "color", "#2383db"));
+		stack.addLast(new Column<>(String.class, "color", "#85baeb"));
+		stack.addLast(new Column<>(String.class, "color", "#c3ddf5"));
+		stack.addLast(new Column<>(String.class, "color", "#aadaac"));
+		stack.addLast(new Column<>(String.class, "color", "#489452"));
+		stack.addLast(new Column<>(String.class, "color", "#306236"));
+		stack.addLast(new Column<>(String.class, "color", "#04400b"));
+		stack.addLast(new Column<>(String.class, "color", "#282828"));
+		stack.addLast(new Column<>(String.class, "color", "#515151"));
+		stack.addLast(new Column<>(String.class, "color", "#808080"));
+		stack.addLast(new Column<>(String.class, "color", "#cdcdcd"));
+		stack.addLast(new Column<>(String.class, "color", "#adb0d6"));
+		stack.addLast(new Column<>(String.class, "color", "#767cbb"));
+		stack.addLast(new Column<>(String.class, "color", "#5556aa"));
+		stack.addLast(new Column<>(String.class, "color", "#3b3c8d"));
 	}
 	
 	private static void chartSVG(Pinto pinto, Stack stack) {
@@ -986,7 +988,7 @@ public class StandardVocabulary extends Vocabulary {
 		e.addFunction((StackFunction)(p, s) -> s.addAll(s3));
 		e.setTerminal(StandardVocabulary::eval);
 		stack.clear();
-		stack.add(new Column<String>(String.class, "HTML", Chart.lineChart(e.evaluate(pinto),"chart-" + ID.getId(),
+		stack.add(new Column<>(String.class, "HTML", Chart.lineChart(e.evaluate(pinto),"chart-" + ID.getId(),
 							title, dateFormat, numberFormat, width, height, colors, background, dataLabels)));
 	}
 
@@ -1072,7 +1074,7 @@ public class StandardVocabulary extends Vocabulary {
 		stack.add(new Column<String>(String.class, input -> "HTML", (r, input) -> {
 			Table t = new Table();
 			t.insertAtTop(s);
-			t.evaluate(range);
+			t.setRange(range);
 			String[] lines = t.toCsv(nf).split("\n");
 			if (!rowHeader.equals("date")) {
 				for (int i = 0; i < lines.length; i++) {
@@ -1113,7 +1115,7 @@ public class StandardVocabulary extends Vocabulary {
 		int rows = stack.size();
 		final Stack s = new Stack(stack);
 		stack.clear();
-		stack.add(new Column<String>(String.class, input -> "HTML", (r, input) -> {
+		stack.add(new Column<>(String.class, input -> "HTML", (r, input) -> {
 			String[] labels = new String[rows];
 			String[] headers = new String[columns];
 			String[][] cells = new String[rows][columns];
@@ -1122,20 +1124,18 @@ public class StandardVocabulary extends Vocabulary {
 				for (int j = 0; j < s.size(); j++) {
 					Pinto.Expression expression = new Pinto.Expression(false);
 					final int J = j;
-					expression.addFunction((StackFunction)(p, s2) -> {
-						s2.add(s.get(J).clone());
-					});
+					expression.addFunction((StackFunction) (p, s2) -> s2.add(s.get(J).clone()));
 					double[][] d;
 					Table t;
 					try {
 						pinto.parse(functions.get(i), expression);
 						t = expression.evaluate(pinto);
 						d = t.toColumnMajorArray();
-					} catch(RuntimeException e) {
+					} catch (RuntimeException e) {
 						throw new RuntimeException("Error in rt function \"" + expression.getText() + "\".", e);
 					}
 					values[j][0] = d[0][d[0].length - 1];
-					values[j][1] = (int) j;
+					values[j][1] = j;
 					if (j == 0) {
 						headers[i] = t.getHeaders(false, false).get(0);
 					}
@@ -1148,15 +1148,15 @@ public class StandardVocabulary extends Vocabulary {
 				for (int j = 0; j < values.length; j++) {
 					StringBuilder sb = new StringBuilder();
 					sb.append("\t<td id=\"rankingColor").append((int) values[j][1]).append("\" class=\"rankingTableCell\">")
-						.append(labels[(int) values[j][1]]).append(": ").append(nf.format(values[j][0]))
-						.append("</td>\n");
+							.append(labels[(int) values[j][1]]).append(": ").append(nf.format(values[j][0]))
+							.append("</td>\n");
 					cells[j][i] = sb.toString();
 				}
 			}
 			StringBuilder sb = new StringBuilder();
 			sb.append("<table class=\"rankingTable\">\n<thead>\n");
 			Arrays.stream(headers)
-				.forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
+					.forEach(h -> sb.append("\t<th class=\"rankingTableHeader\">").append(h).append("</th>\n"));
 			sb.append("</thead>\n<tbody>\n");
 			for (int i = 0; i < cells.length; i++) {
 				sb.append("<tr>\n");

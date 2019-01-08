@@ -72,6 +72,11 @@ public class Column<T> implements Cloneable {
 			for(int j = 0; j < s.length; j++) {
 				s[j] = nf.format(d[j]); 
 			}
+		} else if(type.isArray()) {
+			Object[] d = Object[].class.cast(rows(range));
+			for(int j = 0; j < s.length; j++) {
+				s[j] = d[j].toString();
+			}
 		} else {
 			Arrays.fill(s, ((Object) rows(range)).toString());
 		}

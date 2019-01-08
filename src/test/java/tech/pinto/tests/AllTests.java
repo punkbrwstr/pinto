@@ -56,7 +56,7 @@ public class AllTests {
 		}
 		@Provides @Singleton MarketData provideMarketData()  {
 			return new MarketData() {
-				@Override public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> getFunction(Request request) { throw new UnsupportedOperationException(); }
+				@Override public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> getRowFunction(Request request) { throw new UnsupportedOperationException(); }
 				@Override public String getDefaultField() { throw new UnsupportedOperationException(); }};
 		}
 	}

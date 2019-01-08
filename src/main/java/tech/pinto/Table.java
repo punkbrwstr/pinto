@@ -2,7 +2,6 @@ package tech.pinto;
 
 import static java.util.stream.Collectors.toList;
 
-
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -31,7 +30,7 @@ public class Table {
 	private final LinkedList<Level> levels = new LinkedList<>();
 	private Optional<String> status = Optional.empty();
 	private Optional<PeriodicRange<?>> range = Optional.empty();
-	private Optional<Stack> evaluatedStack = Optional.empty();
+	private Optional<Stack> flattenedStack = Optional.empty();
 
 	public Table() {
 		levels.add(new Level(true));
@@ -92,21 +91,23 @@ public class Table {
 			List<Column<?>> collapsed = levels.removeFirst().getStacks().stream().flatMap(LinkedList::stream).collect(Collectors.toList());
 			levels.peekFirst().getStacks().get(0).addAll(0,collapsed);
 		}
-		return levels.peekFirst().getStacks().get(0);
+		flattenedStack =  Optional.of(levels.peekFirst().getStacks().get(0));
+		return flattenedStack.get();
 	}
 
-	public void evaluate(PeriodicRange<?> range) {
+	public void setRange(PeriodicRange<?> range) {
 		this.range = Optional.of(range);
-		evaluatedStack = Optional.of(flatten());
+		if(!flattenedStack.isPresent()) {
+			flatten();
+		}
 	}
 
-	
 	public PeriodicRange<?> getRange() {
 		return range.orElseThrow(() -> new PintoSyntaxException("Cannot access table range before evaluating."));
 	}
 	
 	public Stack getStack() {
-		return evaluatedStack.orElseThrow(() -> new PintoSyntaxException("Cannot access stack before evaluating."));
+		return flattenedStack.orElseThrow(() -> new PintoSyntaxException("Cannot access stack before evaluating."));
 	}
 	
 	public void setStatus(String s) {

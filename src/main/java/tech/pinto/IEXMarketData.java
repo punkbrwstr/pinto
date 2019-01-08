@@ -31,7 +31,7 @@ public class IEXMarketData implements MarketData {
 	private static Map<String,TreeMap<LocalDate,double[]>> cache = new HashMap<>();
 
 	@Override
-	public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> getFunction(Request req) {
+	public <P extends Period<P>> Function<PeriodicRange<?>, double[][]> getRowFunction(Request req) {
 		return range -> {
 			double[][] d = new double[req.size()][(int) range.size()];
 			for(int i = 0; i < d.length; i++) {
