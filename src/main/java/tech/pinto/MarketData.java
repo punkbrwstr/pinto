@@ -30,15 +30,6 @@ public interface MarketData {
 			});
 	}
 
-	default public List<Column<String>> getStaticData(String literal) {
-	    return getStaticData(fromLiteral(literal));
-    }
-
-	default public List<Column<String>> getStaticData(Request request) {
-		throw new UnsupportedOperationException();
-	}
-
-
 	default public Request fromLiteral(String literal) {
 		String[] securitiesAndFields = literal.split(":");
 		String fieldsString = securitiesAndFields.length > 1 ? securitiesAndFields[1] : getDefaultField();
@@ -54,6 +45,10 @@ public interface MarketData {
 		private final String securityFieldsString;
 		private final Map<String,String> overrides;
 
+
+		public Request(String security, String field) {
+			this(Arrays.asList(security), Arrays.asList(field));
+        }
 
 		public Request(List<String> securities, List<String> fields) {
 		    this(securities, fields, new HashMap<>());

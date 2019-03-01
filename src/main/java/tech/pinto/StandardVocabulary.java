@@ -246,7 +246,7 @@ public class StandardVocabulary extends Vocabulary {
 
     	names.add(getUnaryOperatorName("isna", x -> x != x ? 1 : 0));
     	names.add(getUnaryOperatorName("not", x -> x == 0 ? 1 : 0));
-    	names.add(getUnaryOperatorName("abs", (DoubleUnaryOperator) Math::abs));
+    	names.add(getUnaryOperatorName("abs", Math::abs));
     	names.add(getUnaryOperatorName("sin", Math::sin));
     	names.add(getUnaryOperatorName("cos", Math::cos));
     	names.add(getUnaryOperatorName("tan", Math::tan));
@@ -254,7 +254,7 @@ public class StandardVocabulary extends Vocabulary {
     	names.add(getUnaryOperatorName("log", Math::log));
     	names.add(getUnaryOperatorName("log10", Math::log10));
     	names.add(getUnaryOperatorName("exp", Math::exp));
-    	names.add(getUnaryOperatorName("signum", (DoubleUnaryOperator)Math::signum));
+    	names.add(getUnaryOperatorName("signum", Math::signum));
     	names.add(getUnaryOperatorName("asin", Math::asin));
     	names.add(getUnaryOperatorName("acos", Math::acos));
     	names.add(getUnaryOperatorName("atan", Math::atan));
@@ -264,14 +264,14 @@ public class StandardVocabulary extends Vocabulary {
     	names.add(getUnaryOperatorName("ceil", Math::ceil));
     	names.add(getUnaryOperatorName("floor", Math::floor));
     	names.add(getUnaryOperatorName("rint", Math::rint));
-    	names.add(getUnaryOperatorName("ulp", (DoubleUnaryOperator)Math::ulp));
+    	names.add(getUnaryOperatorName("ulp", Math::ulp));
     	names.add(getUnaryOperatorName("sinh", Math::sinh));
     	names.add(getUnaryOperatorName("cosh", Math::cosh));
     	names.add(getUnaryOperatorName("tanh", Math::tanh));
     	names.add(getUnaryOperatorName("expm1", Math::expm1));
     	names.add(getUnaryOperatorName("log1p", Math::log1p));
-    	names.add(getUnaryOperatorName("nextUp", (DoubleUnaryOperator)Math::nextUp));
-    	names.add(getUnaryOperatorName("nextDown", (DoubleUnaryOperator)Math::nextDown));
+    	names.add(getUnaryOperatorName("nextUp", Math::nextUp));
+    	names.add(getUnaryOperatorName("nextDown", Math::nextDown));
     	names.add(getUnaryOperatorName("neg", x -> x * -1.0d));
     	names.add(getUnaryOperatorName("inv", x -> 1.0 / x));
     	names.add(getUnaryOperatorName("zeroToNa", x -> x == 0 ? Double.NaN : x));
@@ -641,10 +641,6 @@ public class StandardVocabulary extends Vocabulary {
 		String tickers = s.removeFirst().cast(String.class).rows(null);
 		String fields = s.removeFirst().cast(String.class).rows(null);
 		pinto.marketdata.getStackFunction(tickers.concat(":").concat(fields)).accept(pinto,s);
-	}
-
-	private static void mkt_static(Pinto pinto, Stack s) {
-
 	}
 
 	private static void pi(Pinto pinto, Stack s) {
