@@ -7,10 +7,10 @@ For language details please see the [Pinto Language Reference](./pinto_reference
 ## Key features
 
  - Expressive: The cleanliness of concatenative code with flexible indexing to tame the stack
- - Batteries included: Integrated Bloomberg or IEX data, charting, rich library of statistical functions
+ - Batteries included: Integrated market data, charting, rich library of statistical functions
  - Performant: Lazy evaluation, range-based caching for [nullary](https://en.wikipedia.org/wiki/Arity) functions 
  - Extensible: User-defined functions behave just like primitives
- - Interoperable: Accessible through an HTTP interface (works great with Python or SAS)
+ - Interoperable: Accessible through an HTTP interface (works great with Python, R and SAS)
 
 ## Why Pinto?
 
@@ -56,7 +56,7 @@ mvn exec:java@REPL -pl pinto-lang
 
 ## License
 
-Copyright (c) 2016 Peter Graf
+Copyright (c) 2019 Peter Graf
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
